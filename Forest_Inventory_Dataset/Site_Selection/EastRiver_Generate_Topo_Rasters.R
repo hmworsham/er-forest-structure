@@ -27,24 +27,24 @@ rasdir <-  file.path('~', 'dem')
 # Topo factor computations
 ##################################
 
-# Ingest raster
-dem <- raster(file.path(rasdir, 'USGS_13_n39-40_w107-108_mosaic_wgs84utm13n.tif'))
-plot(dem)
-
-# slope
-slope <- terrain(dem, opt = 'slope', unit = 'degrees')
-writeRaster(slope, file.path(rasdir, 'usgs_slope_10m.tif'))
-slope <- NULL
-
-# aspect
-aspect <- terrain(dem, opt = 'aspect', unit = 'degrees')
-writeRaster(aspect, file.path(rasdir, 'usgs_aspect_10m.tif'))
-aspect <- NULL
-
-# curvature
-curvature <- spatialEco::curvature(dem, type = c('total', 'bolstad'))
-writeRaster(curvature, file.path(rasdir, 'usgs_curvature_10m.tif'))
-curvature <- NULL
+# # Ingest raster
+# dem <- raster(file.path(rasdir, 'USGS_13_n39-40_w107-108_mosaic_wgs84utm13n.tif'))
+# plot(dem)
+# 
+# # slope
+# slope <- terrain(dem, opt = 'slope', unit = 'degrees')
+# writeRaster(slope, file.path(rasdir, 'usgs_slope_10m.tif'))
+# slope <- NULL
+# 
+# # aspect
+# aspect <- terrain(dem, opt = 'aspect', unit = 'degrees')
+# writeRaster(aspect, file.path(rasdir, 'usgs_aspect_10m.tif'))
+# aspect <- NULL
+# 
+# # curvature
+# curvature <- spatialEco::curvature(dem, type = c('total', 'bolstad'))
+# writeRaster(curvature, file.path(rasdir, 'usgs_curvature_10m.tif'))
+# curvature <- NULL
 
 # tpi
 tpi_1000 <- spatialEco::tpi(dem, scale = 99, win = 'rectangle', normalize = T)
@@ -60,13 +60,12 @@ twi <- dynatopmodel::build_layers(dem, fill.sinks = T)
 writeRaster(twi, file.path(rasdir, 'usgs_twi_10m.tif'))
 twi <- NULL
 
-
-# Compare USGS 1/9 arc-second DEM-derived values to original AOP DEM-derived values
-slope.aop = raster::extract(slope, spdf, buffer = 20, fun = mean)
-slope.usgs = raster::extract(toporasters[[6]], spdf, buffer = 20, fun = mean)
-
-aspect.aop = raster::extract(aspect, spdf, buffer = 20, fun = mean)
-aspect.usgs = raster::extract(toporasters[[1]], spdf, buffer = 20, fun = mean)
-
-slope.usgs
-aspect.usgs
+# # Compare USGS 1/9 arc-second DEM-derived values to original AOP DEM-derived values
+# slope.aop = raster::extract(slope, spdf, buffer = 20, fun = mean)
+# slope.usgs = raster::extract(toporasters[[6]], spdf, buffer = 20, fun = mean)
+# 
+# aspect.aop = raster::extract(aspect, spdf, buffer = 20, fun = mean)
+# aspect.usgs = raster::extract(toporasters[[1]], spdf, buffer = 20, fun = mean)
+# 
+# slope.usgs
+# aspect.usgs
