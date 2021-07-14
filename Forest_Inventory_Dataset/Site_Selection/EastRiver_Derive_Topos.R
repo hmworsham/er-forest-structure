@@ -141,7 +141,10 @@ plots21 <- list.files(file.path(sfdir,
                      'Kueppers_EastRiver_ProposedSites_2021_25'),
                      pattern = 'shp', full.names = T)
 
-newcoords <- data.frame(Site_ID = c('emerald','emerald2', 'cement 28'), Longitude = c(-107.047670, -107.047914, -106.8253285), Latitude = c(39.010148, 39.014249, 38.8274440))
+newcoords <- data.frame(
+  Site_ID = c('emerald','emerald2', 'cement 28', 'walrod1', 'walrod2'), 
+  Longitude = c(-107.047670, -107.047914, -106.8253285, -106.846080, -106.8472989), 
+  Latitude = c(39.010148, 39.014249, 38.8274440, 38.828859, 38.8292840))
 
 
 coords
