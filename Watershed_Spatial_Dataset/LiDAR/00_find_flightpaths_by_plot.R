@@ -39,10 +39,11 @@ load.pkgs(pkgs)
 ###################
 
 # Name directory where shapefiles live
-shapedir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N'
+allplotsdir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N'
+shapedir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N/Polygons'
 
 # Read in the shapefile containing all plots
-allplots_path <- paste(shapedir, 'AllPlots', 'Kueppers_EastRiver_AllPlots_2020_WGS84UTM13N.shp', sep ='/')
+allplots_path <- paste(allplotsdir, 'AllPlots', 'Kueppers_EastRiver_AllPlots_2020_WGS84UTM13N.shp', sep ='/')
 allplots <- st_read(allplots_path)
 
 ######################################
@@ -63,6 +64,7 @@ fp_plot_itx <-  data.frame(matrix(NA,
                                   ncol = nrow(allplots)))
 names(fp_plot_itx) <- allplots$PLOT_ID
 row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][9]})
+
 #row.names(fp_plot_itx) <- lapply(flightpaths, strsplit, '/', 9)
 
 # Find flightpath chunk boundaries and check for intersections with allplots
@@ -110,8 +112,45 @@ for(i in seq(length(flightpaths))){
   fp_plot_itx[i,] = itx
 }
 
-View(fp_plot_itx)
 
-itx_trues <- which(fp_plot_itx == TRUE, arr.ind = T, useNames = TRUE)
+# find_fps <- function(aoi){
+#   
+#   # Specify a plot of interest
+#   plotpath = list.files(shapedir, 
+#                         pattern = glob2rx(paste0(aoi,"*shp")),
+#                         full.names = T)
+#   plotsf = st_read(plotpath, quiet=T)
+#   geoextent = as.list(extent(plotsf))
+#   #print(geoextent)
+#   
+#   # Clip the waveforms that intersect the aoi
+#   for(i in seq(length(flightpaths))){
+#     geo_files = grep(list.files(flightpaths[i], full.names = T),
+#                      pattern = 'geolocation',
+#                      value = T)
+#     geo_bin = geo_files[1]
+#     geo_hdr = geo_files[2]
+#     geolo = read.ENVI(geo_bin, headerfile = geo_hdr)
+#     
+#     fp_maxx = max(geolo[,1])
+#     fp_minx = min(geolo[,1])
+#     fp_maxy = max(geolo[,2])
+#     fp_miny = min(geolo[,2])
+#   
+#     plotinfp = geoextent[1] >= fp_minx & geoextent[2] <= fp_maxx & geoextent[3] >= fp_miny & geoextent[4] <= fp_maxy
+#     
+#     fp_plot_itx[i, aoi] <- plotinfp
+#   }
+#   # waveform1 = wf[,-1]
+#   # colnames(geol)[2:9] = c('x', 'y', 'z', 'dx', 'dy', 'dz', 'or', 'fr')
+#   # ll = apply(waveform1, 1, wavelen)
+#   # x = geol$x + geol$dx*(round(ll/2)-geol$fr) # use the middle point to represent the waveform position
+#   # y = geol$y + geol$dy*(round(ll/2)-geol$fr)
+#   # ind = which (x >= geoextent[1] & x<= geoextent[2] & y >= geoextent[3] & y<= geoextent[4])
+#   # swaveform = wf[ind,]
+#   # 
+#   # return(swaveform)
+#   return(fp_plot_itx)
+# }
 
 write.csv(fp_plot_itx, '~/Desktop/EastRiver_Plot_LiDAR_Intersections.csv')

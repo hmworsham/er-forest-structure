@@ -41,13 +41,7 @@ load.pkgs(pkgs)
 ################################
 
 # Name data directory
-datadir <- '/Volumes/Brain/GIS/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/'
-
-# Zipfiles
-zipfiles <- paste0(datadir, grep(list.files(datadir), pattern = '.7z', value = T))
-
-# Name flightpaths as filenames
-flightpaths <- paste0(datadir, grep(list.files(datadir), pattern = '.7z', invert = T, value = T))
+datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/'
 
 # Function to ingest files and store as environment variables
 ingest <- function(flightpath){
@@ -97,8 +91,10 @@ ingest <- function(flightpath){
 }
 
 # Ingest one flightpath
-fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL014', flightpaths)]
-wf <- mclapply(fp, ingest, mc.cores = detectCores())
+flightpaths <- list.files(datadir, full.names = T)
+fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
+wf <- ingest(fp[1])
+#wf <- mclapply(fp, ingest, mc.cores = detectCores())
 
 ###################################
 # clip waveform to one plot extent
@@ -130,6 +126,7 @@ out_sub_rf <- clipwf(out, plot_sf, 200)
 re_sub_rf <- clipwf(re, plot_sf, 200)
 geol_sub_rf <- clipwf(geol, plot_sf, 200)
 
+
 # Trim the results to the same indexes to make sure they match
 out_sub <- out_sub_rf[out_sub_rf$index %in% geol_sub_rf$index]
 out_sub <- out_sub[out_sub$index %in% re_sub_rf$index]
@@ -137,6 +134,10 @@ re_sub <- re_sub_rf[re_sub_rf$index %in% geol_sub_rf$index]
 re_sub <- re_sub[re_sub$index %in% out_sub$index]
 geol_sub <- geol_sub_rf[geol_sub_rf$index %in% re_sub$index]
 geol_sub <- geol_sub[geol_sub$index %in% out_sub$index]
+
+# Assign geo column names
+geoindex <- c(1:9,16)
+colnames(geol_sub)[geoindex] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
 
 #######################################
 # Waveform deconvolution
@@ -171,15 +172,44 @@ dec <- mapply(deconvolution,
 
 tdec <- t(dec)
 fdec <- data.table(index=1:nrow(tdec),tdec)
+View(fdec)
 
+out_sub <- subset(testfps$out, select = -index)
+re_sub <- subset(testfps$re, select = -index)
+sysir_rep <- as.numeric(subset(testfps$sysir, select = -index))
+outir_rep <- as.numeric(subset(testfps$outir, select = -index))
+
+return1 <- as.list(as.data.frame(t(re_sub)))
+out1<-as.list(as.data.frame(t(out_sub)))
+sysir2<-as.list(as.data.frame(t(sysir_rep)))
+outir2<-as.list(as.data.frame(t(outir_rep)))
+
+testdecon <- deconvolution(re_sub[445,], out_sub[445,], sysir_rep, sysir_rep)
+testdecomp <- decom.adaptive(testdecon)
+
+plot(t(re_sub[445])[1:48], type = 'l', xlab = 't (ns)', ylab = 'Intensity', lwd =5, cex.axis =2, cex.lab = 2)
+plot(testdecon[1:48], col = 'darkblue', lwd = 5, type = 'l', xlab = 't (ns)', ylab = 'Intensity', cex.axis = 2, cex.lab = 2)
+
+
+ayi<-data.frame(testdecomp[[2]])
+sumayi<-0
+x<-1:48
+sumayi<-sumayi + ayi[1,2] * exp(-abs(x - ayi[2,2])**ayi[4,2]/(2 * ayi[3,2]**2))
+
+lines(sumayi, col = 'cyan2', lwd =5, type = 'l', xlab = 't (ns)', ylab = 'Intensity')
+legend('topleft', legend = c('Deconvolved', 'Decomposed'), col = c('darkblue', 'cyan2'), lty = 1, box.lty = 0, cex = 1.2)
 #final_result <- mapply(peakfind, fdec)
+
+
 
 #######################################
 # Waveform decomposition
 #######################################
 
 #### run on all data
-dr3 <- apply(re_sub, 1, decom.adaptive, smooth = TRUE, width = 5, thres = 0.12)
+dr3 <- apply(re_sub, 1, decom.adaptive, smooth = T, thres = .27)
+View(dr3)
+View(re_sub)
 
 rfit3<-do.call("rbind",lapply(dr3,"[[",1)) ## waveform is correctly decomposed with index,some are not correct index by NA
 
@@ -188,19 +218,23 @@ ga3<-do.call("rbind",lapply(dr3,"[[",2))   ###the original results, which can he
 pa3<-do.call("rbind",lapply(dr3,"[[",3))   ###useful decomposition results for next step or geolocation transformation.
 
 # Get indices of waveforms that were correctly processed
-rid<-rfit3[!is.na(rfit3),]
+failed_null <- which(lapply(dr3, 'is.null')==TRUE)
+failed_na <- setdiff(as.numeric(re_sub[,1]$index), rfit3[!is.na(rfit3),])
 
 #Get indices of waveforms that need to be reprocessed
-wid<-setdiff(as.numeric(unlist(re_sub[,1])),rid)  
-wid
+wid<-setdiff(as.numeric(re_sub[,1]$index), failed_null)
 
 # Subset the params that resulted from successful decompositions 
 rpars<-pa3[!is.na(pa3[,1]),]
+geol_keep <- geol_sub[!failed_null]
+geol_keep
+
+colnames(rpars) <- c('index', 'A', 'u', 'sigma', 'r', 'A_std', 'u_std', 'sig_std', 'r_std')
+decomre <- geotransform(decomp=rpars, geol_keep)
+decomre
 
 # Create a dataframe with time-bin values estimated through fitting decomposition
-rpars
-
-
+View(rpars)
 
 re<-decom(wf[182,],smooth=TRUE, width=5)[[2]]
 re[4:6,2]
@@ -280,8 +314,15 @@ fig <- plot_ly(data.frame(hpc), x = ~x, y = ~y, z = ~z,
 fig <- fig %>% add_markers()
 fig
 
-
 hpcgrid<-waveformgrid(hpc=hpc,res=c(1,1))
+hpcgrid$intensity[,1]
+plot(hpcgrid$cx, hpcgrid$cy, fill=hpcgrid$intensity[,1])
+names(hpcgrid)
+ggplot(hpcgrid, aes(x = cx, y = cy)) +
+  geom_point(aes(color = intensity[,1]))
+View(hpcgrid)
+
+
 ###using raw data
 rawgrid<-waveformgrid(waveform = return,geo=geo,method="Other")
 ##adding quantiles
@@ -292,7 +333,16 @@ rquangrid<-waveformgrid(waveform = return,geo = geo,res=c(1,1),quan=c(0.4,0.48,0
 ####waveformvoxel
 voxr<-waveformvoxel(hpc,res=c(1,1,0.15))
 ##adding quan
-qvoxr<-waveformvoxel(hpc,res=c(1,1,0.15),quan=c(0.4,0.5,0.75,0.86))
+qvoxr<-waveformvoxel(hpc,res=c(.8,.8,0.4),quan=c(0.4,0.5,0.75,0.86))
+qvoxr
+
+fig <- plot_ly(data.frame(qvoxr), x = ~cx, y = ~cy, z = ~cz,
+               type = 'scatter3d',
+               mode = 'markers',
+               color = ~intensity[,6])
+
+fig
+
 
 ###convert the hpc to the composite waveforms
 rtc<-rawtocomposite(voxr)
