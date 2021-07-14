@@ -92,14 +92,15 @@ topos <- fullset[c('Site_ID',
 outs <- c('Carbon 15',
           'Carbon 21',
           'Carbon 6',
-          #'Cement Creek 8',
-          #'Cement Creek 9',
+          'Cement Creek 8',
+          'Cement Creek 9',
           'Coal Creek Valley North 1', 
           'Coal Creek Valley North 1B',
           'Coal Valley South 1',
           'Coal Valley South 2',
           'Coal Valley South 4',
           'Coal Valley South 5',
+          #'dummy',
           'Point Lookout North 3',
           'Schuylkill North 2B',
           'Schuylkill North 5B', 
@@ -172,7 +173,7 @@ printfigs(topos_cut)
 ############################
 
 # Select variables of interest
-kplots_long <- siteinfo20[,c('SFA_ID',
+kplots_long <- siteinfo20[,c('Site_ID',
                            'TPI_1000',
                            'TPI_2000',
                            'Elevation_m',
@@ -182,7 +183,7 @@ kplots_long <- siteinfo20[,c('SFA_ID',
                            'TWI')]
 
 # Gather to format long
-kplots_long <- gather(kplots_long, variable, value, -SFA_ID)
+kplots_long <- gather(kplots_long, variable, value, -Site_ID)
 kplots_long <- kplots_long %>%
   arrange(variable, value) %>%
   mutate(order = row_number())
