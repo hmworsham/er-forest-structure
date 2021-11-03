@@ -12,7 +12,7 @@ pkgs <- c('dplyr',
           'raster',
           'caret',
           'FactoMineR',
-          'pca3d') 
+          'pca3d')
 
 # Name the packages you want to use here
 load.pkgs <- function(pkg){
@@ -79,7 +79,8 @@ head(sitetopos21)
 head(sitetopos20)
 
 # Row bind 2020 and 2021 topographic info
-sitetopos.all <- bind_rows(sitetopos20, sitetopos21)
+#sitetopos.all <- bind_rows(sitetopos20, sitetopos21)
+sitetopos.all <- topos_cut
 View(sitetopos.all)
 
 # Specify which plots to remove
@@ -110,15 +111,17 @@ topos.cut <- sitetopos.all[!sitetopos.all$Site_Name %in% outs, ]
 nrow(topos.cut)
 
 # Remove unneeded columns (Site_Name, Radiation)
-sitetopos <- topos.cut[-c(1,9)]
-View(sitetopos)
+sitetopos.all
+#sitetopos <- sitetopos.all[-c(1,2,7,9)]
+sitetopos <- topos_cut[-c(1,2,7,9,10)]
+
+rownames(sitetopos) <- seq(1:nrow(sitetopos))
 st.mat <- as.matrix(sitetopos)
 st.mat
 rescaled <- preProcess(st.mat, method=c("center", "scale"))
 
 # Normalize
 plots.norm <- predict(rescaled, st.mat)
-plots.norm
 heatmap(plots.norm)
 
 #################
@@ -177,10 +180,11 @@ sitetopos$PCA3[pca3.sel] <- 'Selected'
 sitetopos$PCA3 <- as.factor(sitetopos$PCA3)
 sitetopos$PCA3 <- factor(sitetopos$PCA3, levels = rev(levels(sitetopos$PCA3)))
 
-topos.cut$PCA3 <- sitetopos$PCA3
-topos.cut$EucDist <- pca3.ed$EucDist
+topos_cut$PCA3 <- sitetopos$PCA3
+topos_cut$EucDist <- pca3.ed$EucDist
 
-View(topos.cut)
+View(topos_cut)
+View(sitetopos.all)
 
 pca3d(pca, components = 1:3, group=sitetopos$PCA3, legend = 'topleft', show.labels =T)
 

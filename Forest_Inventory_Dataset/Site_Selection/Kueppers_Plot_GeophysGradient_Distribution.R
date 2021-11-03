@@ -55,26 +55,26 @@ siteinfo20$Inventory[grepl('XX', siteinfo20$SFA_ID)] <- 'Partial Inventory'
 # Row bind 2020 and 2021 site info
 zonnew$Site_ID <- rownames(zonnew)
 zonnew$Established <- 'Proposed'
-zonnew <- zonnew[c('Site_ID',
-                   'Established',
-                   'DTMf_ASO_free_snow_9m', 
-                  'SlopeDeg_30m',
-                  'Aspect_9m',
-                  'TWI_9m_x5',
-                  'TPI_9m_x5',
-                  'TPI_9m_1000_std',
-                  'TPI_9m_2000_std')]
+zonnew <- zonnew[c(8,9,1:7)]
+zonnew
 names(zonnew) <- c('Site_ID',
                    'Established',
+                   'Aspect',
+                   'Curvature',
                    'Elevation_m',
                    'Slope',
-                   'Aspect',
-                   'TWI',
-                   'TPI_45',
                    'TPI_1000',
-                   'TPI_2000')
+                   'TPI_2000',
+                   'TWI')
 
 fullset <- bind_rows(siteinfo21, siteinfo20, zonnew)
+
+fullset[fullset$Site_ID %in% c('Snodgrass NE Slope 5', 
+                               'Snodgrass NE Slope 4', 
+                               'Carbon 21B',
+                               'sr-pvg1',
+                               'cc-cvs1'), 'Established'] <- 'Established'
+
 
 # Select variables of interest from 2021 site info
 topos <- fullset[c('Site_ID',
@@ -86,34 +86,80 @@ topos <- fullset[c('Site_ID',
                    'TPI_45',
                    'TPI_1000',
                    'TPI_2000')]
-
+View(topos)
 
 # Specify which plots to exclude
+outs <- NA
 outs <- c('Carbon 15',
           'Carbon 21',
           'Carbon 6',
+          'Carbon 6B',
           'Cement Creek 8',
           'Cement Creek 9',
+          'Cement Creek 16',
           'Coal Creek Valley North 1', 
-          'Coal Creek Valley North 1B',
+          #'Coal Creek Valley North 1B',
+          'Coal Creek 1B',
           'Coal Valley South 1',
           'Coal Valley South 2',
           'Coal Valley South 4',
           'Coal Valley South 5',
-          #'dummy',
-          'Point Lookout North 3',
+          'dummy',
+          'emerald',
+          'emerald2',
+          #'Point Lookout North 3',
           'Schuylkill North 2B',
           'Schuylkill North 5B', 
           'Schuylkill North 2',
           'Schuylkill North 5',
+          'SG-NES1B',
           'Snodgrass Convergent 4',
           'Snodgrass East Slope 2',
           'Snodgrass NE Slope 1',
+          'Ute Gulch 1',
           'Ute Gulch 2')
+          #'Walrod 1',
+          #'Walrod 2'
+
+# Specify which plots are in 
+ins <- c(topos[topos$Established == 'Established', 'Site_ID'],
+         'Coal Creek Valley North 1B',
+         'cement 28',
+         '25 Granite Basin',
+         'emerald',
+         'Carbon 20',
+         #'axtell1',
+         'coal north 2', 
+         'Point Lookout North 3',
+         #'wildcat1', 
+         #'scarp1', 
+         'scarp2',
+         #'scarp3',
+         'coal north 3', 
+         'sr-pvg1',
+         'cc-cvs1'
+         )
 
 # Remove the cut sites from the dataframe
-topos_cut <- topos[!topos$Site_ID %in% outs, ]
+#topos_cut <- topos[!topos$Site_ID %in% outs, ]
+#topos_cut <- topos[topos$Established == 'Established', ]
+topos_cut <- topos[topos$Site_ID %in% ins, ]
+topos_cut$Sensor <- 'Sensor = F'
+topos_cut[topos_cut$Site_ID %in% c('Carbon 21B',
+                                   'sr-pvg1',
+                                   'Snodgrass NE Slope 5',
+                                   'ER-APL1',
+                                   'ER-APU1',
+                                   'ER-BME1',
+                                   'ER-GT1',
+                                   'SG-SWR1',
+                                   'XX-PLN2',
+                                   'cc-cvs1'), 'Sensor'] <-  'Sensor = T'
 topos_cut
+
+# topos_cut$sta <- sin(topos_cut$Aspect*pi/180)
+# topos_cut$sta
+# plot(sort(topos_cut$sta))
 
 # Define a function to print figures
 printfigs <- function(df){
@@ -124,7 +170,7 @@ printfigs <- function(df){
   #'''
   
   # Define colors
-  colors = c('grey10', 'grey50', 'firebrick', 'darkblue', 'steelblue', 'forest green', 'chocolate1')
+  colors = c('grey10', 'grey30', 'firebrick', 'darkblue', 'steelblue', 'forest green', 'chocolate1')
   varnames = c('Elevation [m]', 
                'Slope angle [º]', 
                'Aspect [º]', 
@@ -144,12 +190,12 @@ printfigs <- function(df){
     png(file.path('Forest_Inventory_Dataset', 
                   'Production_Images', 
                   paste0(names(topos[t+2]),'.png')), 
-        width = 15, height = 10, units = 'in', res = 180)
+        width = 12, height = 9, units = 'in', res = 180)
     
     # Print the plot to png
       print(
         ggplot(df, aes(x = reorder(Site_ID,  df[, t+2]), y = df[, t+2])) +
-          geom_point(aes(color = Established, size = 4)) +
+          geom_point(aes(color = Established, size = 12)) +
           scale_color_manual(values = c(clr, 'grey 70')) +
           scale_y_continuous(name = varname) +
           #                    limits = c(2600, 3600),
@@ -166,7 +212,8 @@ printfigs <- function(df){
 }
 
 printfigs(topos_cut)
-
+nrow(topos_cut)
+topos_cut
 
 ############################
 # Facet grid all variables
