@@ -5,16 +5,15 @@
 # This script contains functions to ingest large (20+GB) files from NEON waveform LiDAR acquisition and split them into more manageable chunks of ~1GB in size. The script defines several functions, which can be combined into a single workflow. The functions allow for writing either to a local storage device or to a Google Cloud Storage bucket.
 
 # Import libraries
-import spectral.io.envi as envi
 import os
 import numpy as np
-import shutil
 import py7zr
+import shutil
+import spectral.io.envi as envi
 
 from google.cloud import storage
 from os.path import isfile, join
 from spectral import *
-
 
 # Function to chunk a large set of waveform files and write to temporary subdirectories in sequence
 def unzip_wf(inzip, outdir):
