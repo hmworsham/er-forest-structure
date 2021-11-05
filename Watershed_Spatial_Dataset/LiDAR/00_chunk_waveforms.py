@@ -16,6 +16,7 @@ from os.path import isfile, join
 import shutil
 import subprocess
 
+
 # Set some parameters for uploading to Google Cloud Storage to avoid timeout errors
 storage.blob._DEFAULT_CHUNKSIZE = 5 * 1024 * 1024  # 5 MB
 storage.blob._MAX_MULTIPART_SIZE = 5 * 1024 * 1024  # 5 MB
