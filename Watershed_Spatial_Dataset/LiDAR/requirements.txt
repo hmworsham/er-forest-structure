@@ -4,5 +4,6 @@ google-cloud
 google-cloud-storage
 matplotlib
 numpy
+requests
 spectral
 

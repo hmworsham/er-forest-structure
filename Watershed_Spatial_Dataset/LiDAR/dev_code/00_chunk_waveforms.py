@@ -5,27 +5,21 @@
 # This script contains functions to ingest large (20+GB) files from NEON waveform LiDAR acquisition and split them into more manageable chunks of ~1GB in size. The script defines several functions, which can be combined into a single workflow. The script allows for writing either to a local storage device or to a Google Cloud Storage bucket.
 
 # Import libraries
-from spectral import *
 import spectral.io.envi as envi
 import os
 import numpy as np
-import re
-import google.cloud
+import shutil
+
 from google.cloud import storage
 from os.path import isfile, join
-import shutil
-import subprocess
+from spectral import *
 
-
-# Set some parameters for uploading to Google Cloud Storage to avoid timeout errors
-storage.blob._DEFAULT_CHUNKSIZE = 5 * 1024 * 1024  # 5 MB
-storage.blob._MAX_MULTIPART_SIZE = 5 * 1024 * 1024  # 5 MB
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/hmworsham/.ssh/eastriver-308601-65de0446573f.json'
 
 # Define the directory where the large files are stored
 indir = ('/Volumes/Brain/GIS/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/')
 #fp = '2018_CRBU_1_2018062514_FL005_waveform_return_pulse_array_img'
 #fp = '2018_CRBU_1_2018061214_FL003'
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/hmworsham/.ssh/eastriver-308601-65de0446573f.json'
 
 # Function to chunk a large set of waveform files and write to temporary subdirectories in sequence
 def envi_chunk(fp):
@@ -116,6 +110,10 @@ def upload_dir(bucket_name, fp):
         fp: flightpath
     '''
 
+    # Set some parameters for uploading to Google Cloud Storage to avoid timeout errors
+    storage.blob._DEFAULT_CHUNKSIZE = 5 * 1024 * 1024  # 5 MB
+    storage.blob._MAX_MULTIPART_SIZE = 5 * 1024 * 1024  # 5 MB
+    
     # Instantiate a client
     storage_client = storage.Client()  # Uses credentials referred in os.environ
     
