@@ -28,66 +28,66 @@ def unzip_wf(inzip, outdir):
         z.extractall(path=outdir)
 
 # Function to chunk a large set of waveform files and write to temporary subdirectories in sequence
-def envi_chunk(fp):
-    ''' Ingests a set of ENVI binary files (bil) and splits them into 1M-line chunks, then writes chunks out to local directory. Also copies one-line impulse response and impulse response at T0 files to the local directory. Each directory corresponds to a flightpath named by flight date and number in series flown that day. The set of binary files and their naming conventions should be consistent across directories. 
+# def envi_chunk(fp):
+#     ''' Ingests a set of ENVI binary files (bil) and splits them into 1M-line chunks, then writes chunks out to local directory. Also copies one-line impulse response and impulse response at T0 files to the local directory. Each directory corresponds to a flightpath named by flight date and number in series flown that day. The set of binary files and their naming conventions should be consistent across directories. 
 
-    Args:
-        fp: string indicating unique flightpath name from source
+#     Args:
+#         fp: string indicating unique flightpath name from source
 
-    '''
+#     '''
 
-    chunk_strings = ['return_pulse', 'geolocation', 'outgoing_pulse', 'observation', 'ephemeris']
-    full_list = os.listdir(os.path.join(indir, fp))
-    chunk_files = [nm for ps in chunk_strings for nm in full_list if ps in nm and 'hdr' not in nm]
-    #print(chunk_files)
+#     chunk_strings = ['return_pulse', 'geolocation', 'outgoing_pulse', 'observation', 'ephemeris']
+#     full_list = os.listdir(os.path.join(indir, fp))
+#     chunk_files = [nm for ps in chunk_strings for nm in full_list if ps in nm and 'hdr' not in nm]
+#     #print(chunk_files)
 
-    for f in chunk_files: 
-        img = envi.open(os.path.join(indir, fp, f + '.hdr'))
-        nobs = np.int(img.shape[0])
-        beg = np.int(0)
-        sub = np.int(1e6)
-        n = np.int(1)
+#     for f in chunk_files: 
+#         img = envi.open(os.path.join(indir, fp, f + '.hdr'))
+#         nobs = np.int(img.shape[0])
+#         beg = np.int(0)
+#         sub = np.int(1e6)
+#         n = np.int(1)
         
-        while sub < nobs:
-            subset = img[beg:sub, :]
-            beg = sub
-            sub = np.int(sub + 1e6)
+#         while sub < nobs:
+#             subset = img[beg:sub, :]
+#             beg = sub
+#             sub = np.int(sub + 1e6)
 
-            subsetname = '-' + str.zfill(f'{n}', 3)
-            fpsub = f.split('_waveform')[0] + subsetname + '_' + f.split('_',5)[-1]
+#             subsetname = '-' + str.zfill(f'{n}', 3)
+#             fpsub = f.split('_waveform')[0] + subsetname + '_' + f.split('_',5)[-1]
             
-            newdir = os.path.join(indir, fp + subsetname)
-            if not os.path.isdir(newdir):
-                os.mkdir(newdir)
-            else: 
-                print(fp + subsetname + ' exists')
+#             newdir = os.path.join(indir, fp + subsetname)
+#             if not os.path.isdir(newdir):
+#                 os.mkdir(newdir)
+#             else: 
+#                 print(fp + subsetname + ' exists')
             
-            outpath = os.path.join(newdir, fpsub + '.hdr')
-            #print(outpath)
+#             outpath = os.path.join(newdir, fpsub + '.hdr')
+#             #print(outpath)
 
-            n = n+1
+#             n = n+1
 
-            envi.save_image(outpath, subset, dtype = 'uint16', ext = '', interleave = 'bil', byte_order = 0)
+#             envi.save_image(outpath, subset, dtype = 'uint16', ext = '', interleave = 'bil', byte_order = 0)
 
-        else:
-            subset = img[beg:nobs, :]
+#         else:
+#             subset = img[beg:nobs, :]
 
-            subsetname = '-' + str.zfill(f'{n}', 3)
-            fpsub = f.split('_waveform')[0] + \
-                subsetname + '_' + f.split('_', 5)[-1]
+#             subsetname = '-' + str.zfill(f'{n}', 3)
+#             fpsub = f.split('_waveform')[0] + \
+#                 subsetname + '_' + f.split('_', 5)[-1]
 
-            newdir = os.path.join(indir, fp + subsetname)
-            if not os.path.isdir(newdir):
-                os.mkdir(newdir)
-            else:
-                print(fp + subsetname + ' exists')
+#             newdir = os.path.join(indir, fp + subsetname)
+#             if not os.path.isdir(newdir):
+#                 os.mkdir(newdir)
+#             else:
+#                 print(fp + subsetname + ' exists')
 
-            outpath = os.path.join(newdir, fpsub + '.hdr')
+#             outpath = os.path.join(newdir, fpsub + '.hdr')
 
-            n = n+1
+#             n = n+1
 
-            envi.save_image(outpath, subset, dtype='uint16',
-                            ext='', interleave='bil', byte_order=0)
+#             envi.save_image(outpath, subset, dtype='uint16',
+#                             ext='', interleave='bil', byte_order=0)
 
 # Function to copy impulse response files from original directory to new directory
 def cp_files(fp):
