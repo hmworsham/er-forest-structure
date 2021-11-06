@@ -15,14 +15,3 @@ outdir = '/global/scratch/users/worsham/LiDAR/waveform_binary'
 
 for p in paths:
     cw.unzip_wf(p, outdir)
-
-# # Define flightpaths to ingest
-# fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
-
-# # Process and upload to GCS
-# for fp in fps:
-#     process_wfbinary(fp)
-
-# # Process and copy to Brain10 storage volume    
-# for fp in fps:
-#     process_wfbinary_b10(fp)
