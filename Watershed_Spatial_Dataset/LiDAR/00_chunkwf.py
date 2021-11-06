@@ -22,7 +22,7 @@ outdir = '/global/scratch/users/worsham/LiDAR/waveform_binary'
 #dview.block = True 
 #dview.map_sync(functools.partial(cw.unzip_wf(outdir=outdir),paths) 
 
-for p in paths:
+for p in paths[46:]:
     cw.unzip_wf(p, outdir)
 
 # # Define flightpaths to ingest
