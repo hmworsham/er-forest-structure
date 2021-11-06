@@ -11,9 +11,17 @@ from waveform import chunk_waveforms as cw
 indir = '/global/scratch/users/worsham/LiDAR'
 files=os.listdir(indir)
 paths=[os.path.join(indir, i) for i in files]
-outdir = '/global/scratch/users/worsham/LiDAR/waveform_binary'
+outdir = '/global/scratch/users/worsham/waveform_binary'
 
+<<<<<<< HEAD
 for p in paths:
+=======
+#dview = c[:]
+#dview.block = True 
+#dview.map_sync(functools.partial(cw.unzip_wf(outdir=outdir),paths) 
+
+for p in paths[46:]:
+>>>>>>> 306ba750a2d72ca1555530d5c00de9852130dc3f
     cw.unzip_wf(p, outdir)
 
 # # Define flightpaths to ingest
