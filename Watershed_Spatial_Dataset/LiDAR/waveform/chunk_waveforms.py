@@ -28,7 +28,7 @@ def unzip_wf(inzip, outdir):
         z.extractall(path=outdir)
 
 # Function to chunk a large set of waveform files and write to temporary subdirectories in sequence
-def envi_chunk(fp):
+def envi_chunk(fp, indir, outdir):
     ''' Ingests a set of ENVI binary files (bil) and splits them into 1M-line chunks, then writes chunks out to local directory. Also copies one-line impulse response and impulse response at T0 files to the local directory. Each directory corresponds to a flightpath named by flight date and number in series flown that day. The set of binary files and their naming conventions should be consistent across directories. 
 
     Args:
@@ -39,8 +39,6 @@ def envi_chunk(fp):
     chunk_strings = ['return_pulse', 'geolocation', 'outgoing_pulse', 'observation', 'ephemeris']
     full_list = os.listdir(os.path.join(indir, fp))
     chunk_files = [nm for ps in chunk_strings for nm in full_list if ps in nm and 'hdr' not in nm]
-    #print(chunk_files)
-
     for f in chunk_files: 
         img = envi.open(os.path.join(indir, fp, f + '.hdr'))
         nobs = np.int(img.shape[0])
@@ -55,13 +53,13 @@ def envi_chunk(fp):
 
             subsetname = '-' + str.zfill(f'{n}', 3)
             fpsub = f.split('_waveform')[0] + subsetname + '_' + f.split('_',5)[-1]
-            
-            newdir = os.path.join(indir, fp + subsetname)
+
+            newdir = os.path.join(outdir, fp + subsetname)
             if not os.path.isdir(newdir):
                 os.mkdir(newdir)
             else: 
                 print(fp + subsetname + ' exists')
-            
+
             outpath = os.path.join(newdir, fpsub + '.hdr')
             #print(outpath)
 
@@ -76,7 +74,7 @@ def envi_chunk(fp):
             fpsub = f.split('_waveform')[0] + \
                 subsetname + '_' + f.split('_', 5)[-1]
 
-            newdir = os.path.join(indir, fp + subsetname)
+            newdir = os.path.join(outdir, fp + subsetname)
             if not os.path.isdir(newdir):
                 os.mkdir(newdir)
             else:
@@ -86,14 +84,12 @@ def envi_chunk(fp):
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype='uint16',
-                            ext='', interleave='bil', byte_order=0)
+            envi.save_image(outpath, subset, dtype='uint16', ext='', interleave='bil', byte_order=0)
 
 # Function to copy impulse response files from original directory to new directory
-def cp_files(fp):
-    alldirs = os.listdir(indir)
+def cp_files(fp, indir, outdir):
+    alldirs = os.listdir(outdir)
     copy_dirs = [d for d in alldirs if fp in d and '-' in d]
-    print(copy_dirs)
 
     full_list = os.listdir(os.path.join(indir, fp))
     copy_strings = ['impulse']
@@ -102,7 +98,7 @@ def cp_files(fp):
     for d in copy_dirs:
         for f in copy_files:
             f2copy = os.path.join(indir, fp, f)
-            copypath = os.path.join(indir, d, f)
+            copypath = os.path.join(outdir, d, f)
             shutil.copyfile(f2copy, copypath)
 
 # Function to write to GCS
@@ -139,34 +135,36 @@ def upload_dir(bucket_name, fp):
                 blob.upload_from_filename(local_file, num_retries=4, timeout=60)
 
 # Function to remove temporary directories after uploading
-def rm_dirs(fp):
+def rm_dirs(fp, indir):
     alldirs = os.listdir(indir)
-    dirs2rm = [os.path.join(indir, d) for d in alldirs if fp in d and '-' in d]
+    dirs2rm = [os.path.join(indir, d) for d in alldirs if fp in d]
     #print(dirs2rm)
     for d in dirs2rm:
         shutil.rmtree(d)
 
 # Function to copy to local storage and remove temporary directories after uploading
-def cp_dir(fp):
+def cp_dir(fp, indir, destdir):
     alldirs = os.listdir(indir)
-    destdir = '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_LiDAR/Binary_Chunks'
     dirs2cp = [os.path.join(indir, d) for d in alldirs if fp in d and '-' in d]
 
     for dc in dirs2cp:
         dest = os.path.join(destdir, dc.split('/')[8])
-        cpdir = shutil.copytree(dc, dest)
+        shutil.copytree(dc, dest)
         shutil.rmtree(dc)
 
+# Function to process all waveforms and copy to directory
+def process_wfbinary_loc(fp, indir, destdir):
+    # Ingest files from one flightpath directory, chunk them, and write chunks to destination subdirs
+    envi_chunk(fp, indir, destdir)
+    cp_files(fp, indir, destdir)  # Copy impulse response files to the new directory
+    #cp_dir(fp, indir, destdir) # Write the directory and files to local storage destination
+    #rm_dirs(fp)
+    print('filepath {} processed'.format(fp))
+
+
 # Function to process all waveforms and upload to Google Cloud Storage
-def process_wfbinary(fp):
-    envi_chunk(fp) # Ingest files from one flightpath directory, chunk them, and write chunks to temporary subdirs
+def process_wfbinary_gc(fp, indir):
+    envi_chunk(fp, indir) # Ingest files from one flightpath directory, chunk them, and write chunks to temporary subdirs
     cp_files(fp) # Copy impulse response files to the new directory
     upload_dir('neon_waveform_binary', fp) # Write the directory and files to GCS
     rm_dirs(fp) # Delete temporary chunk directories from source 
-
-# Function to process all waveforms and copy to Brain10
-def process_wfbinary_b10(fp):
-    envi_chunk(fp) # Ingest files from one flightpath directory, chunk them, and write chunks to temporary subdirs
-    cp_files(fp) # Copy impulse response files to the new directory
-    cp_dir(fp) # Write the directory and files to local storage destination
-    print('filepath {} processed'.format(fp))
