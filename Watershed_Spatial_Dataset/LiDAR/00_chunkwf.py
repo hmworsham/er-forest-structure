@@ -5,19 +5,25 @@
 
 # Script to split large binary files into chunks of 1M lines each for parallel processing
 
-import dask.multiprocessing
-import importlib
+#import importlib
 import os
-import functools
-
 from waveform import chunk_waveforms as cw
-from dask.distributed import Client
+from ipyparallel import Client
 
-importlib.reload(cw)
+#importlib.reload(cw)
 
 # Connect to dask
-c = Client(address=os.getenv('SCHED') + ':8786')
-dask.config.set(scheduler='processes', num_workers=20)
+c = Client()
+c.ids
+
+lview = c.load_balanced_view()
+lview.block = True # cause execution on main process to wait while tasks sent to workers finish 
+
+#lview.execute('import os')
+#lview.execute('from waveform import chunk_waveforms as cw')
+
+def wrapper(i):
+    return(cw.envi_chunk(i, indir))
 
 # Define the directory where large files are stored
 indir = '/global/scratch/users/worsham/waveform_binary'
@@ -27,8 +33,7 @@ outdir = '/global/scratch/users/worsham/waveform_binary_split'
 fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
 
 # Process and upload to GCS
-futures = []
-for fp in fps[34:37]:
-    futures.append(dask.delayed(cw.envi_chunk)(fp, indir))
+# for fp in fps[34:37]:
+#     futures.append(dask.delayed(cw.envi_chunk)(fp, indir))
 
-dask.compute(futures)
+lview.map(wrapper, fps[34:37])
