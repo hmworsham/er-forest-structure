@@ -2,8 +2,10 @@ google
 google-api-core
 google-cloud
 google-cloud-storage
+ipyparallel
 matplotlib
 numpy
+py7zr
 requests
 spectral
 
