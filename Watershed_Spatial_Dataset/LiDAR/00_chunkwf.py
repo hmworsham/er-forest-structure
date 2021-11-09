@@ -6,6 +6,7 @@
 # Script to split large binary files into chunks of 1M lines each for parallel processing
 
 #import importlib
+sys.path.append('./eastriver/Watershed_Spatial_Dataset/LiDAR/')
 import os
 from waveform import chunk_waveforms as cw
 from ipyparallel import Client
