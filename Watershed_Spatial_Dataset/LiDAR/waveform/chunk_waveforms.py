@@ -161,7 +161,6 @@ def process_wfbinary_loc(fp, indir, destdir):
     #rm_dirs(fp)
     print('filepath {} processed'.format(fp))
 
-
 # Function to process all waveforms and upload to Google Cloud Storage
 def process_wfbinary_gc(fp, indir):
     envi_chunk(fp, indir) # Ingest files from one flightpath directory, chunk them, and write chunks to temporary subdirs
