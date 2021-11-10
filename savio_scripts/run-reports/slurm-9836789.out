@@ -1,0 +1,8 @@
+2021-11-05 16:27:04.208 [IPClusterStart] Removing pid file: /global/home/users/worsham/.ipython/profile_default/pid/ipcluster.pid
+2021-11-05 16:27:04.215 [IPClusterStart] Starting ipcluster with [daemon=False]
+2021-11-05 16:27:04.218 [IPClusterStart] Creating pid file: /global/home/users/worsham/.ipython/profile_default/pid/ipcluster.pid
+2021-11-05 16:27:04.222 [IPClusterStart] Starting Controller with LocalControllerLauncher
+2021-11-05 16:27:05.229 [IPClusterStart] Starting 1 Engines with LocalEngineSetLauncher
+2021-11-05 16:27:35.243 [IPClusterStart] Engines appear to have started successfully
+/var/spool/slurmd/job9836789/slurm_script: line 27: syntax error near unexpected token `newline'
+/var/spool/slurmd/job9836789/slurm_script: line 27: `ipython ~/eastriver/Watershed_Spatial_Dataset/LiDAR/00_chunkwf.py > '
