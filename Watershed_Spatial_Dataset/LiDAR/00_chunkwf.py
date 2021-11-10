@@ -6,7 +6,8 @@
 # Script to split large binary files into chunks of 1M lines each for parallel processing
 
 #import importlib
-sys.path.append('./eastriver/Watershed_Spatial_Dataset/LiDAR/')
+import sys
+sys.path.append('/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/')
 import os
 from waveform import chunk_waveforms as cw
 from ipyparallel import Client
@@ -23,18 +24,23 @@ lview.block = True # cause execution on main process to wait while tasks sent to
 #lview.execute('import os')
 #lview.execute('from waveform import chunk_waveforms as cw')
 
-def wrapper(i):
-    return(cw.envi_chunk(i, indir))
-
-# Define the directory where large files are stored
+# Define directories
 indir = '/global/scratch/users/worsham/waveform_binary'
 outdir = '/global/scratch/users/worsham/waveform_binary_split'
 
-# # Define flightpaths to ingest
+def wrapper(i):
+    import sys
+    sys.path.append('/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/')
+    from waveform import chunk_waveforms as cw 
+    indir = '/global/scratch/users/worsham/waveform_binary'
+    outdir = '/global/scratch/users/worsham/waveform_binary_split'
+    return(cw.envi_chunk(i, indir, outdir))
+
+# Define flightpaths to ingest
 fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
 
 # Process and upload to GCS
-# for fp in fps[34:37]:
+# for fp in fps:
 #     futures.append(dask.delayed(cw.envi_chunk)(fp, indir))
 
-lview.map(wrapper, fps[34:37])
+lview.map(wrapper, fps)
