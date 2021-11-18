@@ -39,7 +39,7 @@ def wrapper(i):
     from waveform import chunk_waveforms as cw 
     idir = '/global/scratch/users/worsham/waveformbinary'
     odir = '/global/scratch/users/worsham/waveformbinarychunks'
-    return(cw.process_wfbinary_loc(i, idir, odir))
+    return(cw.chunk_wfbinary_loc(i, idir, odir))
 
 # Define flightpaths to ingest
 fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
