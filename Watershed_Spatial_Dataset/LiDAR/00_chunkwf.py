@@ -21,8 +21,8 @@ lview = c.load_balanced_view()
 lview.block = True # cause execution on main process to wait while tasks sent to workers finish
 
 # Define directories
-indir = '/global/scratch/users/worsham/waveformbinary'
-outdir = '/global/scratch/users/worsham/waveformbinarychunk'
+indir = '/global/scratch/users/worsham/waveform_binary'
+outdir = '/global/scratch/users/worsham/waveformbinarychunks'
 # indir = '/Users/hmworsham/waveformbinary'
 # outdir = '/Users/hmworsham/waveformbinarychunks'
 
@@ -37,7 +37,7 @@ def wrapper(i):
     import sys
     sys.path.append('/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/')
     from waveform import chunk_waveforms as cw 
-    idir = '/global/scratch/users/worsham/waveformbinary'
+    idir = '/global/scratch/users/worsham/waveform_binary'
     odir = '/global/scratch/users/worsham/waveformbinarychunks'
     return(cw.chunk_wfbinary_loc(i, idir, odir))
 
