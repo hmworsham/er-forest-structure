@@ -161,10 +161,10 @@ def cp_dir(fp, indir, destdir):
         shutil.rmtree(dc)
 
 # Function to process all waveforms and copy to directory
-def chunk_wfbinary_loc(index, fps, indir, destdir):
+def chunk_wfbinary_loc(fp, indir, destdir):
     # Ingest files from one flightpath directory, chunk them, and write chunks to destination subdirs
-    envi_chunk(fps[index], indir, destdir)
-    cp_files(fps[index], indir, destdir)  # Copy impulse response files to the new directory
+    envi_chunk(fp, indir, destdir)
+    cp_files(fp, indir, destdir)  # Copy impulse response files to the new directory
     print('filepath {} processed'.format(fp))
 
 # Function to process all waveforms and upload to Google Cloud Storage
