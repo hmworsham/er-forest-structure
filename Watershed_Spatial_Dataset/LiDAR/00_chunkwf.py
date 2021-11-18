@@ -45,4 +45,4 @@ def wrapper(i):
 fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
 
 # Split and save to scratch
-lview.map(wrapper, fps[8:10])
+lview.map(wrapper, fps)
