@@ -16,4 +16,4 @@
 
 # Command(s) to run:
 module load python/3.7
-python ~/eastriver/Watershed_Spatial_Dataset/LiDAR/00_chunkwf.py > unzip.pyout
+python ~/eastriver/Watershed_Spatial_Dataset/LiDAR/00_unzipwf.py > unzip.pyout

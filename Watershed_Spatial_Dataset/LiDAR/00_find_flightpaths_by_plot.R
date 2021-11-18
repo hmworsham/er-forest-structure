@@ -39,8 +39,8 @@ load.pkgs(pkgs)
 ###################
 
 # Name directory where shapefiles live
-allplotsdir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N'
-shapedir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N/Polygons'
+allplotsdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/'
+shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
 
 # Read in the shapefile containing all plots
 allplots_path <- paste(allplotsdir, 'AllPlots', 'Kueppers_EastRiver_AllPlots_2020_WGS84UTM13N.shp', sep ='/')
@@ -51,11 +51,11 @@ allplots <- st_read(allplots_path)
 ######################################
 
 # Name data directory
-datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All'
+datadir <- '/global/scratch/users/worsham/waveform_binary_split'
 
 # Name flightpaths as filenames
 flightpaths <- list.dirs(datadir,recursive = F)
-flightpaths <- flightpaths[2:length(flightpaths)]
+#flightpaths <- flightpaths[2:length(flightpaths)] 
 
 # Make a dataframe depicting all intersects between plots and flightpaths
 # Define empty dataframe to store intersection decisions
@@ -64,8 +64,6 @@ fp_plot_itx <-  data.frame(matrix(NA,
                                   ncol = nrow(allplots)))
 names(fp_plot_itx) <- allplots$PLOT_ID
 row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][9]})
-
-#row.names(fp_plot_itx) <- lapply(flightpaths, strsplit, '/', 9)
 
 # Find flightpath chunk boundaries and check for intersections with allplots
 # for(i in seq(length(flightpaths))){

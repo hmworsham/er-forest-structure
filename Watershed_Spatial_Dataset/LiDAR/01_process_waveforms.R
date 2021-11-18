@@ -8,6 +8,10 @@
 ########################
 
 # Install non-CRAN libraries
+#Sys.setenv(GDAL_DATA = '/global/home/groups/consultsw/sl-7.x86_64/modules/gdal/2.2.3/share/gdal/')
+#libproj::libproj_install_proj_data()
+#usethis::edit_r_profile() 
+#install.packages('libproj', repos = "https://paleolimbot.r-universe.dev")
 #devtools::install_github("jrminter/rPeaks") # rPeaks for deconv/decomp
 #devtools::install_github('tankwin08/waveformlidar') # waveformlidar for general processing
 #devtools::install_github('lwasser/neon-aop-package/neonAOP') #neonAOP for reading binary data
@@ -28,7 +32,7 @@ pkgs <- c('dplyr',
           'parallel',
           'itcSegment',
           'rlist',
-          'plot3d') # Name the packages you want to use here
+          'plot3D') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
 load.pkgs <- function(pkg){
@@ -45,14 +49,14 @@ load.pkgs(pkgs)
 ################################
 
 # Name data directory
-datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All'
+datadir <- '/global/scratch/users/worsham/waveform_binary_split'
 
 # Name directory where inventory plot shapefiles live
-shapedir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N/Polygons'
+shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
-intersects <- read.csv('~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/EastRiver_Plot_LiDAR_Intersections.csv')
+intersects <- read.csv('~/eastriver/Watershed_Spatial_Dataset/LiDAR/Output/EastRiver_Plot_LiDAR_Intersections.csv')
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
 
 # Define area of interest by plot ID

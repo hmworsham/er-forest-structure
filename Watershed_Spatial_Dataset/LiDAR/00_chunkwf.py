@@ -25,22 +25,19 @@ lview.block = True # cause execution on main process to wait while tasks sent to
 #lview.execute('from waveform import chunk_waveforms as cw')
 
 # Define directories
-indir = '/global/scratch/users/worsham/waveform_binary'
-outdir = '/global/scratch/users/worsham/waveform_binary_split'
+indir = '/global/scratch/users/worsham/waveformbinary'
+outdir = '/global/scratch/users/worsham/waveformbinarychunk'
 
 def wrapper(i):
     import sys
     sys.path.append('/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/')
     from waveform import chunk_waveforms as cw 
-    indir = '/global/scratch/users/worsham/waveform_binary'
-    outdir = '/global/scratch/users/worsham/waveform_binary_split'
-    return(cw.envi_chunk(i, indir, outdir))
+    idir = '/global/scratch/users/worsham/waveformbinary'
+    odir = '/global/scratch/users/worsham/waveformbinarychunks'
+    return(cw.process_wfbinary_loc(i, idir, odir))
 
 # Define flightpaths to ingest
 fps = [d for d in os.listdir(indir) if os.path.isdir(os.path.join(indir,d))] # Lists all flightpaths
 
-# Process and upload to GCS
-# for fp in fps:
-#     futures.append(dask.delayed(cw.envi_chunk)(fp, indir))
-
-lview.map(wrapper, fps)
+# Split and save to scratch
+lview.map(wrapper, fps[:4])

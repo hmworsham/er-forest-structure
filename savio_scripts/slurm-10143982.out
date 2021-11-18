@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/00_unzipwf.py", line 17, in <module>
+    cw.unzip_wf(p, outdir)
+  File "/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/waveform/chunk_waveforms.py", line 28, in unzip_wf
+    z.extractall(path=outdir)
+  File "/global/home/users/worsham/.local/lib/python3.7/site-packages/py7zr/py7zr.py", line 955, in extractall
+    self._extract(path=path, return_dict=False, callback=callback)
+  File "/global/home/users/worsham/.local/lib/python3.7/site-packages/py7zr/py7zr.py", line 647, in _extract
+    os.utime(str(outfilename), times=(lastmodified, lastmodified))
+FileNotFoundError: [Errno 2] No such file or directory
