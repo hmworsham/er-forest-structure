@@ -39,22 +39,27 @@ def envi_chunk(fp, indir, outdir):
     chunk_strings = ['return_pulse', 'geolocation', 'outgoing_pulse', 'observation', 'ephemeris']
     full_list = os.listdir(os.path.join(indir, fp))
     chunk_files = [nm for ps in chunk_strings for nm in full_list if ps in nm and 'hdr' not in nm]
+
     for f in chunk_files: 
         img = envi.open(os.path.join(indir, fp, f + '.hdr'))
         nobs = np.int(img.shape[0])
         beg = np.int(0)
         sub = np.int(1e6)
         n = np.int(1)
-        
+        print(f + ' loaded')
+    
         while sub < nobs:
             subset = img[beg:sub, :]
+            #print(f'{n}: {len(subset)} lines')
             beg = sub
             sub = np.int(sub + 1e6)
 
             subsetname = '-' + str.zfill(f'{n}', 3)
             fpsub = f.split('_waveform')[0] + subsetname + '_' + f.split('_',5)[-1]
+            #print('fpsubsetname:', fpsub)
 
             newdir = os.path.join(outdir, fp + subsetname)
+            #print('newdirname:', newdir)
             if not os.path.isdir(newdir):
                 os.mkdir(newdir)
             else: 
@@ -69,10 +74,12 @@ def envi_chunk(fp, indir, outdir):
 
         else:
             subset = img[beg:nobs, :]
+            #print(len(subset))
 
             subsetname = '-' + str.zfill(f'{n}', 3)
             fpsub = f.split('_waveform')[0] + \
                 subsetname + '_' + f.split('_', 5)[-1]
+            #print('fpsubsetname:', fpsub)
 
             newdir = os.path.join(outdir, fp + subsetname)
             if not os.path.isdir(newdir):
@@ -81,6 +88,7 @@ def envi_chunk(fp, indir, outdir):
                 print(fp + subsetname + ' exists')
 
             outpath = os.path.join(newdir, fpsub + '.hdr')
+            #print('outpath:', outpath)
 
             n = n+1
 
@@ -153,12 +161,10 @@ def cp_dir(fp, indir, destdir):
         shutil.rmtree(dc)
 
 # Function to process all waveforms and copy to directory
-def process_wfbinary_loc(fp, indir, destdir):
+def chunk_wfbinary_loc(fp, indir, destdir):
     # Ingest files from one flightpath directory, chunk them, and write chunks to destination subdirs
     envi_chunk(fp, indir, destdir)
     cp_files(fp, indir, destdir)  # Copy impulse response files to the new directory
-    #cp_dir(fp, indir, destdir) # Write the directory and files to local storage destination
-    #rm_dirs(fp)
     print('filepath {} processed'.format(fp))
 
 # Function to process all waveforms and upload to Google Cloud Storage
