@@ -11,7 +11,7 @@ from waveform import chunk_waveforms as cw
 indir = '/global/scratch/users/worsham/LiDAR'
 files=os.listdir(indir)
 paths=[os.path.join(indir, i) for i in files]
-outdir = '/global/scratch/users/worsham/waveformbinary'
+outdir = '/global/scratch/users/worsham/waveform_binary'
 
 for p in paths:
     cw.unzip_wf(p, outdir)

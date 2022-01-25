@@ -189,11 +189,14 @@ def cp_dir(fp, indir, destdir):
 
 
 def chunk_wfbinary_loc(fp, indir, destdir):
+
     # Ingest files from one flightpath directory, chunk them, and write chunks to destination subdirs
     envi_chunk(fp, indir, destdir)
     # Copy impulse response files to the new directory
     cp_files(fp, indir, destdir)
     print('filepath {} processed'.format(fp))
+
+    return errors
 
 # Function to process all waveforms and upload to Google Cloud Storage
 
