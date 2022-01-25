@@ -85,7 +85,7 @@ def envi_chunk(fp, indir, outdir):
             n = n+1
 
             envi.save_image(outpath, subset, dtype=dt,
-                            ext='', sample_size=ss, interleave=il, byte_order=bo)
+                            ext='', sample_size=ss, interleave='bil', byte_order=bo)
 
         else:
             subset = img[beg:nobs, :]
@@ -107,8 +107,8 @@ def envi_chunk(fp, indir, outdir):
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype='uint16',
-                            ext='', interleave='bil', byte_order=0)
+            envi.save_image(outpath, subset, dtype=dt,
+                            ext='', interleave='bil', byte_order=bo)
 
 # Function to copy impulse response files from original directory to new directory
 
