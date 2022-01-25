@@ -2,9 +2,9 @@
 
 # Rclone data from Savio Scratch to watched Drive directory
 
-scratch=/global/scratch/users/worsham/waveform_binary/
+scratch=/global/scratch/users/worsham/waveformbinarychunks/
 
-dest=er-drive:/EastRiver/waveformlidar/
+dest=er-drive:/EastRiver/waveformlidarchunks/
 
 priority=16
 

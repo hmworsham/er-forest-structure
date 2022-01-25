@@ -70,7 +70,7 @@ def envi_chunk(fp, indir, outdir):
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype = 'uint16', ext = '', interleave = 'bil', byte_order = 0)
+            envi.save_image(outpath, subset, dtype = 'uint16', ext = '', interleave = 'bil', byte_order = 0, force = True)
 
         else:
             subset = img[beg:nobs, :]
@@ -92,7 +92,7 @@ def envi_chunk(fp, indir, outdir):
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype='uint16', ext='', interleave='bil', byte_order=0)
+            envi.save_image(outpath, subset, dtype='uint16', ext='', interleave='bil', byte_order=0, force = True)
 
 # Function to copy impulse response files from original directory to new directory
 def cp_files(fp, indir, outdir):
@@ -162,10 +162,28 @@ def cp_dir(fp, indir, destdir):
 
 # Function to process all waveforms and copy to directory
 def chunk_wfbinary_loc(fp, indir, destdir):
+
     # Ingest files from one flightpath directory, chunk them, and write chunks to destination subdirs
-    envi_chunk(fp, indir, destdir)
-    cp_files(fp, indir, destdir)  # Copy impulse response files to the new directory
+    
+    errors = []
+    
+    try:
+        envi_chunk(fp, indir, destdir)
+    except:
+        print(f'{fp} was not chunked')
+        errors.append(['chunking failed for ', fp])
+        pass
+    
+    try:
+        cp_files(fp, indir, destdir)  # Copy impulse response files to the new directory
+    except:
+        print(f"{fp}'s system and TO impulse responses were not copied")
+        errors.append(['system and TO impulse response copying failed for ', fp])
+        pass
+                      
     print('filepath {} processed'.format(fp))
+    
+    return errors
 
 # Function to process all waveforms and upload to Google Cloud Storage
 def process_wfbinary_gc(fp, indir):
