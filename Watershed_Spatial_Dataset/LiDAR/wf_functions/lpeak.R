@@ -24,12 +24,14 @@ lpeak <- function(series,span=3)
   v <- max.col(z, "first") == 1 + s   # take first if a tie
   result <- c(rep(FALSE,s),v)
   result <- result[1:(length(result)-s)]
-  print(z)
-  print(s)
-  print(v)
-  print(result)
+  # print(z)
+  # print(s)
+  # print(v)
+  # print(result)
+  
+  return(result)
 }
 
-series = c(2,2,2,2,4,5,7,8,12,9,7,5,2,2,2,4,5,6,12,17,18,19,19,18,17,15,12,6,5,4,2,2,2)
-lpeak(series, 3)
+#series = c(2,2,2,2,4,5,7,8,12,9,7,5,2,2,2,4,5,6,12,17,18,19,19,18,17,15,12,6,5,4,2,2,2)
+#lpeak(series, 3)
 

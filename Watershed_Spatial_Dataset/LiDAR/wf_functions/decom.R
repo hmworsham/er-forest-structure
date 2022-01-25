@@ -1,8 +1,8 @@
 #' decom
 #'
-#' The function allows you to eatimate parameters charcterizing waveforms and to pave the way for generating waveform-based point cloud.
+#' The function allows you to estimate parameters charcterizing waveforms and to pave the way for generating waveform-based point cloud.
 #'
-#' @param x is a waveform with a index at the begining and followed with intensities.
+#' @param x is a waveform with a index at the beginning and followed with intensities.
 #' @param smooth is tell whether you want to smooth the waveform to remove some obvious outliers. Default is TRUE.
 #' @param thres is to determine if the detected peak is the real peak whose intensity should be higher than threshold*maximum intensity. Default is 0.22.
 #' @param width width of moving window.Default is 3, must be odd integer between 1 and n.This parameter ONLY work when the smooth is TRUE.
@@ -55,60 +55,99 @@
 #'
 
 
-decom<-function(x,smooth=TRUE,width=3,thres=0.22){
-  y0<-as.numeric(x)
-  index<-y0[1]
-  y<-y0[-1]
+decom<-function(x, smooth=TRUE, peakfix=FALSE, width=3, thres=0.22){
+  
+  waveform<-as.numeric(x)
+  index<-waveform[1]
+  y <-waveform[-1]
   y[y==0]<-NA
-  ###when for direct decomposition
-  y<-y-min(y,na.rm = T)+1
-  if (smooth ==TRUE)  y<-runmean(y,width,"C")##"fast" here cannot handle the NA in the middle
-  peakrecord<-lpeak(y,3)#show TRUE and FALSE
-  peaknumber<-which(peakrecord == T)#show true's position, namely time in this case
-  #peaknumber,it show the peaks' corresponding time
-  imax<-max(y,na.rm=T)
-  ind<-y[peaknumber]>thres*imax      #####################you need to change threshold##########################################
-  realind<-peaknumber[ind]#collect time
-  newpeak<-y[realind]  #collect intensity
-  z<-length(realind)
+  
+  ### Direct decomposition
+  y <- y-min(y,na.rm = T)+1
+  
+  # Smooth waveform with running mean and window of size width, using 'C' algorithm; 'fast' can't handle na
+  if (smooth ==TRUE) {
+    y<-runmean(y,width,"C")
+    } 
+  
+  if (peakfix == T) {
+    firstnonzero <- which(y!=0)[1]
+    if (y[[firstnonzero]] >= y[[firstnonzero+1]]) {
+      y[[firstnonzero-1]] <- 0.5 * y[[firstnonzero]]
+    }
+  }
+  
+  # Identify peaks
+  peakrecord <- lpeak(y, 3)
+  
+  # Find return time of peak
+  peaktime <- which(peakrecord == T)
+  n.peaks = length(peaktime)
+  
+  # Catch errors where the deconvolved waveform catches no peaks
+  if (n.peaks == 0){
+    peaktime <- which.max(y)
+  }
+  
+  # Filter out noisy peaks (those less than threshold*max intensity in the return vector)
+  imax <- max(y, na.rm=T)
+  ind <- y[peaktime] >= thres*imax
+  
+  # Get the time of true peaks
+  realind<-peaktime[ind]
+  
+  # Get the intensity of real peaks
+  newpeak<-y[realind]
+  
+  # Get the number of true peaks
+  z <- length(realind)
 
   #then we fliter peak we have in the waveform
-  #you must define newpeak as a list or a vector(one demision),otherwise it's just a value
-  #I just assume that intensity is larger than 45 can be seen as a peak, this can be changed
+  #you must define newpeak as a list or a 1D vector; otherwise it's just a scalar
 
-  #####if the peak location is too close, remove it just keep one
-  #not sure we really need this step
-
-  ##################################initilize parameters
-  ###for normal Gaussian
+  ### Initialize parameters
+  ### For normal Gaussian
   gu<-realind
   gi<-newpeak*2/3
   gsd<-realind[1]/5
   if (z>1){
     gsd[2:z]<-diff(realind)/4
   }
+  
+  # Fit gaussians using the auto generate formula
 
-  # start to fit use the auto generate formula
-
-    init0 <- gennls(gi, gu, gsd)
-
+  init0 <- gennls(A=gi, u=gu, sig=gsd)
   #init$formula
   #init$start
   df<-data.frame(x=seq_along(y),y)
-  log<-tryCatch(fit<-nlsLM(init0$formula,data=df,start=init0$start,algorithm='LM',control=nls.lm.control(factor=100,maxiter=1024,
-                          ftol = .Machine$double.eps, ptol = .Machine$double.eps),na.action=na.omit),error=function(e) NULL)#this maybe better
+
+  log<-tryCatch(
+    fit<-nlsLM(
+      init0$formula,
+      data=df,
+      start=init0$start,
+      algorithm='LM',
+      control=nls.lm.control(
+        factor=100,
+        maxiter=1024,
+        ftol = .Machine$double.eps,
+        ptol = .Machine$double.eps),
+      na.action=na.omit),
+    error=function(e) NULL)
+
   ###then you need to determine if this nls is sucessful or not?
   if (!is.null(log)){
     result=summary(fit)$parameters
     pn<-sum(result[,1]>0)
     rownum<-nrow(result);npeak<-rownum/3
+
     #record the shot number of not good fit
     rightfit<-NA;ga<-matrix(NA,rownum,5);#pmi<-matrix(NA,npeak,7)
     ga<-cbind(index,result)
     pmi<-NULL
     if (pn==rownum){
       rightfit<-index
-      #ga<-cbind(index,result)
+
       ####directly get the parameters
       ###make a matrix
       pm<-matrix(NA,npeak,6)

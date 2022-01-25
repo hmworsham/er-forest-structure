@@ -25,7 +25,7 @@ pkgs <- c('dplyr',
           'devtools',
           'plotly',
           'rPeaks',
-          'waveformlidar',
+          'rwaveform',
           'rgdal',
           'caTools',
           'sf', 
@@ -45,19 +45,28 @@ load.pkgs <- function(pkg){
 load.pkgs(pkgs)
 
 ################################
-# Ingest ENVI binary files
+# Setup workspace
 ################################
 
 # Name data directory
-datadir <- '/global/scratch/users/worsham/waveform_binary_split'
+#datadir <- '/global/scratch/users/worsham/waveform_binary_split'
+datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
 
 # Name directory where inventory plot shapefiles live
-shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+#shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+shapedir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
-intersects <- read.csv('~/eastriver/Watershed_Spatial_Dataset/LiDAR/Output/EastRiver_Plot_LiDAR_Intersections.csv')
+#intersectscsv <- '~/eastriver/Watershed_Spatial_Dataset/LiDAR/Output/EastRiver_Plot_LiDAR_Intersections.csv'
+intersectcsv <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/Working_Files/Watershed_Spatial_Dataset/Output/EastRiver_Plot_LiDAR_Intersections.csv'
+
+intersects <- read.csv(intersectcsv)
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
+
+################################
+# Ingest binary files for one flightpath
+################################
 
 # Define area of interest by plot ID
 aoi <- 'SG-NES2'
@@ -65,231 +74,48 @@ aoi <- 'SG-NES2'
 # Select flightpaths that intersect the aoi
 itx_true <- intersects[intersects[aoi] == T,1]
 aoi_fps <- file.path(datadir, itx_true)
+#aoi_fps <- flightpaths
+wf_arrays = ingest(aoi_fps[2])
 
-# Function to ingest files
-ingest <- function(flightpath){
-  
-  # Name the waveform files to ingest
-  obs_bin = grep(list.files(flightpath, full.names = T), # Observation
-                 pattern = 'observation', 
-                 value = T)
-  out_bin = grep(list.files(flightpath, full.names = T), # Outgoing pulse
-                 pattern = 'outgoing', 
-                 value = T)
-  geo_bin = grep(list.files(flightpath, full.names = T), # Geolocation array
-                 pattern = 'geolocation', 
-                 value = T)
-  re_bin = grep(list.files(flightpath, full.names = T), # Return pulse
-                pattern = 'return_pulse', 
-                value = T)
-  imp_re_bin = grep(list.files(flightpath, full.names = T), # System impulse response (for deconvolution)
-                    pattern = 'impulse_response_', 
-                    value = T)
-  imp_out_bin = grep(list.files(flightpath, full.names = T), # Outgoing impulse response (for deconvolution)
-                     pattern = 'impulse_response_T0', 
-                     value = T)
-  
-  # Read the binary files as arrays
-  obs_array = read.ENVI(obs_bin[1], headerfile = obs_bin[2])
-  out_array = read.ENVI(out_bin[1], headerfile = out_bin[2])
-  geo_array = read.ENVI(geo_bin[1], headerfile = geo_bin[2])
-  re_array = read.ENVI(re_bin[1], headerfile = re_bin[2])
-  imp_re_array = read.ENVI(imp_re_bin[1], headerfile = imp_re_bin[2])
-  imp_out_array = read.ENVI(imp_out_bin[1], headerfile = imp_out_bin[2])
-  
-  # Load return as reshaped data table
-  out = data.table(index=c(1:nrow(out_array)), out_array)
-  re = data.table(index=c(1:nrow(re_array)), re_array)
-  geol = data.table(index=c(1:nrow(geo_array)), geo_array)
-  sysir = data.table(index=c(1:nrow(imp_re_array)), imp_re_array)
-  outir = data.table(index=c(1:nrow(imp_re_array)), imp_re_array)
-  
-  # Assign geo column names
-  geoindex = c(1:9,16)
-  colnames(geol)[geoindex] = c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
-  
-  # Return values
-  wf_arrays = list('out' = out, 're' = re, 'geol' = geol, 'sysir' = sysir, 'outir' = outir)
-  return(wf_arrays)
-}
-
-###################################
 # clip waveform to one plot extent
-###################################
+#aoiext = rwaveform::aoiextent('SG-NES2', shapedir)
+#xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
 
-# Function to clip any waveform
-clipwf <- function(wf, geol, aoi, buff=20){
-  
-  # Specify a plot of interest
-  plotpath = list.files(shapedir, 
-                      pattern = glob2rx(paste0(aoi,"*shp")),
-                      full.names = T)
-  plotsf = st_read(plotpath, quiet=T)
-  plotbuff = st_buffer(plotsf,
-                       buff,
-                       endCapStyle = "SQUARE",
-                       joinStyle = "MITRE",
-                       mitreLimit = 0.05,)
-  geoextent = as.list(extent(plotbuff))
-  
-  # Clip the waveforms that intersect the aoi
-  waveform1 = wf[,-1]
-  colnames(geol)[2:9] = c('x', 'y', 'z', 'dx', 'dy', 'dz', 'or', 'fr')
-  ll = apply(waveform1, 1, wavelen)
-  x = geol$x + geol$dx*(round(ll/2)-geol$fr) # use the middle point to represent the waveform position
-  y = geol$y + geol$dy*(round(ll/2)-geol$fr)
-  ind = which (x >= geoextent[1] & x<= geoextent[2] & y >= geoextent[3] & y<= geoextent[4])
-  swaveform = wf[ind,]
-  
-  return(swaveform)
+# Subset to a manageable set of waveforms for testing
+
+out <- wf_arrays$out
+re <- wf_arrays$re
+geol <- wf_arrays$geol
+outir <- wf_arrays$outir
+sysir <- wf_arrays$sysir
+
+out_sub <- out[120000:121000]
+re_sub <- re[120000:121000]
+geol_sub <- geol[120000:121000]
+
+sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
+
+# deconvolve waveforms
+library(rwaveform)
+decon <- rwaveform::deconv.apply(wf_arrays, sub_arrays, method='RL')
+
+# Restore original index values
+decon$index <- re_sub$index
+
+# Check for NaNs and extreme values
+deconvals <- subset(decon, select = -index)
+nanrows = which(rowSums(is.na(deconvals))>0)
+bigrows = which(rowSums(deconvals)>10^5)
+
+# Clean NaNs and extreme values
+if(length(nanrows) | length(bigrows)) {
+  decon <- deconv.clean(decon)
 }
 
-# Function to clip outgoing and return pulse waveforms, using generic clipwf function
-doclip <- function(in_arrays, buff=20){
-  
-  # specify waveform arrays
-  out = in_arrays$out
-  re = in_arrays$re
-  geol = in_arrays$geol
-  #colnames(geol)[2:9] = c('x', 'y', 'z', 'dx', 'dy', 'dz', 'or', 'fr')
-  
-  # Apply the clipwf function to subset waveforms
-  out_sub_tmp = clipwf(out, geol, aoi, buff)
-  re_sub_tmp = clipwf(re, geol, aoi, buff)
-  geol_sub_tmp = clipwf(geol, geol, aoi, buff)
-  
-  # Trim the results to the same indexes to make sure they match
-  out_sub  = out_sub_tmp[out_sub_tmp$index %in% geol_sub_tmp$index]
-  out_sub = out_sub[out_sub$index %in% re_sub_tmp$index]
-  re_sub = re_sub_tmp[re_sub_tmp$index %in% geol_sub_tmp$index]
-  re_sub = re_sub[re_sub$index %in% out_sub$index]
-  geol_sub = geol_sub_tmp[geol_sub_tmp$index %in% re_sub$index]
-  geol_sub = geol_sub[geol_sub$index %in% out_sub$index]
-  
-  # Return a list of the clipped arrays
-  clips = list('outgoing' = out_sub, 'return' = re_sub, 'geolocation' = geol_sub)
-  return(clips)
-}
 
-################################################
-# Clean error-generating waveforms functions
-################################################
+# waveform decomposition 
 
-# Function to find waveforms that will break Gaussian fit procedure
-# gfitesc <- function(x){
-#   xre <- x$return
-#   apply(xre, 1, function(xwf){
-#     tre<-try(decom(xwf), silent = T)
-#     if(class(tre) == 'try-error'){
-#       tre <- NULL
-#     }
-#     tre
-#   })
-# }
-# 
-# # Function to find indices of problematic waveforms
-# gfitindxs <- function(breaks){
-#   okindx = which(lengths(breaks)>0)
-#   return(okindx)
-# }
-# 
-# # Function to remove those waveforms
-# rmbreaks <- function(indxs, wf){
-#   wfre <- wf$return
-#   wfout <- wf$outgoing
-#   wfgeo <- wf$geolocation
-#   newre <- wfre[indxs]
-#   newout <- wfout[indxs]
-#   newgeo <- wfgeo[indxs]
-#   
-#   return(list('return' = newre, 'outgoing' = newout, 'geolocation' = newgeo))
-# }
 
-###################################
-# waveform deconvolution function
-###################################
-
-deconv.waveforms <- function(rawarray, subarray, method = 'Gold', np = 2, rescale = T){
-  # Function to deconvolve an array of waveform returns. Inputs:
-    # - rawarray: the full set of waveforms output from the ingest function
-    # - subarray: either the full set of waveforms or a subset, the output of doclip function
-  # Uses the waveformlidar::deconvolution function with either Gold or Richardson-Lucy algorithm to (1) first deconvolve the system impulse response with the system outgoing response to estimate the true system response and (2) deconvolve the raw waveform returns from target with both the outgoing pulse and the system response. The second step approximately removes outgoing, system, and atmospheric scattering noise from the returns, yielding a direct estimate of the photon energy returned to sensor. 
-  # Returns: an nx501 matrix of deconvolved waveform returns
-  
-  # Repeat the system
-  outir_rep = rawarray$outir[rep(seq_len(nrow(rawarray$outir)), nrow(subarray$return))]
-  sysir_rep = rawarray$sysir[rep(seq_len(nrow(rawarray$sysir)), nrow(subarray$return))]
-  
-  # Remove the index columns -- replace them later
-  out = subset(subarray$outgoing, select = -index)
-  re = subset(subarray$return, select = -index)
-  outir_rep = subset(outir_rep, select = -index)
-  sysir_rep = subset(sysir_rep, select = -index)
-  
-  # Convert the arrays to lists for batch deconvolution
-  re.ls = as.list(as.data.frame(t(re)))
-  out.ls = as.list(as.data.frame(t(out)))
-  outir.ls = as.list(as.data.frame(t(outir_rep)))
-  sysir.ls = as.list(as.data.frame(t(sysir_rep)))
-  
-  # Run deconvolution
-  decon = mapply(waveformlidar::deconvolution,
-               re = re.ls, 
-               out = out.ls, 
-               imp = sysir.ls,
-               imp_out = outir.ls,
-               method = method,
-               np = np,
-               rescale = rescale)
-  decon.t = t(decon)
-  decon.tbl = data.table(index = 1:nrow(decon.t), decon.t)
-  
-  return(decon.tbl)
-}
-
-###################################
-# waveform decomposition functions
-###################################
-
-# Function to run waveform decomposition
-decom.waveforms <- function(wfarray, deconarray) {
-  
-  # Define return and geo arrays
-  #re = wfarray$return
-  re = deconarray
-  geol = wfarray$geolocation
-  
-  # Run adaptive decomposition algorithm on clipped returns
-  # Use error handling to identify erroneous or un-decomposable returns
-  safe_decomp = function(x){
-    tryCatch(decom.adaptive(x, smooth = T, thres = 0.22, width = 3), 
-             error = function(e){NA})}
-  
-  # Apply the safe decomposition to the set
-  decom = apply(re, 1, safe_decomp)
-  
-  # Filter out returns that threw exceptions
-  successes = which(!is.na(decom)) 
-  decom = decom[successes]
-  geol = geol[successes]
-  
-  # Pull Gaussian parameters
-  rfit = do.call('rbind', lapply(decom, '[[', 1)) # Indices of correctly processed waveforms
-  gpars = do.call('rbind', lapply(decom, '[[', 3)) # The Gaussian parameters
-  
-  # Get indices of waveforms that need to be reprocessed
-  problem_wfs = setdiff(as.numeric(re[,1]$index), rfit[!is.na(rfit)])
-  problem_index = which(lapply(decom, 'is.null')==T)
-  
-  # Preserve parameters that resulted from successful decomposition
-  repars = gpars[!is.na(gpars[,1]),]
-  colnames(repars) = c('index', 'A', 'u', 'sigma', 'r', 'A_std', 'u_std', 'sig_std', 'r_std')
-  geol = geol[!problem_index]
-  geolcols <- c(1:9,16)
-  colnames(geol)[geolcols] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
-
-  return(list('repars' = repars, 'geolocation' = geol))
-}
 
 ###################################
 # functions to run full processing
@@ -302,7 +128,8 @@ process_wf <- function(fp){
   # clip
   wfarrays = ingest(fp)
   print('flightpath ingested')
-  cliparrays = doclip(wfarrays, 20)
+  #cliparrays = doclip(wfarrays, 20)
+  cliparrays = wfarrays
   if(dim(cliparrays[[1]])[1]==0){
     print('clip failed: flightpath does not intersect plot')
     return()
@@ -330,16 +157,18 @@ process_wf <- function(fp){
 ##########################################
 aois <- names(intersects)[-c(1,3,4,9,10)] # subset plots within AOP acquisition area
 
+intersects[intersects[aoi] == T,1]
+
 ### DEBUG
-for(aoi in aois[1]){
+for(aoi in aois[6]){
   itx_true = intersects[intersects[aoi] == T,1]
-  aoi_fpls = file.path(datadir, itx_true)
+  aoi_flps = file.path(datadir, itx_true)
   wfpts = lapply(aoi_flps, process_wf)
 }
 
 View(wfpts)
 dc = apply(wfpts[[2]], 1, safe_decomp)
-dc
+
 for(aoi in aois){
   itx_true = intersects[intersects[aoi] == T,1]
   aoi_flps = file.path(datadir, itx_true)
@@ -352,15 +181,16 @@ for(aoi in aois){
 # Process 1 waveform for illustration
 ######################################
 process_wf(aoi_fps[3])
+aoi_fps
 aoi_fps[3]
 aoi_fps
 
-#testfps <- ingest(aoi_fps[1])
+testfps <- ingest(aoi_fps[1])
 cliparrs <- lapply(testfps, doclip)
 fullset <- bind_rows(cliparrs)
-outi <- fullset$outgoing
-reti <- fullset$return
-geoi <- fullset$geolocation
+outi <- testfps$out
+reti <- testfps$re
+geoi <- testfps$geol
 
 geoi$index <- NULL
 colnames(geoi)[1:8]<-c("x","y","z","dx","dy","dz","or","fr")

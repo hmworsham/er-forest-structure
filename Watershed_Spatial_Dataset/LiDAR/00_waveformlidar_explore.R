@@ -20,6 +20,7 @@ pkgs <- c('dplyr',
           'devtools',
           'plotly',
           'rPeaks',
+          'stringr',
           'waveformlidar',
           'rgdal',
           'caTools',
@@ -41,7 +42,7 @@ load.pkgs(pkgs)
 ################################
 
 # Name data directory
-datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/'
+datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks/2018_CRBU_1_2018061214_FL003-001'
 
 # Function to ingest files and store as environment variables
 ingest <- function(flightpath){
@@ -91,7 +92,7 @@ ingest <- function(flightpath){
 }
 
 # Ingest one flightpath
-flightpaths <- list.files(datadir, full.names = T)
+flightpaths <- list.dirs(datadir, full.names = T)
 fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
 wf <- ingest(fp[1])
 #wf <- mclapply(fp, ingest, mc.cores = detectCores())

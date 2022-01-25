@@ -24,7 +24,7 @@
 #'    npeaks(y,drop=c(1,3))
 #'
 
-y = c(2,2,2,2,4,5,7,8,12,9,7,5,2,2,2,4,5,6,12,17,18,19,19,18,17,15,12,6,5,4,2,2,2)
+#y = c(2,2,2,2,4,5,7,8,12,9,7,5,2,2,2,4,5,6,12,17,18,19,19,18,17,15,12,6,5,4,2,2,2)
 
 npeaks<-function(y,drop=c(0,0),smooth=TRUE,threshold=0.2){
   y<-as.numeric(unlist(y))
@@ -41,12 +41,10 @@ npeaks<-function(y,drop=c(0,0),smooth=TRUE,threshold=0.2){
   peaknumber<-which(peakrecord == T)#show true's position, namely time in this case
   #peaknumber,it show the peaks' corresponding time
   imax<-max(y,na.rm=T)
-  ind<-y[peaknumber]>threshold*imax      #####################you need to change threshold##########################################
+  ind<-y[peaknumber]>threshold*imax
   realind<-peaknumber[ind]#collect time
   newpeak<-y[realind]  #collect intensity
   z<-length(realind)
   #return(y)
-  return (ind)
+  return (z)
 }
-
-npeaks(y, smooth = F)
