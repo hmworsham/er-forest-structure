@@ -1,2 +1,5 @@
 # R logs
 .Rhistory
+
+# VSCode stuff
+.vscode
