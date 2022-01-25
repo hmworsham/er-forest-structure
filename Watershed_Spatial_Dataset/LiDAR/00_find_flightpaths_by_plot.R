@@ -6,8 +6,7 @@ pkgs <- c('dplyr',
           'ggplot2',
           'rgdal',
           'caTools',
-          'sf', 
-          'googleCloudStorageR') # Name the packages you want to use here
+          'sf') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
 load.pkgs <- function(pkg){
@@ -20,38 +19,26 @@ load.pkgs <- function(pkg){
 load.pkgs(pkgs)
 
 ###################
-# Set up GCS
-###################
-# Sys.setenv("GCS_DEFAULT_BUCKET" = "neon_waveform_binary")
-# 
-# gcs_global_bucket('neon_waveform_binary')
-# objects <- gcs_list_objects()
-# flightpaths <- unique(sapply(str_split(objects$name, '/',2), getElement, 1))
-# 
-# for(f in flightpaths){
-#   fp_objects = gcs_list_objects(prefix = f)
-#   geols = grep(fp_objects$name, pattern = 'geolocation', value = T)
-#   print(geols)
-# }
-
-###################
 # Ingest plots 
 ###################
 
 # Name directory where shapefiles live
-allplotsdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/'
-shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
+sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
 
 # Read in the shapefile containing all plots
-allplots_path <- paste(allplotsdir, 'AllPlots', 'Kueppers_EastRiver_AllPlots_2020_WGS84UTM13N.shp', sep ='/')
-allplots <- st_read(allplots_path)
+allplots_path = list.files(allplotsdir, 
+                    pattern = glob2rx(paste0('*AllPlots*',"*shp")),
+                    full.names = T)
+allplots <- st_read(allplots_path, quiet=T)
 
 ######################################
 # Find flightpaths that contain plots
 ######################################
 
 # Name data directory
-datadir <- '/global/scratch/users/worsham/waveform_binary_split'
+datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
+datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveformlidar'
 
 # Name flightpaths as filenames
 flightpaths <- list.dirs(datadir,recursive = F)
@@ -63,7 +50,8 @@ fp_plot_itx <-  data.frame(matrix(NA,
                                   nrow = length(flightpaths), 
                                   ncol = nrow(allplots)))
 names(fp_plot_itx) <- allplots$PLOT_ID
-row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][9]})
+row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][11]})
+
 
 # Find flightpath chunk boundaries and check for intersections with allplots
 # for(i in seq(length(flightpaths))){
@@ -100,10 +88,11 @@ for(i in seq(length(flightpaths))){
   geo_bin = geo_files[1]
   geo_hdr = geo_files[2]
   geolo = read.ENVI(geo_bin, headerfile = geo_hdr)
-  
   xcoords = c(min(geolo[,1]), max(geolo[,1]), max(geolo[,1]), min(geolo[,1]), min(geolo[,1]))
   ycoords = c(max(geolo[,2]), max(geolo[,2]), min(geolo[,2]), min(geolo[,2]), max(geolo[,2]))
   xym = cbind(xcoords, ycoords)
+  extent = data.frame(xmin = min(xcoords), xmax = max(xcoords), ymin = min(ycoords), ymax = max(ycoords))
+  write.table(extent, file="../flightpath_extents.csv", sep = ',', append=T, col.names = F, row.names = F)
   sps = st_sfc(st_polygon(list(xym)))
   st_crs(sps) = CRS('+init=epsg:32613')
   itx = st_intersects(sps, allplots, sparse = F)
@@ -151,4 +140,4 @@ for(i in seq(length(flightpaths))){
 #   return(fp_plot_itx)
 # }
 
-write.csv(fp_plot_itx, '~/Desktop/EastRiver_Plot_LiDAR_Intersections.csv')
+write.csv(fp_plot_itx, '../EastRiver_Plot_LiDAR_Intersections.csv')

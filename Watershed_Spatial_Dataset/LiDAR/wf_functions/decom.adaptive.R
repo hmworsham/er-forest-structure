@@ -1,3 +1,4 @@
+
 decom.adaptive<-function(x,smooth=TRUE,thres=0.22,width=3){
   y0<-as.numeric(x)
   index<-y0[1]

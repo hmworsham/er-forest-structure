@@ -73,16 +73,14 @@ deconvolution<-function(re,out,imp,imp_out=NULL,method =c("Gold"),np=2,rescale=T
   y<-as.numeric(re)
   x<-as.numeric(out)
 
-
   if (rescale == TRUE){
     y[y==0]<-NA;
     y<-y-min(y,na.rm=T)+1
-    y[is.na(y)]<-0
-
+    y[is.na(y)] <- 0
 
     x[x==0]<-NA
     x<-x-min(x,na.rm=T)+1
-    x[is.na(x)]<-0
+    x[is.na(x)] <- 0
 
     imp[imp==0]<-NA
     minim<-min(imp,na.rm=TRUE)
@@ -90,7 +88,7 @@ deconvolution<-function(re,out,imp,imp_out=NULL,method =c("Gold"),np=2,rescale=T
     imp[is.na(imp)]<-0
   }
 
-  zn<- n_peaks(y)
+  zn <- npeaks(y)
 
   if (zn<=np){
     irb1<-small_paras[1:3]
@@ -99,27 +97,60 @@ deconvolution<-function(re,out,imp,imp_out=NULL,method =c("Gold"),np=2,rescale=T
     irb1<-large_paras[1:3]
     irb2<-large_paras[4:6]
   }
-
+  
+  # If outgoing and return impulse response vectors submitted, first deconvolve the impulse response with the outgoing impulse
   if (is.null(imp_out) == FALSE) {
+    
+    # Prepare the impulse response vector
     imp_out[imp_out==0]<-NA
     imp_out<-imp_out - min(imp_out,na.rm=TRUE)
     imp_out[is.na(imp_out)]<-0
-    imre<-rPeaks::SpectrumDeconvolution(imp,imp_out,iterations=imp_out_pars[1],repetitions=imp_out_pars[2],boost=imp_out_pars[3],method=method)
-    imre<-round(imre,2)  #########################################very important step
-
-    y1<-rPeaks::SpectrumDeconvolution(y,imre,iterations=irb1[1],repetitions=irb1[1],boost=irb1[3],method=method)
-  } else {
-    ###parameter are import for geting the information
-    y1<-rPeaks::SpectrumDeconvolution(y,imp,iterations=irb1[1],repetitions=irb1[2],boost=irb1[3],method=method)
+    
+    # Deconvolve the impulse response
+    imre<-rPeaks::SpectrumDeconvolution(
+      imp,
+      imp_out,
+      iterations=imp_out_pars[1],
+      repetitions=imp_out_pars[2],
+      boost=imp_out_pars[3],
+      method=method)
+    
+    # Important to round the deconvolved impulse response
+    imre<-round(imre,2)
+    
+    # Then deconvolve the return vector with the impulse response
+    y1<-rPeaks::SpectrumDeconvolution(
+      y,
+      imre,
+      iterations=irb1[1],
+      repetitions=irb1[1],
+      boost=irb1[3],
+      method=method)
+  
+    } else {
+    
+    # If no outgoing and return impulse response submitted, deconvolve the return vector with the system impulse response
+    y1<-rPeaks::SpectrumDeconvolution(
+      y,
+      imp,
+      iterations=irb1[1],
+      repetitions=irb1[2],
+      boost=irb1[3],
+      method=method)
   }
-    ###parameter are import for geting the information
-    #y1<-SpectrumDeconvolution(y,im,iterations=irb1[1],repetitions=irb1[2],boost=irb1[3],method=method)
-    de<-rPeaks::SpectrumDeconvolution(y1,x,iterations=irb2[1],repetitions=irb2[2],boost=irb2[3],method=method)
-
+    
+    # Finally, deconvolve the impulse-deconvolved return vector a second time, now with the outgoing pulse
+    de <- rPeaks::SpectrumDeconvolution(
+      y1,
+      x,
+      iterations=irb2[1],
+      repetitions=irb2[2],
+      boost=irb2[3],
+      method=method)
+  
+  # Return the rounded deconvolved result
   return(round(de,2))
 }
-
-
 
 
 

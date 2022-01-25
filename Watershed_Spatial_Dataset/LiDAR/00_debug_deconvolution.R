@@ -12,17 +12,18 @@
 #devtools::install_github('lwasser/neon-aop-package/neonAOP') #neonAOP for reading binary data
 
 # Install and load typical libraries
-pkgs <- c('dplyr',
+pkgs <- c('caTools',
+          'dplyr',
           'tidyverse',
           'ggplot2',
           'raster',
           'data.table',
           'devtools',
+          'minpack.lm',
           'plotly',
           'rPeaks',
-          'waveformlidar',
+          'rwaveform',
           'rgdal',
-          'caTools',
           'sf', 
           'parallel') # Name the packages you want to use here
 
@@ -36,71 +37,36 @@ load.pkgs <- function(pkg){
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
 
+setwd('~/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/')
+
 ################################
 # Ingest ENVI binary files
 ################################
 
 # Name data directory
-datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/'
-
-# Function to ingest files and store as environment variables
-ingest <- function(flightpath){
-  
-  # Name the 
-  obs_bin = grep(list.files(flightpath, full.names = T), # Observation
-                 pattern = 'observation', 
-                 value = T)
-  out_bin = grep(list.files(flightpath, full.names = T), # Outgoing pulse
-                 pattern = 'outgoing', 
-                 value = T)
-  geo_bin = grep(list.files(flightpath, full.names = T), # Geolocation array
-                 pattern = 'geolocation', 
-                 value = T)
-  re_bin = grep(list.files(flightpath, full.names = T), # Return pulse
-                pattern = 'return_pulse', 
-                value = T)
-  imp_re_bin = grep(list.files(flightpath, full.names = T), # System impulse response (for deconvolution)
-                    pattern = 'impulse_response_', 
-                    value = T)
-  imp_out_bin = grep(list.files(flightpath, full.names = T), # Outgoing impulse response (for deconvolution)
-                     pattern = 'impulse_response_T0', 
-                     value = T)
-  
-  # Read the binary files as arrays
-  obs_array <- read.ENVI(obs_bin[1], headerfile = obs_bin[2])
-  out_array <- read.ENVI(out_bin[1], headerfile = out_bin[2])
-  geo_array <- read.ENVI(geo_bin[1], headerfile = geo_bin[2])
-  re_array <- read.ENVI(re_bin[1], headerfile = re_bin[2])
-  imp_re_array <- read.ENVI(imp_re_bin[1], headerfile = imp_re_bin[2])
-  imp_out_array <- read.ENVI(imp_out_bin[1], headerfile = imp_out_bin[2])
-  
-  # Load return as reshaped data table
-  out <<- data.table(index=c(1:nrow(out_array)), out_array)
-  re <<- data.table(index=c(1:nrow(re_array)), re_array)
-  geol <<- data.table(index=c(1:nrow(geo_array)), geo_array)
-  sysir <<- data.table(index=c(1:nrow(imp_re_array)), imp_re_array)
-  outir <<- data.table(index=c(1:nrow(imp_re_array)), imp_re_array)
-  
-  # Assign geo column names
-  geoindex <- c(1:9,16)
-  colnames(geol)[geoindex] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
-  
-  # Reassemble data tables into list of objects
-  #wf_tbls <- list("out" = out, "re" = re, "geo" = geo, "sysir" = sysir, "outir" = outir)
-  #return(wf_tbls)
-}
+#datadir <- '/Volumes/Brain10/Geospatial/RMBL/NEON_AOP_2018/Waveform_Lidar/Binary_All/'
+datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
 
 # Ingest one flightpath
 flightpaths <- list.files(datadir, full.names = T)
-fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
-wf <- ingest(fp[1])
+
+fp <- flightpaths[92]
+wf <- ingest(fp)
+#fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
+#wf <- ingest(fp[1])
+
+out <- wf$out
+re <- wf$re
+geol <- wf$geol
+outir <- wf$outir
+sysir <- wf$sysir
 
 # Subset to a manageable set of waveforms for testing
-out_sub <- out[1:100000]
-re_sub <- re[1:100000]
-geol_sub <- geol[1:100000]
+out_sub <- out[120000:121000]
+re_sub <- re[120000:121000]
+geol_sub <- geol[120000:121000]
 
-## Assign geo column names
+## Assign geo column names to work in downstream functions
 geoindex <- c(1:9,16)
 colnames(geol_sub)[geoindex] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
 
@@ -119,52 +85,92 @@ sysir_rep <- subset(sysir_rep, select = -index)
 outir_rep <- subset(outir_rep, select = -index)
 
 # Convert the data into lists before batch deconvolving
-return1 <- as.list(as.data.frame(t(re_sub)))
-out1 <- as.list(as.data.frame(t(out_sub)))
-sysir2 <- as.list(as.data.frame(t(sysir_rep)))
-outir2 <- as.list(as.data.frame(t(outir_rep)))
+return1 <- lapply(as.list(as.data.frame(t(re_sub))), as.numeric)
+out1 <- lapply(as.list(as.data.frame(t(out_sub))), as.numeric)
+sysir2 <- lapply(as.list(as.data.frame(t(sysir_rep))), as.numeric)
+outir2 <- lapply(as.list(as.data.frame(t(outir_rep))), as.numeric)
 
-# Run deconvolution
-dec <- mapply(deconvolution, 
+decon <- mapply(rwaveform::deconvolution, 
               re=return1,
               out=out1,
               imp=sysir2,
               imp_out=outir2,
               method='Gold',
-              np = 2,
-              rescale = T
+              np = 3,
+              rescale = F,
+              small_paras = list(c(20,2,1.2,20,1.2,2)),
+              large_paras=list(c(40,4,1.8,40,4,1.8))
               )
 
-View(dec)
-tdec <- t(dec)
-fdec <- data.table(index=1:nrow(tdec),tdec)
-View(fdec)
-dim(fdec)
+# Transpose deconvolution result
+tdecon <- t(decon)
+dim(tdecon)
 
-plot(seq(100), dec[1:100,58589], type = 'l')
-plot(seq(100), dec[1:100,2], type = 'l')
+# Create a data table of dim nrow tdecon, ncol decon 
+decon.dt <- data.table(index=1:nrow(tdecon), tdecon)
+dim(decon.dt)
 
+# Count number of weird returns
+length(decon.dt[rowSums(decon.dt!=0)])
+
+# Plot some deconvolved returns to check
+plot(seq(500), decon[1:500,16], type = 'l')
+lines(seq(500), return1[16][[1]], type = 'l')
+
+return1.dt <- data.table(index=1:length(return1), return1)
+plot(seq(500), decon[1:500,42], type = 'l', col = sample(rainbow(10)))
+for(d in seq(1:100)){
+  lines(seq(500), decon[1:500,d], type = 'l', col = sample(rainbow(10)))
+}
+
+########################################
+# Waveform decomposition
+########################################
+
+source('wf_functions/decom.R')
+source('wf_functions/decom.adaptive.R')
+source('wf_functions/gennls.R')
+
+xx2 <- decom(decon.dt[42], peakfix=F, thres=0.01)
+xx <- apply(decon.dt, 1, decom, thres=0.002)
+
+which(lengths(xx)==0)
+plot(seq(500), decon[1:500,22], type = 'l', col = sample(rainbow(10)))
+
+which.max(decon.dt[22])
+max(decon.dt[22])
+decon.dt[22]
+
+plot(xx[42], type = 'l', col = sample(rainbow(10)))
+for(d in seq(1:100)){
+  lines(seq(500), xx[1:500,d], type = 'l', col = sample(rainbow(10)))
+}
+
+###########################
 safe_decomp <- function(x){
-  tryCatch(decom.adaptive(x, smooth = T, thres = 0.22, width = 3), 
+  tryCatch(decom.adaptive(x, smooth = T, thres = 0.05, width = 5), 
            error = function(e){'NA'})}
 
 # Apply the safe decomposition to the set
 dc = apply(fdec, 1, safe_decomp)
 
-testdeco <- decom.adaptive(fdec[58589], smooth = T, thres = 0.22, width = 3)
+# Find which returns failed
+fails = which(dc=='NA')
+length(fails)
+fails
+
+testdeco <- decom(fdec[374], smooth = T, thres = 0.22, width = 3)
+testdeco = dc[1438][[1]]
 ayi<-data.frame(testdeco[[2]])
 sumayi<-0
 x <- 1:100
 sumayi <- sumayi + ayi[1,2] * exp(-abs(x - ayi[2,2])**ayi[4,2]/(2 * ayi[3,2]**2))
 plot(sumayi, type='l')
 
-testdeco <- decom.adaptive(re_sub[2], smooth = T, thres = 0.22, width = 3)
-ayi<-data.frame(testdeco[[2]])
-sumayi<-0
-x <- 1:100
-sumayi<-sumayi + ayi[1,2] * exp(-abs(x - ayi[2,2])**ayi[4,2]/(2 * ayi[3,2]**2))
-lines(sumayi)
+lines(seq(500), dec[1:500,1438], type = 'l')
+lines(seq(100), return1[[1438]][1:100], type='l')
 
+# thing to do is keep successful decompositions and infill successful deconvolutions where necessary
 
 # Filter out returns that threw exceptions
 View(dc)

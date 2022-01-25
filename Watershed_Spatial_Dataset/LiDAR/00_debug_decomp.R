@@ -7,7 +7,7 @@ pkgs <- c('dplyr',
           'devtools',
           'plotly',
           'rPeaks',
-          'waveformlidar',
+          'rwaveform',
           'rgdal',
           'caTools',
           'sf', 
@@ -24,12 +24,6 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
-
-# Load helper functions
-sourcedir <- '~/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/wf_functions'
-source_scripts <- list.files(sourcedir, full.names = T)
-sapply(source_scripts, source)
-source(file.path(sourcedir, 'decom.adaptive.R'))
 
 # Debug
 aoi <- 'ER-GT1'
