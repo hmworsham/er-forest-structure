@@ -16,12 +16,12 @@ from ipyparallel import Client
 from waveform import chunk_waveforms as cw
 
 # Connect to ipyparallel
-c = Client()
-c.ids
+#c = Client()
+#c.ids
 
-lview = c.load_balanced_view()
+#lview = c.load_balanced_view()
 # cause execution on main process to wait while tasks sent to workers finish
-lview.block = True
+#lview.block = True
 
 # Define directories
 indir = '/global/scratch/users/worsham/waveform_binary'
@@ -46,7 +46,7 @@ def wrapper(i):
     return(cw.chunk_wfbinary_loc(i, idir, odir))
 
 
-Define flightpaths to ingest
+#Define flightpaths to ingest
 fps = [d for d in os.listdir(indir) if os.path.isdir(
     os.path.join(indir, d))]  # Lists all flightpaths
 

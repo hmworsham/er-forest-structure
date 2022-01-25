@@ -23,8 +23,10 @@ load.pkgs(pkgs)
 ###################
 
 # Name directory where shapefiles live
-allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
-sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
+#allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
+#sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
+allplotsdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/AllPlots'
+sfdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons'
 
 # Read in the shapefile containing all plots
 allplots_path = list.files(allplotsdir, 
@@ -37,8 +39,9 @@ allplots <- st_read(allplots_path, quiet=T)
 ######################################
 
 # Name data directory
-datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
-datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveformlidar'
+#datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
+#datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveformlidar'
+datadir <- '/global/scratch/users/worsham/waveform_binary'
 
 # Name flightpaths as filenames
 flightpaths <- list.dirs(datadir,recursive = F)
@@ -50,8 +53,7 @@ fp_plot_itx <-  data.frame(matrix(NA,
                                   nrow = length(flightpaths), 
                                   ncol = nrow(allplots)))
 names(fp_plot_itx) <- allplots$PLOT_ID
-row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][11]})
-
+row.names(fp_plot_itx) <- sapply(flightpaths, function(x){strsplit(x, '/')[[1]][7]})
 
 # Find flightpath chunk boundaries and check for intersections with allplots
 # for(i in seq(length(flightpaths))){
@@ -92,7 +94,7 @@ for(i in seq(length(flightpaths))){
   ycoords = c(max(geolo[,2]), max(geolo[,2]), min(geolo[,2]), min(geolo[,2]), max(geolo[,2]))
   xym = cbind(xcoords, ycoords)
   extent = data.frame(xmin = min(xcoords), xmax = max(xcoords), ymin = min(ycoords), ymax = max(ycoords))
-  write.table(extent, file="../flightpath_extents.csv", sep = ',', append=T, col.names = F, row.names = F)
+  write.table(extent, file="~/flightpath_extents.csv", sep = ',', append=T, col.names = F, row.names = F)
   sps = st_sfc(st_polygon(list(xym)))
   st_crs(sps) = CRS('+init=epsg:32613')
   itx = st_intersects(sps, allplots, sparse = F)
@@ -140,4 +142,4 @@ for(i in seq(length(flightpaths))){
 #   return(fp_plot_itx)
 # }
 
-write.csv(fp_plot_itx, '../EastRiver_Plot_LiDAR_Intersections.csv')
+write.csv(fp_plot_itx, '~/EastRiver_Plot_LiDAR_Intersections.csv')
