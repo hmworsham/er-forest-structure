@@ -92,6 +92,7 @@ out_sub <- out[500000:510000]
 re_sub <- re[500000:510000]
 geol_sub <- geol[500000:510000]
 sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
+
 ################################
 # deconvolve waveforms
 ################################
@@ -135,20 +136,18 @@ nopeaks <- which(np==0)
 decon <- decon[-nopeaks,]
 #decon <- decon[-unreasonable,]
 
-# waveform decomposition 
-unload('rwaveform')
-load_all('~/Repos/rwaveform')
-cl <- makeCluster(detectCores())
+################################
+# Decompose waveforms
+################################
+
 decomp <- mclapply(re,
                1,
                rwaveform::decom.adaptive,
                smooth=T,
                peakfix=T,
                thres=0.05,
-               width=3)
-stopCluster(cl)
-par
-length(which(lengths(decomp)==0))
+               width=3, 
+               )
 
 ###################################
 # functions to run full processing
@@ -208,13 +207,14 @@ process_wf <- function(fp, clip=FALSE, aoi){
   #decon <- decon[-unreasonable,]
   
   # Decompose waveforms
-  decomp <- apply(decon,
-                  1,
-                  rwaveform::decom.adaptive,
-                  smooth=T,
-                  peakfix=T,
-                  thres=0.05,
-                  width=3)
+  decomp <- mcmapply(
+    rwaveform::decom.adaptive,
+    decon,
+    smooth=T,
+    peakfix=T,
+    thres=0.2,
+    width=3,
+    mc.cores=getOption("mc.cores", ceiling(detectCores()/2)))
   
   # geotransform waveforms to points
   wfpts = geotransform(decomp = decom$repars, decom$geolocation)
