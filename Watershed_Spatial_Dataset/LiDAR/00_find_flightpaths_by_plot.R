@@ -101,6 +101,7 @@ for(i in seq(length(flightpaths))){
   fp_plot_itx[i,] = itx
 }
 
+fp_plot_itx
 
 # find_fps <- function(aoi){
 #   
