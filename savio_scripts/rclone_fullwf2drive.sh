@@ -4,7 +4,7 @@
 
 scratch=/global/scratch/users/worsham/waveform_binary_chunks/
 
-dest=er-drive:/EastRiver/waveformlidarchunks/
+dest=er-drive:/EastRiver/waveform_lidar_chunks/
 
 priority=19
 
