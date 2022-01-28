@@ -42,26 +42,25 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
-load_all('~/Repos/rwaveform')
+load_all('~/rwaveform')
 
 ################################
 # Setup workspace
 ################################
 
 # Name data directory
-#datadir <- '/global/scratch/users/worsham/waveform_binary_split'
-datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveform_lidar_chunks'
+datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
+#datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveform_lidar_chunks'
 
 # Name directory where inventory plot shapefiles live
-#shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
-shapedir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
+shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+#shapedir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
-#intersectscsv <- '~/eastriver/Watershed_Spatial_Dataset/LiDAR/Output/EastRiver_Plot_LiDAR_Intersections.csv'
-intersectcsv <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/Working_Files/Watershed_Spatial_Dataset/Output/EastRiver_Plot_LiDAR_Intersections.csv'
-
-intersects <- read.csv(intersectcsv)
+intersectscsv <- '~/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
+#intersectcsv <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/EastRiver_Plot_LiDAR_Intersections.csv'
+intersects <- read.csv(intersectscsv)
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
 
 ################################
@@ -75,7 +74,8 @@ aoi <- 'CC-UC1'
 itx_true <- intersects[intersects[aoi] == T,1]
 aoi_fps <- file.path(datadir, itx_true)
 aoi_fps <- flightpaths
-wf_arrays = ingest(aoi_fps[99])
+wf_arrays = ingest(aoi_fps[1])
+aoi_fps
 
 # clip waveform to one plot extent
 aoiext = rwaveform::aoiextent('SG-NES2', shapedir)
@@ -97,7 +97,7 @@ sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
 tic <- proc.time()
 decon <- rwaveform::deconv.apply(
   wf_arrays, 
-  sub_arrays, 
+  wf_arrays, 
   method='Gold', 
   rescale=F,
   small_paras = list(c(30,2,1.2,30,2,2)),
@@ -137,15 +137,16 @@ decon <- decon[-nopeaks,]
 # waveform decomposition 
 unload('rwaveform')
 load_all('~/Repos/rwaveform')
-
-decomp <- apply(decon,
+cl <- makeCluster(detectCores())
+decomp <- mclapply(re,
                1,
                rwaveform::decom.adaptive,
                smooth=T,
                peakfix=T,
                thres=0.05,
                width=3)
-
+stopCluster(cl)
+par
 length(which(lengths(decomp)==0))
 
 ###################################
@@ -224,7 +225,9 @@ process_wf <- function(fp, clip=FALSE, aoi){
 # process waveforms for one flightpath
 ##########################################
 
-test1 <- process_wf(sub_arrays, clip=F)
+tic <- proc.time()
+test1 <- process_wf(aoi_fps[1], clip=F)
+toc <- proc.time() - tic
 
 ##########################################
 # process waveforms at all plot locations
