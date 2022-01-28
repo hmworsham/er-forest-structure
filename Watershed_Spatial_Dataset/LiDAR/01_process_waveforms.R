@@ -92,8 +92,9 @@ out_sub <- out[500000:510000]
 re_sub <- re[500000:510000]
 geol_sub <- geol[500000:510000]
 sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
-
+################################
 # deconvolve waveforms
+################################
 tic <- proc.time()
 decon <- rwaveform::deconv.apply(
   wf_arrays, 
