@@ -324,6 +324,37 @@ ggplot(hpcgrid, aes(x = cx, y = cy)) +
 View(hpcgrid)
 
 
+testfps <- ingest(aoi_fps[1])
+cliparrs <- lapply(testfps, doclip)
+fullset <- bind_rows(cliparrs)
+outi <- testfps$out
+reti <- testfps$re
+geoi <- testfps$geol
+
+geoi$index <- NULL
+colnames(geoi)[1:8]<-c("x","y","z","dx","dy","dz","or","fr")
+hpc<-data.frame(hyperpointcloud(waveform=reti,geo=geoi))
+
+
+fig <- plot_ly(data.frame(hpc), x = ~x, y = ~y, z = ~z, 
+               type = 'scatter3d',
+               mode = 'markers',
+               marker = list(color = ~log10(intensity), colorscale = c('#FFE1A1', '#683531'),
+                             showscale = T,
+                             size = 1)) 
+fig <- fig %>%
+  layout(scene = list(xaxis = list(title = 'X',range=c(327700, 327850)),
+                      yaxis = list(title = 'Y',range=c(4310900,4310960)),
+                      zaxis = list(title = 'Z', range = c(3300,3700))))
+fig
+
+library(plot3D)
+
+rs <- sample(nrow(hpc), 500000, replace = F)
+hpc <- hpc[rs,]
+scatter3D(hpc$x, hpc$y, hpc$z, colvar = log10(hpc$intensity), pch = '.', col = ramp.col(c('grey90', 'darkblue'), alpha = 0.6), ticktype='detailed')
+
+
 ###using raw data
 rawgrid<-waveformgrid(waveform = return,geo=geo,method="Other")
 ##adding quantiles
