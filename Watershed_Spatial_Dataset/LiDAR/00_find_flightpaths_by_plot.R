@@ -23,10 +23,10 @@ load.pkgs(pkgs)
 ###################
 
 # Name directory where shapefiles live
-#allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
-#sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
-allplotsdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/AllPlots'
-sfdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons'
+allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
+sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
+#allplotsdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/AllPlots'
+#sfdir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons'
 
 # Read in the shapefile containing all plots
 allplots_path = list.files(allplotsdir, 
@@ -39,10 +39,9 @@ allplots <- st_read(allplots_path, quiet=T)
 ######################################
 
 # Name data directory
-#datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
-#datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveformlidar'
-datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
-
+datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveformlidar'
+#datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
+datadir
 # Name flightpaths as filenames
 flightpaths <- list.dirs(datadir,recursive = F)
 #flightpaths <- flightpaths[2:length(flightpaths)] 
