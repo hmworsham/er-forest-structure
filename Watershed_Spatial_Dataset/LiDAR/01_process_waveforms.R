@@ -25,7 +25,6 @@ pkgs <- c('dplyr',
           'devtools',
           'plotly',
           'rPeaks',
-          'rwaveform',
           'rgdal',
           'caTools',
           'sf', 
@@ -43,6 +42,7 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
+load_all('~/Repos/rwaveform')
 
 ################################
 # Setup workspace
@@ -50,7 +50,7 @@ load.pkgs(pkgs)
 
 # Name data directory
 #datadir <- '/global/scratch/users/worsham/waveform_binary_split'
-datadir <- '/Volumes/GoogleDrive/.shortcut-targets-by-id/1xCDkpB9tRCZwEv2R3hSPKvGkQ6kdy8ip/waveformlidarchunks'
+datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/waveform_lidar_chunks'
 
 # Name directory where inventory plot shapefiles live
 #shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
@@ -69,53 +69,84 @@ names(intersects) <- str_replace(names(intersects), '\\.', '-')
 ################################
 
 # Define area of interest by plot ID
-aoi <- 'SG-NES2'
+aoi <- 'CC-UC1'
 
 # Select flightpaths that intersect the aoi
 itx_true <- intersects[intersects[aoi] == T,1]
 aoi_fps <- file.path(datadir, itx_true)
-#aoi_fps <- flightpaths
-wf_arrays = ingest(aoi_fps[2])
+aoi_fps <- flightpaths
+wf_arrays = ingest(aoi_fps[99])
 
 # clip waveform to one plot extent
-#aoiext = rwaveform::aoiextent('SG-NES2', shapedir)
-#xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
+aoiext = rwaveform::aoiextent('SG-NES2', shapedir)
+xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
 
 # Subset to a manageable set of waveforms for testing
-
 out <- wf_arrays$out
 re <- wf_arrays$re
 geol <- wf_arrays$geol
 outir <- wf_arrays$outir
 sysir <- wf_arrays$sysir
 
-out_sub <- out[120000:121000]
-re_sub <- re[120000:121000]
-geol_sub <- geol[120000:121000]
-
+out_sub <- out[500000:510000]
+re_sub <- re[500000:510000]
+geol_sub <- geol[500000:510000]
 sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
 
 # deconvolve waveforms
-library(rwaveform)
-decon <- rwaveform::deconv.apply(wf_arrays, sub_arrays, method='RL')
-
-# Restore original index values
-decon$index <- re_sub$index
+tic <- proc.time()
+decon <- rwaveform::deconv.apply(
+  wf_arrays, 
+  sub_arrays, 
+  method='Gold', 
+  rescale=F,
+  small_paras = list(c(30,2,1.2,30,2,2)),
+  large_paras = list(c(40,4,1.8,30,2,2)))
+toc <- proc.time()
+print(toc-tic)
 
 # Check for NaNs and extreme values
-deconvals <- subset(decon, select = -index)
-nanrows = which(rowSums(is.na(deconvals))>0)
-bigrows = which(rowSums(deconvals)>10^5)
+#decon <- subset(decon, select = -index)
+nanrows = which(rowSums(is.na(decon))>0)
+bigrows = which(rowSums(decon[,2:501])>10^5)
+print(nanrows)
+print(bigrows)
 
 # Clean NaNs and extreme values
 if(length(nanrows) | length(bigrows)) {
   decon <- deconv.clean(decon)
 }
 
+# Restore original index values
+#newindex <- re_sub[-nanrows]$index
+#decon$index <- re_sub$index
+#setindex(decon, index)
+
+# Find npeaks
+decon <- data.table(t(apply(decon, 1, peakfix)))
+np <- apply(decon, 1, npeaks, smooth=F, threshold=0)
+
+# Store indices of returns with potentially unreasonable number of peaks or 0 peaks
+#unreasonable <- decon[np>12]$index
+nopeaks <- which(np==0)
+
+# Filter out 0 and unreasonable peak vectors
+decon <- decon[-nopeaks,]
+#decon <- decon[-unreasonable,]
 
 # waveform decomposition 
+unload('rwaveform')
+load_all('~/Repos/rwaveform')
 
+decomp <- apply(decon,
+               1,
+               rwaveform::decom.adaptive,
+               smooth=T,
+               peakfix=T,
+               thres=0.05,
+               width=3)
 
+length(which(lengths(decomp)==0))
 
 ###################################
 # functions to run full processing
@@ -123,38 +154,83 @@ if(length(nanrows) | length(bigrows)) {
 
 ## Run full procedure on all waveforms intersecting with aoi
 
-process_wf <- function(fp){
+process_wf <- function(fp, clip=FALSE, aoi){
   
-  # clip
+  # Ingest waveforms
   wfarrays = ingest(fp)
-  print('flightpath ingested')
-  #cliparrays = doclip(wfarrays, 20)
-  cliparrays = wfarrays
-  if(dim(cliparrays[[1]])[1]==0){
-    print('clip failed: flightpath does not intersect plot')
-    return()
-  }
-  else{
-    print('clip succeeded')
+  print(paste('flightpath', fp, 'ingested'))
+  
+  # Clip waveforms to geometry if specified
+  if (clip) {
     
-    # deconvolve
-    deconv = deconv.waveforms(wfarrays, cliparrays, method = 'Gold')
-    print(dim(deconv))
-
-    # decompose
-    decom = decom.waveforms(cliparrays, deconv)
-    print('decomposition succeeded')
-
-    # geotransform waveforms to points
-    #wfpts = geotransform(decomp = decom$repars, decom$geolocation)
+    arrays = rwaveform::clipwf(wfarrays, aoiext, buff=20)
+    
+    if(dim(arrays[[1]])[1]==0) {
+      print('clip failed: flightpath does not intersect plot')
+    } else {
+      print('clip succeeded')
+    }
+  } else {
+    arrays = wfarrays
   }
   
-  return(decom)
+  # deconvolve
+  decon <- rwaveform::deconv.apply(
+    wfarrays, 
+    arrays, 
+    method='Gold', 
+    rescale=F,
+    small_paras = list(c(30,2,1.2,30,2,2)),
+    large_paras = list(c(40,4,1.8,30,2,2)))
+
+  # Check for NaNs and extreme values
+  #decon <- subset(decon, select = -index)
+  nanrows = which(rowSums(is.na(decon))>0)
+  bigrows = which(rowSums(decon[,2:length(decon)])>10^5)
+  
+  # Clean NaNs and extreme values
+  if(length(nanrows) | length(bigrows)) {
+    decon <- deconv.clean(decon)
+  }
+  
+  # Find npeaks
+  decon <- data.table(t(apply(decon, 1, peakfix)))
+  np <- apply(decon, 1, npeaks, smooth=F, threshold=0)
+  
+  # Store indices of returns with potentially unreasonable number of peaks or 0 peaks
+  #unreasonable <- decon[np>12]$index
+  nopeaks <- which(np==0)
+  
+  # Filter out 0 and unreasonable peak vectors
+  decon <- decon[-nopeaks,]
+  #decon <- decon[-unreasonable,]
+  
+  # Decompose waveforms
+  decomp <- apply(decon,
+                  1,
+                  rwaveform::decom.adaptive,
+                  smooth=T,
+                  peakfix=T,
+                  thres=0.05,
+                  width=3)
+  
+  # geotransform waveforms to points
+  wfpts = geotransform(decomp = decom$repars, decom$geolocation)
+  
+  return(wfpts)
 }
+
+##########################################
+# process waveforms for one flightpath
+##########################################
+
+test1 <- process_wf(sub_arrays, clip=F)
 
 ##########################################
 # process waveforms at all plot locations
 ##########################################
+
+
 aois <- names(intersects)[-c(1,3,4,9,10)] # subset plots within AOP acquisition area
 
 intersects[intersects[aoi] == T,1]
@@ -176,41 +252,3 @@ for(aoi in aois){
   wfpts_df = data.frame(do.call('rbind', wfpts))
   write.csv(wfpts_df, paste0('~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/waveform_points_02/', aoi, '.csv'))
 }
-
-######################################
-# Process 1 waveform for illustration
-######################################
-process_wf(aoi_fps[3])
-aoi_fps
-aoi_fps[3]
-aoi_fps
-
-testfps <- ingest(aoi_fps[1])
-cliparrs <- lapply(testfps, doclip)
-fullset <- bind_rows(cliparrs)
-outi <- testfps$out
-reti <- testfps$re
-geoi <- testfps$geol
-
-geoi$index <- NULL
-colnames(geoi)[1:8]<-c("x","y","z","dx","dy","dz","or","fr")
-hpc<-data.frame(hyperpointcloud(waveform=reti,geo=geoi))
-
-
-fig <- plot_ly(data.frame(hpc), x = ~x, y = ~y, z = ~z, 
-               type = 'scatter3d',
-               mode = 'markers',
-               marker = list(color = ~log10(intensity), colorscale = c('#FFE1A1', '#683531'),
-                             showscale = T,
-                             size = 1)) 
-fig <- fig %>%
-  layout(scene = list(xaxis = list(title = 'X',range=c(327700, 327850)),
-                      yaxis = list(title = 'Y',range=c(4310900,4310960)),
-                      zaxis = list(title = 'Z', range = c(3300,3700))))
-fig
-
-library(plot3D)
-
-rs <- sample(nrow(hpc), 500000, replace = F)
-hpc <- hpc[rs,]
-scatter3D(hpc$x, hpc$y, hpc$z, colvar = log10(hpc$intensity), pch = '.', col = ramp.col(c('grey90', 'darkblue'), alpha = 0.6), ticktype='detailed')

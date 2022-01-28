@@ -127,10 +127,6 @@ for(d in seq(1:100)){
 # Waveform decomposition
 ########################################
 
-source('wf_functions/decom.R')
-source('wf_functions/decom.adaptive.R')
-source('wf_functions/gennls.R')
-
 xx2 <- decom(decon.dt[42], peakfix=F, thres=0.01)
 xx <- apply(decon.dt, 1, decom, thres=0.002)
 
