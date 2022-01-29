@@ -58,10 +58,24 @@ shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
+
+# Get forest intersections
+forestcsv <- '~/flightpath_forest_intersections.csv'
+forest <- read.csv(forestcsv)
+
+# Get plot/LiDAR intersections
 intersectscsv <- '~/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
 #intersectcsv <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/EastRiver_Plot_LiDAR_Intersections.csv'
+
 intersects <- read.csv(intersectscsv)
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
+
+################################
+# Subset flighpaths intersecting forest
+################################
+
+isforest <- which(forest$pct_forest > 0.08)
+flightpaths <- flightpaths[isforest]
 
 ################################
 # Ingest binary files for one flightpath
@@ -99,7 +113,7 @@ sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
 tic <- proc.time()
 decon <- rwaveform::deconv.apply(
   wf_arrays, 
-  wf_arrays, 
+  sub_arrays, 
   method='Gold', 
   rescale=F,
   small_paras = list(c(30,2,1.2,30,2,2)),
@@ -134,6 +148,7 @@ nopeaks <- which(np==0)
 
 # Filter out 0 and unreasonable peak vectors
 decon <- decon[-nopeaks,]
+
 #decon <- decon[-unreasonable,]
 
 ################################
@@ -149,87 +164,14 @@ decomp <- mclapply(re,
                width=3, 
                )
 
-###################################
-# functions to run full processing
-###################################
-
-## Run full procedure on all waveforms intersecting with aoi
-
-process_wf <- function(fp, clip=FALSE, aoi){
-  
-  # Ingest waveforms
-  wfarrays = ingest(fp)
-  print(paste('flightpath', fp, 'ingested'))
-  
-  # Clip waveforms to geometry if specified
-  if (clip) {
-    
-    arrays = rwaveform::clipwf(wfarrays, aoiext, buff=20)
-    
-    if(dim(arrays[[1]])[1]==0) {
-      print('clip failed: flightpath does not intersect plot')
-    } else {
-      print('clip succeeded')
-    }
-  } else {
-    arrays = wfarrays
-  }
-  
-  # deconvolve
-  decon <- rwaveform::deconv.apply(
-    wfarrays, 
-    arrays, 
-    method='Gold', 
-    rescale=F,
-    small_paras = list(c(30,2,1.2,30,2,2)),
-    large_paras = list(c(40,4,1.8,30,2,2)))
-
-  # Check for NaNs and extreme values
-  #decon <- subset(decon, select = -index)
-  nanrows = which(rowSums(is.na(decon))>0)
-  bigrows = which(rowSums(decon[,2:length(decon)])>10^5)
-  
-  # Clean NaNs and extreme values
-  if(length(nanrows) | length(bigrows)) {
-    decon <- deconv.clean(decon)
-  }
-  
-  # Find npeaks
-  decon <- data.table(t(apply(decon, 1, peakfix)))
-  np <- apply(decon, 1, npeaks, smooth=F, threshold=0)
-  
-  # Store indices of returns with potentially unreasonable number of peaks or 0 peaks
-  #unreasonable <- decon[np>12]$index
-  nopeaks <- which(np==0)
-  
-  # Filter out 0 and unreasonable peak vectors
-  decon <- decon[-nopeaks,]
-  #decon <- decon[-unreasonable,]
-  
-  # Decompose waveforms
-  decomp <- mcmapply(
-    rwaveform::decom.adaptive,
-    decon,
-    smooth=T,
-    peakfix=T,
-    thres=0.2,
-    width=3,
-    mc.cores=getOption("mc.cores", ceiling(detectCores()/2)))
-  
-  # geotransform waveforms to points
-  wfpts = geotransform(decomp = decom$repars, decom$geolocation)
-  
-  return(wfpts)
-}
-
 ##########################################
 # process waveforms for one flightpath
 ##########################################
 
 tic <- proc.time()
-test1 <- process_wf(aoi_fps[1], clip=F)
-toc <- proc.time() - tic
-
+test1 <- rwaveform::process_wf(flightpaths[42])
+toc <- proc.time()
+print(toc-tic)
 ##########################################
 # process waveforms at all plot locations
 ##########################################
