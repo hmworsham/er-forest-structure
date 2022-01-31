@@ -42,7 +42,7 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
-load_all('~/rwaveform')
+load_all('~/Repos/rwaveform')
 
 ################################
 # Setup workspace
@@ -86,14 +86,13 @@ aoi <- 'CC-UC1'
 
 # Select flightpaths that intersect the aoi
 itx_true <- intersects[intersects[aoi] == T,1]
-aoi_fps <- file.path(datadir, itx_true)
+#aoi_fps <- file.path(datadir, itx_true)
 aoi_fps <- flightpaths
-wf_arrays = ingest(aoi_fps[1])
-aoi_fps
+wf_arrays = rwaveform::ingest(aoi_fps[42])
 
 # clip waveform to one plot extent
-aoiext = rwaveform::aoiextent('SG-NES2', shapedir)
-xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
+#aoiext = rwaveform::aoiextent(aoi, shapedir)
+#xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
 
 # Subset to a manageable set of waveforms for testing
 out <- wf_arrays$out
@@ -102,9 +101,9 @@ geol <- wf_arrays$geol
 outir <- wf_arrays$outir
 sysir <- wf_arrays$sysir
 
-out_sub <- out[500000:510000]
-re_sub <- re[500000:510000]
-geol_sub <- geol[500000:510000]
+out_sub <- out[100000:100100]
+re_sub <- re[100000:100100]
+geol_sub <- geol[100000:100100]
 sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
 
 ################################
@@ -143,26 +142,72 @@ decon <- data.table(t(apply(decon, 1, peakfix)))
 np <- apply(decon, 1, npeaks, smooth=F, threshold=0)
 
 # Store indices of returns with potentially unreasonable number of peaks or 0 peaks
-#unreasonable <- decon[np>12]$index
+unreasonable <- decon[np>12]$index
 nopeaks <- which(np==0)
 
 # Filter out 0 and unreasonable peak vectors
-decon <- decon[-nopeaks,]
-
-#decon <- decon[-unreasonable,]
+if (length(nopeaks)| length(unreasonable)){
+  decon <- decon[-nopeaks,]
+  #decon <- decon[-unreasonable,]
+}
 
 ################################
 # Decompose waveforms
 ################################
 
-decomp <- mclapply(re,
-               1,
-               rwaveform::decom.adaptive,
-               smooth=T,
-               peakfix=T,
-               thres=0.05,
-               width=3, 
-               )
+# Remove the index columns -- we'll replace them later
+decon = subset(decon, select = -index)
+geol = subset(geol, select = -index)
+
+## Convert the arrays to lists for batch deconvolution
+decon2 = lapply(as.list(as.data.frame(t(decon))), as.numeric)
+#geol2 = lapply(as.list(as.data.frame(t(geol))), as.numeric)
+
+# Run adaptive decomposition algorithm on clipped returns
+# Use error handling to identify erroneous or un-decomposable returns
+safe_decomp = function(x){
+  tryCatch(decom.adaptive(x, smooth = T, peakfix=T, thres = 0.2, width = 3), 
+           error = function(e){NA})}
+
+
+# Apply safe decomposition to the set
+# DOESN'T WORK
+decomp = pbmcmapply(
+  safe_decomp,
+  decon2,
+  mc.cores=getOption("mc.cores", ceiling(detectCores()/2))
+)
+
+# WORKS BUT ON ONE CORE
+decomp = mapply(
+  safe_decomp,
+  decon
+)
+
+decomp
+
+# WORKS BUT ON ONE CORE
+decomp = apply(
+  decon,
+  1,
+  safe_decomp
+)
+
+x <- rnorm(1e4, mean = 12, sd = 5)
+dt <- as.data.table( x )
+dt[ , c("y1", "y2", "y3") := as.vector( mode = "double", NA ) ]
+
+
+# BREAKS
+tic <- proc.time()
+decomp <- rwaveform::decom.waveforms(
+  sub_arrays,
+  decon,
+  smooth=T,
+  thres=0.,
+  window=3)
+toc <- proc.time()
+print(toc-tic)
 
 ##########################################
 # process waveforms for one flightpath
@@ -172,6 +217,7 @@ tic <- proc.time()
 test1 <- rwaveform::process_wf(flightpaths[42])
 toc <- proc.time()
 print(toc-tic)
+
 ##########################################
 # process waveforms at all plot locations
 ##########################################
