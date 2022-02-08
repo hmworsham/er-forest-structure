@@ -77,9 +77,9 @@ names(intersects) <- str_replace(names(intersects), '\\.', '-')
 isforest <- which(forest$pct_forest > 0.08)
 flightpaths <- flightpaths[isforest]
 
-################################
+##########################################
 # Ingest binary files for one flightpath
-################################
+###########################################
 
 # Define area of interest by plot ID
 aoi <- 'CC-UC1'
@@ -88,140 +88,49 @@ aoi <- 'CC-UC1'
 itx_true <- intersects[intersects[aoi] == T,1]
 #aoi_fps <- file.path(datadir, itx_true)
 aoi_fps <- flightpaths
-wf_arrays = rwaveform::ingest(aoi_fps[42])
+
+#wf_arrays <- rwaveform::ingest(aoi_fps[648])
 
 # clip waveform to one plot extent
 #aoiext = rwaveform::aoiextent(aoi, shapedir)
 #xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=20)
 
-# Subset to a manageable set of waveforms for testing
-out <- wf_arrays$out
-re <- wf_arrays$re
-geol <- wf_arrays$geol
-outir <- wf_arrays$outir
-sysir <- wf_arrays$sysir
+did <- list.files('/global/scratch/users/worsham/geolocated_returns')
+did = unlist(strsplit(did, '_returnpoints.csv', 1))
+fps = list.files(datadir)
+fps = fps[isforest]
+did = did[!did %in% setdiff(did,fps)] 
+length(fps[!fps %in% did])
 
-out_sub <- out[100000:100100]
-re_sub <- re[100000:100100]
-geol_sub <- geol[100000:100100]
-sub_arrays = list('out'=out_sub, 're'=re_sub, 'geol'=geol_sub)
-
-################################
-# deconvolve waveforms
-################################
-tic <- proc.time()
-decon <- rwaveform::deconv.apply(
-  wf_arrays, 
-  sub_arrays, 
-  method='Gold', 
-  rescale=F,
-  small_paras = list(c(30,2,1.2,30,2,2)),
-  large_paras = list(c(40,4,1.8,30,2,2)))
-toc <- proc.time()
-print(toc-tic)
-
-# Check for NaNs and extreme values
-#decon <- subset(decon, select = -index)
-nanrows = which(rowSums(is.na(decon))>0)
-bigrows = which(rowSums(decon[,2:501])>10^5)
-print(nanrows)
-print(bigrows)
-
-# Clean NaNs and extreme values
-if(length(nanrows) | length(bigrows)) {
-  decon <- deconv.clean(decon)
-}
-
-# Restore original index values
-#newindex <- re_sub[-nanrows]$index
-#decon$index <- re_sub$index
-#setindex(decon, index)
-
-# Find npeaks
-decon <- data.table(t(apply(decon, 1, peakfix)))
-np <- apply(decon, 1, npeaks, smooth=F, threshold=0)
-
-# Store indices of returns with potentially unreasonable number of peaks or 0 peaks
-unreasonable <- decon[np>12]$index
-nopeaks <- which(np==0)
-
-# Filter out 0 and unreasonable peak vectors
-if (length(nopeaks)| length(unreasonable)){
-  decon <- decon[-nopeaks,]
-  #decon <- decon[-unreasonable,]
-}
-
-################################
-# Decompose waveforms
-################################
-
-# Remove the index columns -- we'll replace them later
-decon = subset(decon, select = -index)
-geol = subset(geol, select = -index)
-
-## Convert the arrays to lists for batch deconvolution
-decon2 = lapply(as.list(as.data.frame(t(decon))), as.numeric)
-#geol2 = lapply(as.list(as.data.frame(t(geol))), as.numeric)
-
-# Run adaptive decomposition algorithm on clipped returns
-# Use error handling to identify erroneous or un-decomposable returns
-safe_decomp = function(x){
-  tryCatch(decom.adaptive(x, smooth = T, peakfix=T, thres = 0.2, width = 3), 
-           error = function(e){NA})}
-
-
-# Apply safe decomposition to the set
-# DOESN'T WORK
-decomp = pbmcmapply(
-  safe_decomp,
-  decon2,
-  mc.cores=getOption("mc.cores", ceiling(detectCores()/2))
-)
-
-# WORKS BUT ON ONE CORE
-decomp = mapply(
-  safe_decomp,
-  decon
-)
-
-decomp
-
-# WORKS BUT ON ONE CORE
-decomp = apply(
-  decon,
-  1,
-  safe_decomp
-)
-
-x <- rnorm(1e4, mean = 12, sd = 5)
-dt <- as.data.table( x )
-dt[ , c("y1", "y2", "y3") := as.vector( mode = "double", NA ) ]
-
-
-# BREAKS
-tic <- proc.time()
-decomp <- rwaveform::decom.waveforms(
-  sub_arrays,
-  decon,
-  smooth=T,
-  thres=0.,
-  window=3)
-toc <- proc.time()
-print(toc-tic)
+flightpaths = fps[!fps %in% did]
+flightpaths = paste0(datadir, '/',flightpaths)
+length(flightpaths)
 
 ##########################################
 # process waveforms for one flightpath
 ##########################################
 
 tic <- proc.time()
-test1 <- rwaveform::process_wf(flightpaths[42])
+test1 <- rwaveform::process_wf(flightpaths[648])
 toc <- proc.time()
 print(toc-tic)
 
 ##########################################
-# process waveforms at all plot locations
+# process waveforms at forested flightpaths
 ##########################################
 
+tryCatch(mclapply(flightpaths[3:40], rwaveform::process_wf, mc.cores=getOption('mc.cores', 3L)), 
+         error = function(cond) {
+           message(paste('Processing failed'))
+         })
+
+# for(fp in flightpaths[301:600]){
+#   rwaveform::process_wf(fp)
+# }
+
+##########################################
+# process waveforms at all plot locations
+##########################################
 
 aois <- names(intersects)[-c(1,3,4,9,10)] # subset plots within AOP acquisition area
 
