@@ -56,15 +56,18 @@ datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
 shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
 #shapedir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
 
+# Name output directory
+outdir <- '/global/scratch/users/worsham/geolocated_returns'
+
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
 
 # Get forest intersections
-forestcsv <- '~/flightpath_forest_intersections.csv'
+forestcsv <- '~/Output/flightpath_forest_intersections.csv'
 forest <- read.csv(forestcsv)
 
 # Get plot/LiDAR intersections
-intersectscsv <- '~/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
+intersectscsv <- '~/Output/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
 #intersectcsv <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/EastRiver_Plot_LiDAR_Intersections.csv'
 
 intersects <- read.csv(intersectscsv)
@@ -89,7 +92,7 @@ itx_true <- intersects[intersects[aoi] == T,1]
 #aoi_fps <- file.path(datadir, itx_true)
 aoi_fps <- flightpaths
 
-#wf_arrays <- rwaveform::ingest(aoi_fps[648])
+wf_arrays <- rwaveform::ingest(aoi_fps[2])
 
 # clip waveform to one plot extent
 #aoiext = rwaveform::aoiextent(aoi, shapedir)
@@ -111,7 +114,7 @@ length(flightpaths)
 ##########################################
 
 tic <- proc.time()
-test1 <- rwaveform::process_wf(flightpaths[648])
+test1 <- rwaveform::process_wf(flightpaths[648], outdir)
 toc <- proc.time()
 print(toc-tic)
 
@@ -119,14 +122,7 @@ print(toc-tic)
 # process waveforms at forested flightpaths
 ##########################################
 
-tryCatch(mclapply(flightpaths[3:40], rwaveform::process_wf, mc.cores=getOption('mc.cores', 3L)), 
-         error = function(cond) {
-           message(paste('Processing failed'))
-         })
-
-# for(fp in flightpaths[301:600]){
-#   rwaveform::process_wf(fp)
-# }
+mclapply(flightpaths[3:40], rwaveform::process_wf, outdir, mc.cores=getOption('mc.cores', 3L))
 
 ##########################################
 # process waveforms at all plot locations

@@ -66,7 +66,7 @@ returns <- density.raster[[2]]
 returns <- reclassify(returns, cbind(-Inf, 0, 1), right=T)
 
 dr <- peaks/returns/5
-dr <- reclassify(dr, cbind(-Inf, 1, NA), right=T)
+dr <- reclassify(dr, cbind(-Inf, 25, NA), right=T)
 
 res(dr)
 extent(dr)
@@ -74,11 +74,12 @@ extent(dr)
 library(sf)
 bnd <- st_read('/global/scratch/users/worsham/RMBL_2020_EastRiver_SDP_Boundary/RMBL_2020_EastRiver_SDP_Boundary/SDP_Boundary.shp')
 
+dr <- mask(dr, bnd)
+par(mar = c(5, 4, 4, 2) + 0.1)
+plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T)
+plot(dr, col=topo.colors(20), add=T)
 
-plot(dr, col=topo.colors(20))
-plot(bnd, add=T)
-ggplot()+
-  geom_raster(data=density.raster, aes(x=x, y=y, fill = layer))
+
 
 
 spplot(rs2)
