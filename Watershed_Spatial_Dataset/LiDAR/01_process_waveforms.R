@@ -77,7 +77,7 @@ names(intersects) <- str_replace(names(intersects), '\\.', '-')
 # Subset flighpaths intersecting forest
 ################################
 
-isforest <- which(forest$pct_forest > 0.08)
+isforest <- which(forest$pct_forest > 0.05)
 flightpaths <- flightpaths[isforest]
 
 ##########################################
