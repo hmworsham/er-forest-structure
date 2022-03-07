@@ -1,0 +1,276 @@
+
+R version 4.0.3 (2020-10-10) -- "Bunny-Wunnies Freak Out"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> # Process NEON waveform LiDAR
+> # Author: Marshall Worsham | worsham@berkeley.edu
+> # Created: 03-26-21
+> # Revised: 03-02-22
+> 
+> ########################
+> # Front matter
+> ########################
+> 
+> # Install non-CRAN libraries
+> #Sys.setenv(GDAL_DATA = '/global/home/groups/consultsw/sl-7.x86_64/modules/gdal/2.2.3/share/gdal/')
+> #libproj::libproj_install_proj_data()
+> #usethis::edit_r_profile() 
+> #install.packages('libproj', repos = "https://paleolimbot.r-universe.dev")
+> #devtools::install_github("jrminter/rPeaks") # rPeaks for deconv/decomp
+> #devtools::install_github('tankwin08/waveformlidar') # waveformlidar for general processing
+> #devtools::install_github('lwasser/neon-aop-package/neonAOP') #neonAOP for reading binary data
+> 
+> # Install and load typical libraries
+> pkgs <- c('dplyr',
++           'tidyverse',
++           'ggplot2',
++           'raster',
++           'data.table',
++           'devtools',
++           'plotly',
++           'rPeaks',
++           'rgdal',
++           'caTools',
++           'sf', 
++           'parallel',
++           'itcSegment',
++           'rlist',
++           'plot3D') # Name the packages you want to use here
+> 
+> # Function to install new packages if they're not already installed
+> load.pkgs <- function(pkg){
++   new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
++   if (length(new.pkg))
++     install.packages(new.pkg, dependencies = TRUE)
++   sapply(pkg, require, character.only = TRUE)
++ } 
+> # Runs the function on the list of packages defined in pkgs
+> load.pkgs(pkgs)
+Loading required package: dplyr
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+Loading required package: tidyverse
+-- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+v ggplot2 3.3.5     v purrr   0.3.4
+v tibble  3.1.6     v stringr 1.4.0
+v tidyr   1.2.0     v forcats 0.5.1
+v readr   1.4.0     
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()
+Loading required package: raster
+Loading required package: sp
+
+Attaching package: 'raster'
+
+The following object is masked from 'package:tidyr':
+
+    extract
+
+The following object is masked from 'package:dplyr':
+
+    select
+
+Loading required package: data.table
+
+Attaching package: 'data.table'
+
+The following object is masked from 'package:raster':
+
+    shift
+
+The following object is masked from 'package:purrr':
+
+    transpose
+
+The following objects are masked from 'package:dplyr':
+
+    between, first, last
+
+Loading required package: devtools
+Loading required package: usethis
+Loading required package: plotly
+
+Attaching package: 'plotly'
+
+The following object is masked from 'package:raster':
+
+    select
+
+The following object is masked from 'package:ggplot2':
+
+    last_plot
+
+The following object is masked from 'package:stats':
+
+    filter
+
+The following object is masked from 'package:graphics':
+
+    layout
+
+Loading required package: rPeaks
+Loading required package: rgdal
+rgdal: version: 1.5-23, (SVN revision 1121)
+Geospatial Data Abstraction Library extensions to R successfully loaded
+Loaded GDAL runtime: GDAL 2.2.3, released 2017/11/20
+Path to GDAL shared files: 
+GDAL binary built with GEOS: FALSE 
+Loaded PROJ runtime: Rel. 4.9.3, 15 August 2016, [PJ_VERSION: 493]
+Path to PROJ shared files: (autodetected)
+Linking to sp version:1.4-5
+Loading required package: caTools
+Loading required package: sf
+Linking to GEOS 3.6.2, GDAL 2.2.3, PROJ 4.9.3
+Loading required package: parallel
+Loading required package: itcSegment
+Loading required package: maptools
+Checking rgeos availability: TRUE
+Loading required package: rgeos
+rgeos version: 0.5-8, (SVN revision 679)
+ GEOS runtime version: 3.6.2-CAPI-1.10.2 
+ Please note that rgeos will be retired by the end of 2023,
+plan transition to sf functions using GEOS at your earliest convenience.
+ Linking to sp version: 1.4-5 
+ Polygon checking: TRUE 
+
+Loading required package: rlist
+Loading required package: plot3D
+     dplyr  tidyverse    ggplot2     raster data.table   devtools     plotly 
+      TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE 
+    rPeaks      rgdal    caTools         sf   parallel itcSegment      rlist 
+      TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE 
+    plot3D 
+      TRUE 
+Warning message:
+no DISPLAY variable so Tk is not available 
+> load_all('~/Repos/rwaveform')
+i Loading rwaveform
+> 
+> ################################
+> # Setup workspace
+> ################################
+> 
+> # Name data directory
+> datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
+> 
+> # Name directory where inventory plot shapefiles live
+> shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+> 
+> # Name output directory
+> outdir <- '/global/scratch/users/worsham/geolocated_returns_plots'
+> 
+> # Name logfile
+> logpath = '/global/scratch/users/worsham/logs/processwf_plots_log.txt'
+> 
+> # Name flightpaths as filenames
+> flightpaths <- list.files(datadir, full.names = T)
+> 
+> # Get forest intersections
+> forestcsv <- '~/Output/flightpath_forest_intersections.csv'
+> forest <- read.csv(forestcsv)
+> 
+> # Get plot/LiDAR intersections
+> intersectscsv <- '~/Output/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
+> 
+> intersects <- read.csv(intersectscsv)
+> names(intersects) <- str_replace(names(intersects), '\\.', '-')
+> 
+> ################################
+> # Subset flighpaths intersecting forest
+> ################################
+> 
+> # isforest <- which(forest$pct_forest > 0.05)
+> # flightpaths <- flightpaths[isforest]
+> 
+> ##########################################
+> # Ingest binary files for one flightpath
+> ###########################################
+> 
+> # # Define area of interest by plot ID
+> # aoi <- 'CC-EMN1'
+> # 
+> # # Select flightpaths that intersect the aoi
+> # itx_true <- intersects[intersects[aoi] == T,1]
+> # aoi_fps <- file.path(datadir, itx_true)
+> # aoi_fps <- flightpaths
+> # aoi_fps
+> # wf_arrays <- rwaveform::ingest(aoi_fps[2])
+> 
+> # clip waveform to one plot extent
+> # aoiext = rwaveform::aoiextent(aoi, shapedir)
+> # xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=3)
+> 
+> ##########################################
+> # process waveforms for one flightpath
+> ##########################################
+> 
+> # tic <- proc.time()
+> # test1 <- rwaveform::process_wf(flightpaths[648], outdir)
+> # toc <- proc.time()
+> # print(toc-tic)
+> 
+> ##########################################
+> # process waveforms at all plot locations
+> ##########################################
+> # 
+> # aop.plots <- c(
+> #   'CC-CVN1', 
+> #   'CC-CVN2', 
+> #   'CC-CVS1',
+> #   'CC-EMN1',
+> #   'CC-UC1',
+> #   'CC-UC2',
+> #   'ER-APL1',
+> #   'ER-APU1',
+> #   'ER-BME1', 
+> #   'ER-BME2', 
+> #   'ER-GT1',
+> #   'SG-NES1',
+> #   'SG-NES2',
+> #   'SG-NES3',
+> #   'SG-SWR1',
+> #   'SR-PVG1',
+> #   'WG-WGM1'
+> # )
+> # 
+> # processatplots <- function(plt, itx, datadir, shapedir){
+> #   
+> #   # Get flighpaths intersecting plot
+> #   itx_true = itx[itx[plt]==T,1]
+> #   aoi_flps = file.path(datadir, itx_true)
+> #   
+> #   # Process and write csv
+> #   lapply(aoi_flps, process_wf_clip, plt, datadir, shapedir, buff=3, logpath, outdir)
+> # }
+> 
+> # for(i in aop.plots){
+> #   processatplots(i, intersects, datadir, shapedir)  
+> # }
+> 
+> processatplots('CC-EMN1', intersects, datadir, shapedir)
+Error in processatplots("CC-EMN1", intersects, datadir, shapedir) : 
+  could not find function "processatplots"
+Execution halted

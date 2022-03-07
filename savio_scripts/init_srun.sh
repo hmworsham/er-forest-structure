@@ -1,2 +1,2 @@
 #!/bin/bash
-srun --job-name batchdcdc -A fc_lmklab -p savio3_bigmem --nodes=3 -t 08:00:00 --ntasks-per-node=32 --pty /bin/bash
+srun --job-name wfatplots -A fc_lmklab -p savio2 --nodes=1 -t 08:00:00 --ntasks-per-node=24 --pty /bin/bash

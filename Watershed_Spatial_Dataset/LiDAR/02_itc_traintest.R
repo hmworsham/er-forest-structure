@@ -20,7 +20,6 @@ pkgs <- c('dplyr',
           'devtools',
           'plotly',
           'rPeaks',
-          'waveformlidar',
           'rgdal',
           'caTools',
           'sf', 
@@ -42,27 +41,41 @@ load.pkgs <- function(pkg){
 load.pkgs(pkgs)
 
 # Name directories
-datadir <- '~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/waveform_points'
-fidir <- '~/Desktop/RMBL/Projects/Forest_Inventory_Dataset/Output/'
-wsdir <- '~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Source/'
-shapedir <- '~/Google Drive (worsham@berkeley.edu)/Research/RMBL/RMBL_East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N/Polygons'
+datadir <- '/global/scratch/users/worsham/geolocated_returns_plots'
+shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
+outdir <- '/global/scratch/users/worsham/trees'
+fidir <- '/global/scratch/users/worsham/EastRiver/Inventory_Plots'
+gpsdir <- '/global/scratch/users/worsham/EastRiver/StemGeolocations'
 
 #########################################
 # Ingest points from waveform processing
 ########################################
 
-ptcsv <- list.files(datadir, full.names = F)
-ptclouds <- lapply(ptcsv, read.csv, header = T)
-aois <- sapply(strsplit(ptcsv, '\\.'), '[', 1)
+ptcsv <- list.files(datadir, full.names = T)
+xx <- read.csv(ptcsv[1], header=T)
+
+aois <- list.files(datadir, full.names = F)
+aois <- unique(sapply(strsplit(aois, '_2018'), '[', 1))
 aois
 ##########################################
 # ITC segmentation
 ##########################################
+saferead <- function(x){
+  tryCatch(read.csv(x, header=T), 
+           error = function(cond) {
+             message(paste('Reading csv failed'))
+           })
+}
+aoi = 'ER-GT1'
+
 pts2las <- function(aoi){
   
   # Get point cloud for aoi
   pc_csv = list.files(datadir, pattern = aoi, full.names = T)
-  pc = read.csv(pc_csv, header = T)
+  pc <- mclapply(pc_csv, saferead, mc.cores=getOption('mc.cores', 16))
+  pc <- do.call(rbind.fill, pc)
+  pc <- pc[order(pc$px, pc$py),]
+  
   
   # Filter outliers and NAs
   #normInt = (abs(pc$pi - mean(pc$pi))/sd(pc$pi))
@@ -78,10 +91,11 @@ pts2las <- function(aoi){
   lasdata = data.frame(X = pc$px,
                        Y = pc$py,
                        Z = pc$pz,
-                       gpstime = 0,
+                       gpstime = 0.0,
                        Intensity = as.integer(pc$t),
-                       ReturnNumber = 1L,
-                       NumberOfReturns = 1L,
+                       ReturnNumber=1L,
+                       scale=1L,
+                       offset=0,
                        ScanDirectionFlag = 0L,
                        EdgeOfFlightline = 0L,
                        Classification = 0L,
@@ -89,6 +103,14 @@ pts2las <- function(aoi){
                        UserData = 0L,
                        PointSourceID = 0L)
   lasheader = header_create(lasdata)
+  header_set_epsg(lasheader, 32613)
+  lasheader$`X scale factor` = 0.1
+  lasheader$`Y scale factor` = 1
+  lasheader$`Z scale factor` = 1
+  lasheader$`X offset` = 0
+  lasheader$`Y offset` = 0
+  lasheader$`Z offset` = 0
+  
   lasfile = file.path(tempdir(), "temp.las")
   
   # write las file out
@@ -101,22 +123,22 @@ pts2las <- function(aoi){
   ws = seq(3, 9, 3)
   th = seq(0.1, 3, length.out = length(ws))
   gclas = classify_ground(newlas, algorithm = pmf(ws = ws, th = th))
-
+  
   ptdata = gclas@data
   #lidR::plot(gclas, size = 3, bg = "white") 
-  scatter3D(ptdata$X, ptdata$Y, ptdata$Z, colvar = ptdata$Z, clab = 'Elevation', pch = 20, ticktype='detailed')
+  #scatter3D(ptdata$X, ptdata$Y, ptdata$Z, colvar = ptdata$Z, clab = 'Elevation', pch = 20, ticktype='detailed')
   
   # Normalize heights to surface
   nlas = normalize_height(gclas, kriging())
-  nlasdata = nlas@data
-  scatter3D(nlasdata$X, nlasdata$Y, nlasdata$Z, colvar = nlasdata$Z, clab = 'Canopy Height', pch = 20, ticktype = 'detailed')
+  #nlasdata = nlas@data
+  #scatter3D(nlasdata$X, nlasdata$Y, nlasdata$Z, colvar = nlasdata$Z, clab = 'Canopy Height', pch = 20, ticktype = 'detailed')
   
   return(nlas)
 }
 
-#testlas <- pts2las('SG-NES2')
+testlas <- pts2las(aoi)
 
-itcdelineate <- function(nlas, aoi, algo='li2012'){
+itcdelineate <- function(nlas, aoi){
   
   # Get plot boundary for aoi
   plotpath = list.files(shapedir, 
@@ -125,68 +147,92 @@ itcdelineate <- function(nlas, aoi, algo='li2012'){
   plotsf = readOGR(plotpath, verbose = F)
   geoextent = as.list(extent(plotsf))
   
-  # Run itcSegment delineation algorithm
-  if(algo == 'dalponte2016'){
-    chm = grid_canopy(nlas, 0.5, pitfree(subcircle = 0.4))
-    f = function(x) {
-      y <- 2.2 * (-(exp(-0.08*(x-2)) - 1)) + 3
-      y[x < 2] <- 3
-      y[x > 20] <- 7
-      return(y)
-    }
-    ft = find_trees(nlas, lmf(f))
-    alg = dalponte2016(chm,
-                       ft, 
-                       th_tree = 1.5, 
-                       th_seed = 0.01, 
-                       th_cr = 0.05,
-                       max_cr = 12)
-    itc = segment_trees(nlas, alg)
-    plot(itc, bg = "white", size = 4, color = "treeID") # visualize trees
-    crowns = delineate_crowns(itc)
+  # Run locate_trees
+  f = function(x) {
+    y <- 2.2 * (-(exp(-0.08*(x-2)) - 1)) + 3
+    y[x < 2] <- 3
+    y[x > 20] <- 7
+    return(y)
   }
+  ft = locate_trees(nlas, lmf(f))
+  #st_crs(ft) <- '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs' 
+  #plot(itc, bg = "white", size = 4, color = "treeID") # visualize trees
+  #crowns = delineate_crowns(itc, 'convex')
   
-  if(algo == 'li2012'){
-    alg = li2012(dt1 = 0.8, 
-                 dt2 = 2, 
-                 R = 1, 
-                 Zu = 12, 
-                 hmin = 1, 
-                 speed_up = 6.5)
-    itc = segment_trees(nlas, alg) # segment point cloud
-    plot(itc, bg = "white", size = 4, color = "treeID") # visualize trees
-    crowns = delineate_crowns(itc, 'convex')
-  }
-  
-  #   
-  # itc = itcLiDAR(X = ld$X, 
-  #                Y = ld$Y, 
-  #                Z = ld$Z, 
-  #                epsg=26913, 
-  #                resolution = 0.3, 
-  #                MinSearchFilSize = 3,
-  #                MaxSearchFilSize = 5, 
-  #                TRESHSeed = 0.6,
-  #                TRESHCrown = 0.85,
-  #                minDIST = 1.1,
-  #                maxDIST = 9,
-  #                HeightThreshold = 1.5,
-  #                cw = 1)
-  # 
-  
-  clipitc = raster::crop(crowns, plotsf)
-  plot(clipitc)
-  destdir = '~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/itc'
+  #ft=mask(ft, plotsf)
+  #plot(clipitc)
+  #destdir = '~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/itc'
   #writeOGR(obj=clipitc, dsn=destdir, layer=paste0(aoi, '_itc'), driver="ESRI Shapefile")
   
-  return(clipitc)
+  return(ft)
 }
+
+sgtrees <- itcdelineate(testlas, aoi)
+
+matchtrees <- function(predictrees, aoi) {
+  
+  # Get plot boundary for aoi
+  plotpath = list.files(shapedir, 
+                        pattern = glob2rx(paste0(aoi,"*shp")),
+                        full.names = T)
+  plotsf = readOGR(plotpath, verbose = F)
+  geoextent = as.list(extent(plotsf))
+  
+  
+  invfiles = list.files(fidir, pattern = paste0(aoi,'_inventory_data_202'), recursive=T, full.names = T)
+  inv = read_excel(invfiles[1], sheet='inventory_data')
+  df = data.frame('Z'=as.numeric(inv$Height_Avg_M), 'X'=as.numeric(inv$Longitude), 'Y'=as.numeric(inv$Latitude))
+  df = na.omit(df)
+  
+  st_crs(predictrees) <- '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs' 
+  y = st_as_sf(df, coords = c('X', 'Y'), crs = '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+  y = st_transform(y, '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+  
+  plot(plotsf, axes=T)
+  plot(st_geometry(y), pch='+', col='lightblue4', add=T)
+  plot(st_geometry(predictrees), pch='+', add=TRUE, col='firebrick2')
+  nn = st_nn(predictrees, y, k=1, returnDist=T)
+  legend(legend=c('Field trees', 'Modeled trees'), col=c('lightblue4', 'firebrick2'), pch='+')
+  
+  dists = unlist(nn$dist)
+  nns = unlist(nn$nn)
+  delta.ht = c()
+  delta.dist = c()
+  misses = c()
+  for(el in seq(length(dists))){
+    if(dists[el]<=2){
+      dh = df$Z[nns[el]] - predictrees$Z[el]
+      delta.ht <- c(delta.ht, dh)
+      delta.dist <- c(delta.dist, dists[el])
+    } else {
+      misses = c(misses, el)
+    }
+  }
+  loss = sqrt(sum(delta.ht^2, delta.dist^2))*(1-length(misses)/length(dists))
+  return(loss)
+}
+
+xx <- matchtrees(sgtrees, aoi)
+xx
+
+delta.dist = unlist(xx$nn)
+nn = unlist(xx$nn)
+nn
+delta.ht = c()
+for(el in length(xx)){
+  if(xx[el]<=2){
+    dh = nn[el]
+    delta.ht[el] = dh
+  } else {
+
 
 itcfun <- function(aoi){
   olas = pts2las(aoi)
-  oitc = itcdelineate(olas, aoi)
+  oft = itcdelineate(olas, aoi)
   return(oitc)
 }
+
+itcfun('CC-CVN2')
 
 itcout <- lapply(aois, itcfun)
 itctest <- itcdelineate(testlas, 'ER-APL1', 'li2012')
@@ -235,7 +281,17 @@ itc_data$Height_m <- itc_data$ZTOP
 # Import full clean inventory data
 ##########################################################################
 # Import full clean inventory data
-invdata <- read.csv(paste0(fidir, 'EastRiver_Full_Inventory_Dataset.csv'))
+invdata <- read.csv(paste0(fidir, 'Inventory_Plots_Data_2018-2020_Collated', 'EastRiver_AllPlots_Inventory_Data_2018-2020_Collated.csv'))
+
+# Import invdata from new sites
+getxl <- function(plt) {
+  
+  invfile = list.files(fidir, pattern = paste0(plt,'_inventory_data', recursive=T, full.names = T)
+  pltinv <- readxl(invfile, sheet='inventory_data', header=T)
+  rbind(invdata, pltinv)
+}
+cvn1.inv <- read.xl()
+
 
 ##########################################################################
 # Import site information
