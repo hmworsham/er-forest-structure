@@ -57,7 +57,7 @@ def envi_chunk(fp, indir, outdir):
         ss = img.sample_size
 
         beg = np.int(0)
-        sub = np.int(1e6)
+        sub = np.int(1e5)
         n = np.int(1)
         print(f + ' loaded')
 
@@ -65,7 +65,7 @@ def envi_chunk(fp, indir, outdir):
             subset = img[beg:sub, :]
             #print(f'{n}: {len(subset)} lines')
             beg = sub
-            sub = np.int(sub + 1e6)
+            sub = np.int(sub + 1e5)
 
             subsetname = '-' + str.zfill(f'{n}', 3)
             fpsub = f.split('_waveform')[0] + \
@@ -84,7 +84,7 @@ def envi_chunk(fp, indir, outdir):
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype=dt,
+            envi.save_image(outpath, subset, force=True, dtype=dt,
                             ext='', sample_size=ss, interleave=il, 
 byte_order=bo)
 
@@ -108,7 +108,7 @@ byte_order=bo)
 
             n = n+1
 
-            envi.save_image(outpath, subset, dtype=dt,
+            envi.save_image(outpath, subset, dtype=dt, force=True,
                             ext='', interleave=il, byte_order=bo)
 
 # Function to copy impulse response files from original directory to new directory

@@ -71,5 +71,5 @@ flightpaths <- flightpaths[isforest]
 # Process waveforms at forested flightpaths on multiple cores
 ###############################################################
 
-lapply(flightpaths[5:100], rwaveform::process_wf, logpath, outdir)
+lapply(flightpaths[1001:2000], rwaveform::process_wf, logpath, outdir)
 #process_wf(flightpaths[1], logpath, outdir)

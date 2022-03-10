@@ -1,14 +1,17 @@
-# R Script to find 2018 NEON LiDAR flightpaths that intersect Kueppers 2020 forest inventory plots
+# R Script to find 2018 NEON LiDAR flightpaths that intersect forest
 
 # Install and load libraries
-pkgs <- c('dplyr',
-          'tidyverse',
-          'ggplot2',
-          'rgdal',
-          'raster',
-          'rgeos',
-          'caTools',
-          'sf') # Name the packages you want to use here
+pkgs <- c(
+  'caTools',
+  'dplyr',
+  'ggplot2',
+  'parallel',
+  'pbmcapply',
+  'raster',
+  'rgdal',
+  'rgeos',
+  'sf',
+  'tidyverse') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
 load.pkgs <- function(pkg){
@@ -20,63 +23,72 @@ load.pkgs <- function(pkg){
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
 
-###################
-# Ingest plots 
-###################
-
-# Name directory where shapefiles live
-allplotsdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/AllPlots'
-sfdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N/Polygons'
-tifdir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/Working_Files/Watershed_Spatial_Dataset/Output/'
-
-# Read in the shapefile containing all plots
-allplots_path = list.files(allplotsdir, 
-                           pattern = glob2rx(paste0('*AllPlots*',"*shp")),
-                           full.names = T)
-allplots <- st_read(allplots_path, quiet=T)
-
-######################################
-# Find flightpaths that contain plots
-######################################
+##############################################
+# Find flightpaths that intersect with forest
+##############################################
 
 # Name data directory
-datadir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/LiDAR/'
-#datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
+datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
+tifdir <- '/global/scratch/users/worsham'
 
-extents <- read.csv(paste0(datadir, 'flightpath_chunk_extents.csv'), header=T)
+# Ingest flightpath chunk extents
+extents <- read.csv(file.path('~','Output', 'flightpath_chunk_extents.csv'), header=F)
+names(extents) <- c('xmin', 'xmax', 'ymin', 'ymax')
+extents$index <- seq(nrow(extents))
 dim(extents)
+head(extents)
+
+# Ingest forest/nonforest binary tif
+forest <- raster(file.path(tifdir, 'aop_forest.tif'))
+plot(forest)
+
+# Define function to turn flightpath chunk extent coordinates into sp boxes
 makeboxes <- function(x) {
   ext = bbox2SP(x[4], x[3], x[2], x[1],
                 proj4string = CRS('+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'))
+  ext$id = x[5]
   return(ext)
 }
 
+# Make boxes for all chunk extents
 boxes <- apply(extents, 1, makeboxes)
-testbox <- boxes[[1]]
 
-forest <- raster(paste0(tifdir, 'aop_forest.tif'))
-plot(forest)
-for (b in nonfor) plot(boxes[[b]], add=T)
-
-
+# Define function to get n forested pixels and flightpath size in pixels
 extractfun <- function(shf, ras) {
-  sz = nrow(extract(ras, shf, na.rm=T, df=T))
-  val = extract(ras, shf, fun=sum, na.rm=T)
-  return(list(val, sz))
+  sz = nrow(raster::extract(ras, shf, na.rm=T, df=T))
+  val = raster::extract(ras, shf, fun=sum, na.rm=T)
+  id = shf$id
+  return(list(val, sz, id))
 }
 
-overlaps <- lapply(boxes, extractfun, forest)
+# Get n forested pixels per flightpath
+# Uses `pbmclapply` to parallelize and track progress
+overlaps <- pbmclapply(boxes, extractfun, forest, mc.cores=22L)
 
+# Calculate percent forest cover per flightpath
 pctforest <- list()
+indexes <- list()
 for (i in seq(1,length(overlaps))){
   pair = unlist(overlaps[i])
   pct = pair[1]/pair[2]
+  idx = pair[3]
   pctforest[i] = pct
+  indexes[i] = idx
   }
 
+pctf <- data.frame('index'=unlist(indexes), 'pctforest'=unlist(pctforest))
+
+# Define non-forested chunks as those with < 8% forest
 nonfor = which(unlist(pctforest)<0.08)
 length(nonfor)
 
-extents$pct_forest <- unlist(pctforest)
+# Add %forest to extents table
+#extents$pct_forest <- unlist(pctforest)
+extents = merge(extents, pctf, by='index')
+
+# Write results to csv
 extents <- data.frame(extents)
-write.csv(extents, '~/Desktop/flightpath_forest_intersections.csv')
+View(extents)
+write.csv(extents, '~/Output/flightpath_forest_intersections.csv')
+
+read.csv('~/Output/flightpath_forest_intersections.csv')

@@ -51,7 +51,7 @@ datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
 outdir <- '/global/scratch/users/worsham/geolocated_returns'
 
 # Name logpath
-logpath = '/global/scratch/users/worsham/logs/processwf_log.txt'
+logpath = '/global/scratch/users/worsham/logs/batchprocesswf_log.txt'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
@@ -70,6 +70,38 @@ flightpaths <- flightpaths[isforest]
 ###############################################################
 # Process waveforms at forested flightpaths on multiple cores
 ###############################################################
+# clearLoggers()
+# lapply(flightpaths[2:30], rwaveform::process_wf, logpath, outdir)
+# process_wf(flightpaths[1], logpath, outdir)
 
-lapply(flightpaths[5:100], rwaveform::process_wf, logpath, outdir)
-#process_wf(flightpaths[1], logpath, outdir)
+###############################################################
+# Process waveforms at forested flightpaths on multiple nodes
+###############################################################
+
+# workernodes <- system('srun hostname', intern = TRUE)
+# 
+# cl <- parallel::makeCluster(workernodes)
+# 
+# setDefaultCluster(cl)
+# registerDoParallel(cl)
+# 
+# # Load packages on node and set DT threads to 1
+# clusterEvalQ(cl = cl, {
+#   library(data.table)
+#   library(devtools)
+#   library(rPeaks)
+#   library(ParallelLogger)
+#   load_all('~/Repos/rwaveform')
+#   setDTthreads(1)
+# })
+# 
+# clusterExport(cl=cl, varlist=c('flightpaths', 'logpath', 'outdir'))
+# 
+# parLapply(
+#   cl=cl,
+#   X=flightpaths[5:100],
+#   fun=rwaveform::process_wf,
+#   logpath,
+#   outdir)
+
+lapply(flightpaths[100:400], rwaveform::process_wf, logpath, outdir)

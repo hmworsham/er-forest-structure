@@ -6,8 +6,12 @@
 # Script to split large binary files into chunks of 1M lines each for parallel processing
 
 import os
+import sys
 
 from ipyparallel import Client
+
+sys.path.append(str('/global/home/users/worsham/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/'))
+
 from waveform import chunk_waveforms as cw
 
 # Connect to ipyparallel
@@ -34,7 +38,7 @@ outdir = '/global/scratch/users/worsham/waveform_binary_chunks'
 def wrapper(i):
     import sys
     sys.path.append(
-        '/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/')
+        '/global/home/users/worsham/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/')
     from waveform import chunk_waveforms as cw
     idir = '/global/scratch/users/worsham/waveform_binary'
     odir = '/global/scratch/users/worsham/waveform_binary_chunks'

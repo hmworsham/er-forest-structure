@@ -4,3 +4,6 @@
 # VSCode stuff
 .vscode
 .python-version
+
+# Slurm stuff
+slurm*.out
