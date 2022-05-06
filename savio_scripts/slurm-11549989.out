@@ -1,2 +1,0 @@
-slurmstepd: error: *** JOB 11549989 ON n0153.savio2 CANCELLED AT 2022-02-28T17:15:42 ***
-slurmstepd: error: Detected 17 oom-kill event(s) in step 11549989.batch cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.

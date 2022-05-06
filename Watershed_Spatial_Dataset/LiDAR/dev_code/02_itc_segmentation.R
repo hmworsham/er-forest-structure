@@ -55,66 +55,10 @@ ptcsv <- list.files(datadir, full.names = F)
 ptclouds <- lapply(ptcsv, read.csv, header = T)
 aois <- sapply(strsplit(ptcsv, '\\.'), '[', 1)
 aois
+
 ##########################################
 # ITC segmentation
 ##########################################
-pts2las <- function(aoi){
-  
-  # Get point cloud for aoi
-  pc_csv = list.files(datadir, pattern = aoi, full.names = T)
-  pc = read.csv(pc_csv, header = T)
-  
-  # Filter outliers and NAs
-  #normInt = (abs(pc$pi - mean(pc$pi))/sd(pc$pi))
-  #normz = (abs(pc$pz - mean(pc$pz))/sd(pc$pz))
-  #pc = pc[which(normInt < 2),]
-  #pc = pc[which(normz < 2),]
-  pc = pc[which(pc$pi < quantile(pc$pi, 0.95)),]
-  pc = pc[which(pc$pz < quantile(pc$pz, 0.99)),]
-  pc = pc[which(pc$pz > quantile(pc$pz, 0.01)),]
-  pc = na.omit(pc)
-  
-  # Convert to las and classify ground points before normalizing
-  lasdata = data.frame(X = pc$px,
-                       Y = pc$py,
-                       Z = pc$pz,
-                       gpstime = 0,
-                       Intensity = as.integer(pc$t),
-                       ReturnNumber = 1L,
-                       NumberOfReturns = 1L,
-                       ScanDirectionFlag = 0L,
-                       EdgeOfFlightline = 0L,
-                       Classification = 0L,
-                       ScanAngleRank = 0L,
-                       UserData = 0L,
-                       PointSourceID = 0L)
-  lasheader = header_create(lasdata)
-  lasfile = file.path(tempdir(), "temp.las")
-  
-  # write las file out
-  write.las(lasfile, lasheader, lasdata)
-  
-  # read las file in
-  newlas = readLAS(lasfile)
-  
-  # Classify ground points to create a normalization surface
-  ws = seq(3, 9, 3)
-  th = seq(0.1, 3, length.out = length(ws))
-  gclas = classify_ground(newlas, algorithm = pmf(ws = ws, th = th))
-
-  ptdata = gclas@data
-  #lidR::plot(gclas, size = 3, bg = "white") 
-  scatter3D(ptdata$X, ptdata$Y, ptdata$Z, colvar = ptdata$Z, clab = 'Elevation', pch = 20, ticktype='detailed')
-  
-  # Normalize heights to surface
-  nlas = normalize_height(gclas, kriging())
-  nlasdata = nlas@data
-  scatter3D(nlasdata$X, nlasdata$Y, nlasdata$Z, colvar = nlasdata$Z, clab = 'Canopy Height', pch = 20, ticktype = 'detailed')
-  
-  return(nlas)
-}
-
-#testlas <- pts2las('SG-NES2')
 
 itcdelineate <- function(nlas, aoi, algo='li2012'){
   

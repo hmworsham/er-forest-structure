@@ -2,9 +2,9 @@
 
 # Rclone data from Savio Scratch to watched Drive directory
 
-scratch=/global/scratch/users/worsham/waveform_binary_chunks/
+scratch=/global/scratch/users/worsham/trees_100K/
 
-dest=er-drive:/EastRiver/waveform_lidar_chunks_1e5/
+dest=er-drive:/EastRiver/trees_100K/
 
 priority=15
 

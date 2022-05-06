@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/00_chunkwf.py", line 26, in <module>
-    cw.unzip_wf(p, outdir)
-  File "/global/home/users/worsham/eastriver/Watershed_Spatial_Dataset/LiDAR/waveform/chunk_waveforms.py", line 27, in unzip_wf
-    with py7zr.SevenZipFile(inzip, 'r') as z:
-  File "/global/home/users/worsham/.local/lib/python3.7/site-packages/py7zr/py7zr.py", line 323, in __init__
-    self.fp: BinaryIO = open(file, "rb")
-IsADirectoryError: [Errno 21] Is a directory: '/global/scratch/users/worsham/LiDAR/waveform_binary'

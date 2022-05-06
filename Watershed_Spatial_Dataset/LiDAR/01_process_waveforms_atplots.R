@@ -58,7 +58,7 @@ shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
 outdir <- '/global/scratch/users/worsham/geolocated_returns_plots'
 
 # Name logfile
-logpath = '/global/scratch/users/worsham/logs/processwf_plots_log.txt'
+logpath = '/global/scratch/users/worsham/logs/plots_pwf_log.txt'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
@@ -73,33 +73,8 @@ intersectscsv <- '~/Output/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
 intersects <- read.csv(intersectscsv)
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
 
-################################
-# Subset flighpaths intersecting forest
-################################
-
-# isforest <- which(forest$pct_forest > 0.05)
-# flightpaths <- flightpaths[isforest]
-
 ##########################################
-# Ingest binary files for one flightpath
-###########################################
-
-# # Define area of interest by plot ID
-# aoi <- 'CC-EMN1'
-# 
-# # Select flightpaths that intersect the aoi
-# itx_true <- intersects[intersects[aoi] == T,1]
-# aoi_fps <- file.path(datadir, itx_true)
-# aoi_fps <- flightpaths
-# aoi_fps
-# wf_arrays <- rwaveform::ingest(aoi_fps[2])
-
-# clip waveform to one plot extent
-# aoiext = rwaveform::aoiextent(aoi, shapedir)
-# xyz = rwaveform::clipwf(wf_arrays, aoiext, buff=3)
-
-##########################################
-# process waveforms for one flightpath
+# Process waveforms for one flightpath
 ##########################################
 
 # tic <- proc.time()
@@ -110,92 +85,95 @@ names(intersects) <- str_replace(names(intersects), '\\.', '-')
 ##########################################
 # process waveforms at all plot locations
 ##########################################
-# 
-# aop.plots <- c(
-#   'CC-CVN1', 
-#   'CC-CVN2', 
-#   'CC-CVS1',
-#   'CC-EMN1',
-#   'CC-UC1',
-#   'CC-UC2',
-#   'ER-APL1',
-#   'ER-APU1',
-#   'ER-BME1', 
-#   'ER-BME2', 
-#   'ER-GT1',
-#   'SG-NES1',
-#   'SG-NES2',
-#   'SG-NES3',
-#   'SG-SWR1',
-#   'SR-PVG1',
-#   'WG-WGM1'
-# )
-# 
+
+aop.plots <- c(
+  'CC-CVN1',
+  'CC-CVN2',
+  'CC-CVS1',
+  'CC-EMN1',
+  'CC-UC1',
+  'CC-UC2',
+  'ER-APL1',
+  'ER-APU1',
+  'ER-BME1',
+  'ER-BME2',
+  'ER-GT1',
+  'SG-NES1',
+  'SG-NES2',
+  'SG-NES3',
+  'SG-SWR1',
+  'SR-PVG1',
+  'WG-WGM1'
+)
+
 processatplots <- function(plt, itx, datadir, shapedir){
 
   # Get flighpaths intersecting plot
   itx_true = itx[itx[plt]==T,1]
-  aoi_flps = file.path(datadir, itx_true)
+  
+  # Find which have completed in outdir
+  did = lapply(strsplit(list.files(outdir), '_'), '[', c(2:6))
+  did = unlist(lapply(did, paste, collapse ='_'))
+  incomplete = itx_true[which(!intersects[intersects[plt]==T,1] %in% did)]
+  aoi_flps = file.path(datadir, incomplete)
 
   # Process and write csv
-  lapply(aoi_flps, process_wf_clip, plt, datadir, shapedir, buff=3, logpath, outdir)
+  lapply(aoi_flps, process.wf.clip, plt, datadir, shapedir, buff=2, logpath, outdir)
 }
 
-# for(i in aop.plots){
-#   processatplots(i, intersects, datadir, shapedir)  
+for(i in aop.plots){
+  processatplots(i, intersects, datadir, shapedir)
+}
+
+
+dc <- process.wf.clip(file.path(datadir,'2018_CRBU_1_2018061914_FL011-050'), 'ER-BME2', datadir, shapedir, buff=2, logpath, outdir)
+
+
+#############
+
+# 
+# 
+# flightpaths <- list.dirs(datadir, full.names = T)
+# fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
+# wf <- ingest(flightpaths[245])
+# 
+# re <- as.numeric(wf$re[500,])
+# out <- as.numeric(wf$out[500,])
+# geol <- as.numeric(wf$geol[500,])
+# sysir <- as.numeric(wf$sysir)
+# outir <- as.numeric(wf$outir)
+# 
+# decon <- deconvolution(re, out, sysir, outir, 'Gold', rescale=F, small_paras = c(30, 2, 1.8, 30, 2, 1.8),
+#                        large_paras = c(30, 3, 1.8, 40, 3, 1.8))
+# 
+# decom <- decom.adaptive(decon)
+# 
+# decom
+# xx <- as.data.frame(decom[[3]])
+# 
+# ayi<-xx[1:2,]
+# sumayi<-0
+# x <- 1:100
+# for (i in 1:nrow(ayi)){
+#   sumayi<-sumayi + ayi[i,2] * exp(-abs(x - ayi[i,3])**ayi[i,5]/(2 * ayi[i,4]**2))
 # }
-
-processatplots('CC-EMN1', intersects, datadir, shapedir)
-
-
-
-
-
-
-
-
-
-flightpaths <- list.dirs(datadir, full.names = T)
-fp <- flightpaths[grep('2018_CRBU_1_2018061314_FL013', flightpaths)]
-wf <- ingest(flightpaths[245])
-
-re <- as.numeric(wf$re[500,])
-out <- as.numeric(wf$out[500,])
-geol <- as.numeric(wf$geol[500,])
-sysir <- as.numeric(wf$sysir)
-outir <- as.numeric(wf$outir)
-
-decon <- deconvolution(re, out, sysir, outir, 'Gold', rescale=F, small_paras = c(30, 2, 1.8, 30, 2, 1.8),
-                       large_paras = c(30, 3, 1.8, 40, 3, 1.8))
-
-decom <- decom.adaptive(decon)
-
-decom
-xx <- as.data.frame(decom[[3]])
-
-ayi<-xx[1:2,]
-sumayi<-0
-x <- 1:100
-for (i in 1:nrow(ayi)){
-  sumayi<-sumayi + ayi[i,2] * exp(-abs(x - ayi[i,3])**ayi[i,5]/(2 * ayi[i,4]**2))
-}
-
-
-
-ayi<-decom[1:3,]
-sumayi<-0
-x<-1:wavelen(y1)
-for (i in 1:nrow(ayi)){
-  sumayi<-sumayi + ayi[i,2] * exp(-abs(x - ayi[i,3])**ayi[i,5]/(2 * ayi[i,4]**2))
-}
-plot(sumayi, type = 'l')
-
-
-plot(re[1:100], type='l', main = 'Waveform Intensity Estimation', ylim=c(0,1000), lty='dotted', xlab='Time (ns)', ylab='Amplitude')
-lines(decon[1:100], col='orange')
-lines(sumayi, col='firebrick2')
-legend(x='topright',legend=c('Raw waveform', 'Spectral deconvolution', 'Gaussian decomposition'), lty=c(3,1,1), col = c('black', 'orange', 'firebrick'), cex=0.8)
-
-?deconvolution
-geoindex <- c(1:9,16)
-colnames(geol)[geoindex] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')
+# 
+# 
+# 
+# ayi<-decom[1:3,]
+# sumayi<-0
+# x<-1:wavelen(y1)
+# for (i in 1:nrow(ayi)){
+#   sumayi<-sumayi + ayi[i,2] * exp(-abs(x - ayi[i,3])**ayi[i,5]/(2 * ayi[i,4]**2))
+# }
+# plot(sumayi, type = 'l')
+# 
+# 
+# plot(re[1:100], type='l', main = 'Waveform Intensity Estimation', ylim=c(0,1000), lty='dotted', xlab='Time (ns)', ylab='Amplitude')
+# lines(decon[1:100], col='orange')
+# lines(sumayi, col='firebrick2')
+# legend(x='topright',legend=c('Raw waveform', 'Spectral deconvolution', 'Gaussian decomposition'), lty=c(3,1,1), col = c('black', 'orange', 'firebrick'), cex=0.8)
+# 
+# ?deconvolution
+# geoindex <- c(1:9,16)
+# colnames(geol)[geoindex] <- c('index', 'orix', 'oriy', 'oriz', 'dx', 'dy', 'dz', 'outref', 'refbin', 'outpeak')

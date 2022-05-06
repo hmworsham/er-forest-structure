@@ -1,7 +1,7 @@
 # Process NEON waveform LiDAR
 # Author: Marshall Worsham | worsham@berkeley.edu
 # Created: 03-26-21
-# Revised: 02-23-22
+# Revised: 03-22-22
 
 ########################
 # Front matter
@@ -48,28 +48,63 @@ load_all('~/Repos/rwaveform')
 datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
 
 # Name output directory
-outdir <- '/global/scratch/users/worsham/geolocated_returns'
+outdir <- '/global/scratch/users/worsham/geolocated_returns_v2'
 
 # Name logpath
-logpath = '/global/scratch/users/worsham/logs/processwf_log.txt'
+logpath = '/global/scratch/users/worsham/logs/sbatch_pwf_log.txt'
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
 
-# Get plot/LiDAR intersections
-intersectscsv <- '~/Output/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
-intersects <- read.csv(intersectscsv)
-names(intersects) <- str_replace(names(intersects), '\\.', '-')
-
 # Subset flightpaths intersecting forest
-forestcsv <- '~/Output/flightpath_forest_intersections.csv'
-forest <- read.csv(forestcsv)
-isforest <- which(forest$pctforest > 0.10)
-flightpaths <- flightpaths[isforest]
+# forestcsv <- '~/Output/flightpath_forest_intersections.csv'
+# forest <- read.csv(forestcsv)
+# isforest <- which(forest$pctforest > 0.05)
+# flightpaths <- flightpaths[isforest]
+
+# Subset flightpaths not already completed
+did = str_replace(list.files(outdir), '_returnpoints.csv', '')
+did = file.path(datadir, did)
+flightpaths <- flightpaths[!flightpaths %in% did]
 
 ###############################################################
 # Process waveforms at forested flightpaths on multiple cores
 ###############################################################
 
-lapply(flightpaths[5:100], rwaveform::process_wf, logpath, outdir)
-#process_wf(flightpaths[1], logpath, outdir)
+main <- function(flightpaths, range, datadir, logpath, outdir){
+  
+  # Find which have completed in outdir
+  #did = str_replace(list.files(outdir), '_returnpoints.csv', '')
+  #did = file.path(datadir, did)
+  #lastdid = max(which(flightpaths[range] %in% did))
+  #todorange = (range[1]+lastdid):tail(range,1)
+  fps = flightpaths[range]
+  
+  # Timeout handling
+  # tl.process.wf <- function(fp, logpath, outdir) {
+  #   setTimeLimit(elapsed=300)
+  #   rwaveform::process.wf(fp, logpath, outdir)
+  # }
+  
+  # Process and write csv
+  for(f in fps){
+    process.wf(f, logpath, outdir)
+  }
+}
+
+main(flightpaths, 1:30, datadir, logpath, outdir)
+
+# Check completion
+# range = 5001:6000
+# did = str_replace(list.files(outdir), '_returnpoints.csv', '')
+# did = file.path(datadir, did)
+# notdid = which(!flightpaths[range] %in% did)
+# notdidabs = notdid+(range[1]-1)
+# notdidabs
+# length(notdidabs)
+# 
+# lastdid = max(which(flightpaths[range] %in% did))
+# todorange = (range[1]+lastdid):tail(range,1)
+# print(lastdid)
+# print(todorange)
+# fps = flightpaths[todorange]
