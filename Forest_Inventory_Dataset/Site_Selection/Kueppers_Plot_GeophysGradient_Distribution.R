@@ -10,43 +10,33 @@
 #############################
 
 ## Install and load libraries
-pkgs <- c('dplyr',
-          'tidyverse',
-          'ggplot2',
-          'data.table')
-
-# Name the packages you want to use here
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} # Function to install new packages if they're not already installed
+library(moose)
+pkgs <- c(
+  'data.table',
+  'dplyr',
+  'ggplot2',
+  'moose',
+  'tidyverse')
 load.pkgs(pkgs) # Runs the function on the list of packages defined in pkgs
 
 # Set working directory.
-setwd(file.path('~', 'Desktop', 'RMBL', 'Projects', fsep = '/'))
-fidir <- file.path(getwd(), 'Forest_Inventory_Dataset', 'Output', fsep = '/')
-wsdir <- file.path(getwd(), 'Watershed_Spatial_Dataset', 'Source', fsep = '/')
+erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', fsep='/')
+fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', fsep = '/')
+wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset', fsep = '/')
+rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
+sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data')
 
 #############################
 # Ingest source data
 #############################
 
 # Ingest 2020 Kueppers plot characteristics CSVs
-siteinfo20 <-  read.csv(file.path(fidir, 'Kueppers_EastRiver_Final_Sites_2020.csv'), header = T)
+tmpfile <- tempfile()
+tmpfile <- drive_download('Kueppers_EastRiver_Site_Index', tmpfile)$local_path
+siteinfo21 <- read_excel(tmpfile)
 
 # Ingest 2020-2021 Kueppers plot info
-siteinfo21 <- read.csv(file.path(fidir, 'EastRiver_ProposedSites_2021_25.csv'), header = T)
-
-# Refactor a couple of columns in siteinfo20 to row bind with 2021 data
-siteinfo20 <- rename(siteinfo20, Site_ID = SFA_ID)
-#siteinfo20$Established <- as.factor(siteinfo20$Established)
-siteinfo20$Established <- 'Established'
-
-# Specify whether site was fully or partially inventoried in 2020
-siteinfo20$Inventory <- 'Full Inventory'
-siteinfo20$Inventory[grepl('XX', siteinfo20$SFA_ID)] <- 'Partial Inventory'
+siteinfo22 <- read.csv(file.path(fidir, 'EastRiver_ProposedSites_2021_25.csv'), header = T)
 
 ###############################################
 # Batch create plots for individual variables
@@ -75,18 +65,20 @@ fullset[fullset$Site_ID %in% c('Snodgrass NE Slope 5',
                                'sr-pvg1',
                                'cc-cvs1'), 'Established'] <- 'Established'
 
-
+fullset <- siteinfo21
 # Select variables of interest from 2021 site info
-topos <- fullset[c('Site_ID',
+topos <- fullset[c('Location_ID',
                    'Established',
                    'Elevation_m',
                    'Slope',
                    'Aspect',
+                   'Heat_Load',
+                   '205-Folded_Aspect',
+                   '205-Southness',
                    'TWI',
-                   'TPI_45',
                    'TPI_1000',
                    'TPI_2000')]
-View(topos)
+topos <- as.data.frame(topos)
 
 # Specify which plots to exclude
 outs <- NA
@@ -170,10 +162,14 @@ printfigs <- function(df){
   #'''
   
   # Define colors
-  colors = c('grey10', 'grey30', 'firebrick', 'darkblue', 'steelblue', 'forest green', 'chocolate1')
+  set.seed=29
+  colors = sample(hmwcolors('crayons'), 10)
   varnames = c('Elevation [m]', 
                'Slope angle [º]', 
                'Aspect [º]', 
+               'Heat Load (MJ cm-2 y-1)',
+               'Aspect Folded about 205º SW-NE (º)',
+               'Southness Adjusted to 205ºSW-NE (º)',
                'Topographic Wetness Index',
                'TPI (45m window)',
                'TPI (1000m window)', 
@@ -187,14 +183,14 @@ printfigs <- function(df){
     print(df[,t+2])
     
     # Open the png quartz image
-    png(file.path('Forest_Inventory_Dataset', 
+    png(file.path(fidir, 
                   'Production_Images', 
                   paste0(names(topos[t+2]),'.png')), 
         width = 12, height = 9, units = 'in', res = 180)
     
     # Print the plot to png
       print(
-        ggplot(df, aes(x = reorder(Site_ID,  df[, t+2]), y = df[, t+2])) +
+        ggplot(df, aes(x = reorder(Location_ID,  df[, t+2]), y = df[, t+2])) +
           geom_point(aes(color = Established, size = 12)) +
           scale_color_manual(values = c(clr, 'grey 70')) +
           scale_y_continuous(name = varname) +
@@ -205,13 +201,13 @@ printfigs <- function(df){
           theme_light(base_size = 24) +
           theme(axis.text.x = element_text(angle = 90, hjust = 1),
                 legend.position="bottom", legend.title = element_blank()) +
-          guides(size = F)
+          guides(scale = 'none')
       )
     dev.off()  
   }
 }
 
-printfigs(topos_cut)
+printfigs(topos)
 nrow(topos_cut)
 topos_cut
 

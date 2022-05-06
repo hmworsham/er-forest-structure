@@ -30,10 +30,10 @@ thl <- function(L,A,S,unit='deg',fold=180) {
     # EQN 3, McCune and Keon 2002 JVS, latitude > 30‚ slope < 60°
     return(0.339+0.808*cos(L)*cos(S)-0.196*sin(L)*sin(S)-0.482*cos(A)*sin(S))
 }
-# L=37
-# A = 180
-# S = 20
-# A=0:360
-# plot(A,thl(L,A,S,fold=225))
-# points(A,thl(L,A,S,fold=225))
+L=37
+A = 180
+S = 20
+A=0:360
+plot(A,thl(L,A,S,fold=225))
+points(A,thl(L,A,S,fold=225))
 

@@ -7,6 +7,8 @@ library(sf)
 library(visreg)
 library(psych)
 library(raster)
+library(RColorBrewer)
+library(viridis)
 
 
 strdir <- '~/Desktop/tifs'
@@ -29,11 +31,12 @@ topo.factors <- c('Aspect',
                   'TWI'
 )
 
-density <- raster(file.path(strdir, 'stand_density_100mx.tif'))
-height <- raster(file.path(strdir, 'mean_height_100m.tif'))
-crs(density)
-values(density)
-plot(density)
+dnsty <- raster(file.path(strdir, 'stand_density_100mx.tif'))
+height <- raster(file.path(strdir, 'height_90pctl.tif'))
+diam <- raster(file.path(strdir, 'mean_diam_100m.tif'))
+crs(dnsty)
+values(dnsty)
+plot(dnsty)
 
 get.rasters <- function(x, dir){
   xpath = file.path(dir, x)
@@ -43,17 +46,18 @@ get.rasters <- function(x, dir){
 }
 
 topos <- flatten(lapply(topo.factors, get.rasters, rasdir))
-library(RColorBrewer)
+
 geol <- raster(file.path(geodir, 'NEW_GeolGrid_Final1.tif'))
+geol <- projectRaster(geol, crs=crs(aop))
 geolm <- mask(geol, aop)
-plot(aop$geometry, col='NA', border='white')
 
-plot(geolm, col=viridis(20))
+plot(aop$geometry, col='NA', border='black', add=T)
+plot(geolm, col=viridis(20), add=T)
 
-resist <- read.csv(file.path(scondir, 'AEM_Res_19m_Kriging.csv'))
-resist[resist==-999.9] <- NA
-sresist <- raster(xmn=min(resist$X), xmx=max(resist$X), ymn=min(resist$Y), ymx=max(resist$Y), res=100, crs="+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs")
-sresist <- rasterize(resist[, c('X', 'Y')], sresist, resist[, 'Res'], fun=mean)
+# resist <- read.csv(file.path(scondir, 'AEM_Res_19m_Kriging.csv'))
+# resist[resist==-999.9] <- NA
+# sresist <- raster(xmn=min(resist$X), xmx=max(resist$X), ymn=min(resist$Y), ymx=max(resist$Y), res=100, crs="+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs")
+# sresist <- rasterize(resist[, c('X', 'Y')], sresist, resist[, 'Res'], fun=mean)
 
 cropfun <- function(ras, shp){
   ras <- crop(ras, extent(shp))
@@ -68,44 +72,61 @@ alignfun <- function(x, target, method='bilinear'){
   return(xnew)
 }
 
-density <- cropfun(density, aop)
+dnsty <- cropfun(dnsty, aop)
+diam <- cropfun(diam, aop)
+height <- cropfun(height, aop)
 
 explainers <- topos
 explainers <- sapply(explainers, cropfun, aop)
-explainers <- sapply(explainers, alignfun, density)
+explainers <- sapply(explainers, alignfun, diam)
+explainers
 
 geol  <- cropfun(geol, aop)
-geol <- alignfun(geol, density, 'ngb')
-explainers[[8]] <- geol
-explainers[[9]] <- sresist
+geol <- alignfun(geol, diam, 'ngb')
 
-density <- values(density)
-elevation <- values(explainers[[3]])
-aspect <- values(explainers[[1]])
-aspect <- sin(aspect*0.0174533)
-slope <- values(explainers[[4]])
-tpi <- values(explainers[[5]])
-twi <- values(explainers[[7]])
-geol <- values(explainers[[8]])
-sresist <- values(explainers[[9]])
+explainers[[14]] <- geol
+
+#explainers[[9]] <- sresist
+
+dnsty <- values(dnsty)
+diam <- values(diam)
+height <- values(height)
+
+elevation <- values(explainers[[8]])
+aspect <- values(explainers[[2]])
+#aspect <- cos(aspect*0.0174533)
+slope <- values(explainers[[10]])
+tpi <- values(explainers[[11]])
+twi <- values(explainers[[13]])
+geol <- values(explainers[[14]])
+#sresist <- values(explainers[[9]])
 
 vars <- data.frame(
-  density,
+  diam,
   elevation,
   aspect,
   slope,
   tpi,
   twi,
-  geol
+ geol
 )
-#hist(vars$density, c='navy', breaks=16, border='white', main='Stand Density Frequency Distribution, 100m pixel')
-vars <- vars[vars$density > 100,]
-vars <- data.frame(scale(vars))
 
+#hist(vars$density, c='navy', breaks=16, border='white', main='Stand Density Frequency Distribution, 100m pixel')
 vars$geol <- as.factor(vars$geol)
-gdc <- dummy.code(vars$geol)
+geol2 <- as.integer(geol)
+geol2 <- as.factor(geol2)
+
+#gdc <- data.frame(dummy.code(geol2))
+
+vars <- cbind(vars, gdc, deparse.level = 0)
+vars <- vars[vars$height > 3,]
+
+vars2 <- data.frame(scale(vars[1:6]))
+#vars <- cbind(vars2, vars[8:21])
+vars <- cbind(vars2, vars[7])
 
 vars <- na.omit(vars)
+
 varcorr <- cor(vars)
 corrplot(varcorr, method='number', type = 'upper',   tl.col = "black", diag=F, tl.pos='td')
 
@@ -124,23 +145,61 @@ pairs.panels(varcorr,
              stars = TRUE,       # If TRUE, adds significance level with stars
              ci = TRUE)          # If TRUE, adds confidence intervals
 
-mod_lm <- gam(density ~elevation+slope+aspect+tpi+twi+geol, data=vars)
-mod_gam1 <- gam(density ~ s(slope, bs='cr'), data=vars)
+mod_lm <- lm(diam ~ elevation+slope+aspect+tpi+twi, data=vars)
 
-mod_gam2 <- gam(density ~ s(elevation) + s(aspect) + s(slope) + s(tpi) + s(twi) + s(geol))
+mod_lmm <- lm(height ~
+                elevation +
+                slope + 
+                aspect + 
+                tpi +
+                twi + 
+                tpi*elevation + 
+                aspect*elevation +
+                slope*elevation + 
+                twi*elevation +
+                slope*aspect + 
+                geol
+                # X20 +
+                # X21 +
+                # X33 +
+                # X34 +
+                # X28 +
+                # X22 +
+                # X25 +
+                # X31 +
+                # X35 +
+                # X20 +
+                # X32 +
+                # X26 +
+                # X30 +
+                # X27
+                , data=vars)
+
+summary(mod_lmm)
+
+mod_gam1 <- gam(dnsty ~ s(slope, bs='cr'), data=vars)
+
+mod_gam2 <- gam(height ~ 
+                  s(elevation) + 
+                  s(aspect) + 
+                  s(slope) + 
+                  s(tpi) + 
+                  s(twi),
+                data=vars)
 
 visreg(mod_gam2)
 summary(mod_lm)
 summary(mod_gam2)
 
 AIC(mod_lm)
-AIC(mod_gam1)
+AIC(mod_gam2)
 
 summary(mod_lm)$sp.criterion
 summary(mod_gam2)$sp.criterion
-visreg2d(mod_gam2, xvar='elevation', yvar='twi', phi=30, theta=30, n.grid=500, border=NA))
 
-vis.gam(mod_gam2, type='response', plot.type='persp', phi=30, theta=30, border=NA)
+visreg2d(mod_gam2, xvar='elevation', yvar='tpi', phi=30, theta=30, n.grid=500, border=NA)
+
+vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='90th percentile height (m)')
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
@@ -148,7 +207,14 @@ summary(mod_gam1)$r.sq
 
 anova(mod_lm, mod_gam1, test="Chisq")
 
-install.packages('visibly')
 
+install.packages('lme4')
+library(lme4)
 
-?corrplot
+mod_lme <- lmer(dnsty ~ elevation+slope+aspect+tpi+twi+(1|geol), data=vars)
+summary(mod_lme)
+confint(mod_lme)
+ranef(mod_lme)$geol
+coef(mod_lme)$geol
+plot(vars$geol, vars$dnsty)
+

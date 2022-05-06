@@ -9,30 +9,28 @@
 # Set up workspace
 #############################
 
-# Install and load libraries
-pkgs <- c('dplyr',
-          'tidyverse',
+## Install and load libraries
+library(moose)
+pkgs <- c('data.table', 
+          'dplyr',
           'ggplot2',
-          'data.table', 
-          'raster', 
-          'sf')
+          'googledrive',
+          'sf',
+          'terra',
+          'tidyverse')
 
-# Name the packages you want to use here
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} # Function to install new packages if they're not already installed
-load.pkgs(pkgs) # Runs the function on the list of packages defined in pkgs
+# Run load on the list of packages named in pkgs
+load.pkgs(pkgs)
+
+# Source helper functions
+source(file.path(dirname(rstudioapi::getSourceEditorContext()$path), 'ss.helpers.R'))
 
 # Set working directory.
-setwd(file.path('~', 'Desktop', 'RMBL', 'Projects', fsep = '/'))
-fidir <- file.path(getwd(), 'Forest_Inventory_Dataset', 'Output', fsep = '/')
-wsdir <- file.path(getwd(), 'Watershed_Spatial_Dataset', 'Source', fsep = '/')
-rasdir <- file.path('..', '..', '..', 'Google Drive (worsham@berkeley.edu)', 'Research', 'RMBL', 'RMBL_East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
-asodir <- file.path('..', '..', '..', 'Google Drive (worsham@berkeley.edu)', 'Research', 'RMBL', 'RMBL_East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'ASO_Snow-Free_DEM')
-sfdir <- file.path('~', 'Google Drive (worsham@berkeley.edu)', 'Research', 'RMBL/RMBL_East River Watershed Forest Data', 'Data', 'Geospatial')
+erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', fsep='/')
+fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', 'Output', fsep = '/')
+wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset', 'Output', fsep = '/')
+rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
+sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data')
 
 #############################
 # Ingest raster data
@@ -41,142 +39,37 @@ topo.factors <- c('Aspect',
                   'Curvature',
                   'DTM',
                   'DEM',
-                  #'Flow_Accumulation',
+                  'Heat_Load',
                   'Slope', 
-                  #'Solar_Radiation', 
                   'TPI', 
-                  'TWI'
-                  )
-
-get.rasters = function(x, dir){
-  xpath = file.path(dir, x)
-  xtif = list.files(xpath, pattern = 'tif$', full.names = T)
-  xras = lapply(xtif, raster)
-  return(xras)
-}
-
-makepolys <- function(input, radius, shape='rectangle'){
-  xy = input[,c(2,3)]
-  spdf = SpatialPointsDataFrame(xy, 
-                                input, 
-                                proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-  sites = spTransform(spdf, crs(toporasters[[1]]))
-  
-  # Add extent points based on radius to centroid
-  yPlus <- sites$Latitude+radius
-  xPlus <- sites$Longitude+radius
-  yMinus <- sites$Latitude-radius
-  xMinus <- sites$Longitude-radius
-  
-  # Create squares using extent points
-  square=cbind(xMinus,yPlus,  # NW corner
-               xPlus, yPlus,  # NE corner
-               xPlus,yMinus,  # SE corner
-               xMinus,yMinus, # SW corner
-               xMinus,yPlus)  # NW corner again - close ploygon
-  
-  # Create polygons with polys
-  ID=input$Site_ID
-  sites <- SpatialPolygons(mapply(function(poly, id)
-  {
-    latlon <- matrix(poly, ncol=2, byrow=TRUE)
-    Polygons(list(Polygon(latlon)), ID = id)
-  },
-  split(square, row(square)), ID),
-  proj4string=crs(toporasters[[1]]))
-  
-  site_names = names(sites)
-  
-  return(sites)
-}
-
-zonals <- function(input, ras.source, type=c('coord', 'sf'), radius, shape='rectangle'){
-  
-  toporasters = flatten(lapply(topo.factors, get.rasters, ras.source))
-  
-  # If it's a coordinate or list of coordinates...
-  if(type == 'coord'){
-    xy = input[,c(2,3)]
-    spdf = SpatialPointsDataFrame(xy,
-                                  input,
-                                  proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-    sites = spTransform(spdf, crs(toporasters[[1]]))
-
-    # Add extent points based on radius to centroid
-    yPlus <- sites$Latitude+radius
-    xPlus <- sites$Longitude+radius
-    yMinus <- sites$Latitude-radius
-    xMinus <- sites$Longitude-radius
-
-    # Create squares using extent points
-    square=cbind(xMinus,yPlus,  # NW corner
-                 xPlus, yPlus,  # NE corner
-                 xPlus,yMinus,  # SE corner
-                 xMinus,yMinus, # SW corner
-                 xMinus,yPlus)  # NW corner again - close ploygon
-
-    # Create polygons with polys
-    ID=input$Site_ID
-    sites <- SpatialPolygons(mapply(function(poly, id)
-    {
-      latlon <- matrix(poly, ncol=2, byrow=TRUE)
-      Polygons(list(Polygon(latlon)), ID = id)
-    },
-    split(square, row(square)), ID),
-    proj4string=crs(toporasters[[1]]))
-
-    site_names = names(sites)
-  }
-  
-  # If it's a shapefile... 
-  else if(type == 'sf'){
-    sites = st_read(input, quiet = T)
-    sites = st_transform(sites, crs(toporasters[[1]]))
-    site_names = sites$PLOT_ID
-  }
-  
-  # Plot the coordinates on top of the DEM
-  plot(toporasters[[4]])
-  plot(sites, add = T)
-  
-  # Extract values from specified factors
-  topovals = sapply(toporasters, raster::extract, sites, fun = mean)
-  
-  # Return the values
-  topovals.df = as.data.frame(topovals)
-  colnames(topovals.df) <- sapply(toporasters, names)
-  rownames(topovals.df) <- site_names
-  
-  return(topovals.df)
-}
+                  'TWI')
 
 #############################
 # Ingest source data
 #############################
 
 # Ingest 2020 Kueppers plot characteristics CSVs
-siteinfo20 <-  read.csv(file.path(fidir, 'Kueppers_EastRiver_Final_Sites_2020.csv'), header = T)
+tmpfile <- tempfile()
+tmpfile <- drive_download('Kueppers_EastRiver_Site_Index', tmpfile)$local_path
+siteinfo21 <- read_excel(tmpfile)
 
 # Ingest 2020-2021 Kueppers plot info
-siteinfo21 <- read.csv(file.path(fidir, 'EastRiver_ProposedSites_2021_25.csv'), header = T)
+siteinfo22 <- read.csv(file.path(fidir, 'EastRiver_ProposedSites_2021_25.csv'), header = T)
 
 # Refactor a couple of columns in siteinfo20 to row bind with 2021 data
 siteinfo20 <- rename(siteinfo20, Site_ID = SFA_ID)
 #siteinfo20$Established <- as.factor(siteinfo20$Established)
 siteinfo20$Established <- 'Established'
 
-View(siteinfo21)
+coords <- siteinfo21[,c(1,6:7)]
 
-coords <- siteinfo20[,c(1,5:6)]
+plots21 <- list.files(file.path(sfdir, 'Geospatial', 'Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N', 'AllPlots'), pattern = 'shp', full.names = T)
 
-plots20 <- list.files(file.path(sfdir, 
-                                'Kueppers_EastRiver_Plot_Shapefiles_2020_WGS84UTM13N', 
-                                'AllPlots'), pattern = 'shp', full.names = T)
-
-plots21 <- list.files(file.path(sfdir,
-                     'Worsham_2021_SiteSelection', 
-                     '2021_Proposed_Sites_All',
-                     'Kueppers_EastRiver_ProposedSites_2021_25'),
+plots22 <- list.files(file.path(sfdir,
+                                'Geospatial',
+                                'Worsham_2021_SiteSelection', 
+                                '2021_Proposed_Sites_All',
+                                'Kueppers_EastRiver_ProposedSites_2021_25'),
                      pattern = 'shp', full.names = T)
 
 newcoords <- data.frame(
@@ -186,18 +79,15 @@ newcoords <- data.frame(
 
 
 
-zon20 <- zonals(plots20, rasdir, type = 'sf')
-zon21 <- zonals(plots21, rasdir, type = 'sf')
+
+zon21 <- zonals(plots21, rasdir, topo.factors, type = 'sf')
+zon21 <- zon21[order(row.names(zon21)),]
+#zon21 <- zon21[order(zon21$usgs_205adjsouthness_100m),]
+write.csv(zon21, '~/Desktop/zonals.csv')
+
+zon22 <- zonals(plots22, rasdir, topo.factors, type = 'sf')
 zonnew <- zonals(newcoords, rasdir, type = 'coord', radius = 20)
 #fullset <- rbind(zon20, zon21, zonnew)
-
-zon20
-zonnew
-
-zon20.aso <- zonals(plots20, asodir, type = 'sf')
-zon21.aso <- zonals(plots21, asodir, type = 'sf')
-zonnew.aso <- zonals(newcoords, asodir, type = 'coord', radius = 20)
-
 
 newcoords
 coords20 <- siteinfo20[,c(1,5:6)]
@@ -227,21 +117,3 @@ write.csv(submitcoords, 'EastRiver_Coordinates_9_Final.csv')
 okok <- makepolys(submitcoords, 20, 'rectangle')
 okok.sf <- st_as_sf(okok)
 st_write(okok.sf, file.path(sfdir, 'Worsham_2021_SiteSelection', '2021_Proposed_Sites_All', 'Kueppers_EastRiver_ProposedSites_2021_9Final'), driver="ESRI Shapefile")
-
-##################
-# Scratch
-##################
-# fullset.aso <- rbind(zon20usgs, zon21usgs, zonnewusgs)
-# 
-# View(fullset)
-# View(fullset.aso)
-# 
-# names(fullset)
-# names(fullset.aso)
-# 
-# fullset <- fullset[c(1,3,4,5,6,7)]
-# names(fullset) <- c('Aspect', 'Elevation', 'Slope', 'TPI_1000', 'TPI_2000', 'TWI')
-# fullset.aso <- fullset.aso[c(1,3,5,7,9,14)]
-# names(fullset.aso) <- c('Aspect', 'Elevation', 'Slope', 'TPI_1000', 'TPI_2000', 'TWI')
-# 
-# fullset-fullset.aso
