@@ -1,13 +1,22 @@
+# Function to install new packages if they're not already installed
+load.pkgs <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
 # Install and load libraries
-library(moose)
+
 pkgs <- c('dplyr',
+          'dynatopmodel',
           'ggplot2',
+          'parallel',
           'rgdal',
           'raster', 
-          'spatialEco',
-          'dynatopmodel', 
           'SpaDES', 
-          'parallel')
+          'spatialEco', 
+          'terra')
 
 # Run load on the list of packages named in pkgs
 load.pkgs(pkgs)
@@ -53,7 +62,7 @@ sinaspect <- sin(aspect100)
 names(sinaspect) <- 'usgs_sinaspect_100m'
 writeRaster(sinaspect, file.path(rasdir, 'Aspect', 'usgs_sinaspect_100m.tif'), overwrite=T)
 
-# folded aspect
+# Folded aspect
 faspect <- foldaspect(aspect, 205)
 names(faspect) <- 'usgs_205faspect_100m'
 writeRaster(faspect, file.path(rasdir, 'Aspect', 'usgs_205faspect_100m.tif'))
@@ -68,12 +77,12 @@ thl <- thl(38, slope, aspect, fold=205)
 names(thl) <- 'usgs_heatload_100m'
 writeRaster(thl, file.path(rasdir, 'Heat_Load', 'usgs_heatload_100m.tif'))
 
-# curvature
+# Curvature
 curvature <- spatialEco::curvature(dem, type = c('total', 'bolstad'))
 writeRaster(curvature, file.path(rasdir, 'usgs_curvature_10m.tif'))
 curvature <- NULL
 
-# tpi
+# TPI
 tpi_1000 <- spatialEco::tpi(dem100, scale = 9, win = 'rectangle', normalize = T)
 tpi_1000 <- disaggregate(tpi_1000, fact=10)
 writeRaster(tpi_1000, file.path(rasdir, 'TPI', 'usgs_tpi_1km.tif'), overwrite = T)
@@ -84,11 +93,18 @@ tpi_2000 <- disaggregate(tpi_2000, fact=10)
 writeRaster(tpi_2000, file.path(rasdir, 'TPI', 'usgs_tpi_2km.tif'))
 tpi_2000 <- NULL
 
-# twi
-topmod <- dynatopmodel::build_layers(dem100, fill.sinks = T)
-twi <- topmod[[3]]
-twi <- disaggregate(twi, fact = 10)
-writeRaster(twi, file.path(rasdir, 'TWI', 'usgs_twi_100m.tif'), overwrite = T)
+# TWI
+topmod <- dynatopmodel::build_layers(raster(dem100), fill.sinks = T)
+twi_100 <- topmod[[3]]
+twi_100 <- disaggregate(twi_100, fact = 10)
+writeRaster(twi_100, file.path(rasdir, 'TWI', 'usgs_twi_100m.tif'), overwrite = T)
+twi_100 <- NULL
+plot(rast(file.path(rasdir, 'TWI', 'usgs_twi_100m.tif')))
+
+topmod <- dynatopmodel::build_layers(raster(dem1000), fill.sinks = T)
+twi_1000 <- topmod[[3]]
+twi_1000 <- disaggregate(twi_1000, fact = 10)
+writeRaster(twi_1000, file.path(rasdir, 'TWI', 'usgs_twi_1km.tif'), overwrite = T)
 twi <- NULL
 
 # upslope contributing area

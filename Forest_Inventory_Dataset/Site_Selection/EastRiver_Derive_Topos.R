@@ -8,13 +8,20 @@
 #############################
 # Set up workspace
 #############################
+# Function to install new packages if they're not already installed
+load.pkgs <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
 
-## Install and load libraries
-library(moose)
+# List packages
 pkgs <- c('data.table', 
           'dplyr',
           'ggplot2',
           'googledrive',
+          'readxl',
           'sf',
           'terra',
           'tidyverse')
@@ -30,10 +37,10 @@ erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', fs
 fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', 'Output', fsep = '/')
 wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset', 'Output', fsep = '/')
 rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
-sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data')
+sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial')
 
 #############################
-# Ingest raster data
+# Ingest data
 #############################
 topo.factors <- c('Aspect', 
                   'Curvature',
@@ -44,76 +51,96 @@ topo.factors <- c('Aspect',
                   'TPI', 
                   'TWI')
 
-#############################
-# Ingest source data
-#############################
-
 # Ingest 2020 Kueppers plot characteristics CSVs
 tmpfile <- tempfile()
 tmpfile <- drive_download('Kueppers_EastRiver_Site_Index', tmpfile)$local_path
-siteinfo21 <- read_excel(tmpfile)
+siteinfo.ext <- read_excel(tmpfile)
+coords.ext <- siteinfo.ext[,c('Location_ID', 'Latitude', 'Longitude')]
 
-# Ingest 2020-2021 Kueppers plot info
-siteinfo22 <- read.csv(file.path(fidir, 'EastRiver_ProposedSites_2021_25.csv'), header = T)
+# Ingest 2022 proposed site info
+siteinfo.22 <- read.csv(file.path(fidir, 'EastRiver_Proposed_Sites_2022_10.csv'))
 
-# Refactor a couple of columns in siteinfo20 to row bind with 2021 data
-siteinfo20 <- rename(siteinfo20, Site_ID = SFA_ID)
-#siteinfo20$Established <- as.factor(siteinfo20$Established)
-siteinfo20$Established <- 'Established'
+# Make df of location names and coordinates
+coords.22 <- siteinfo.22[,c('Location_Name', 'Latitude', 'Longitude')]
+names(coords.22)[1] <- 'Location_ID'
 
-coords <- siteinfo21[,c(1,6:7)]
+# Ingest boundaries of existing plots
+plots.ext <- list.files(file.path(sfdir, 'Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N', 'AllPlots'), pattern = 'shp', full.names = T)
 
-plots21 <- list.files(file.path(sfdir, 'Geospatial', 'Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N', 'AllPlots'), pattern = 'shp', full.names = T)
+#############################
+# Compute topographic stats
+#############################
 
-plots22 <- list.files(file.path(sfdir,
-                                'Geospatial',
-                                'Worsham_2021_SiteSelection', 
-                                '2021_Proposed_Sites_All',
-                                'Kueppers_EastRiver_ProposedSites_2021_25'),
-                     pattern = 'shp', full.names = T)
+# Compute topo statistics for new plots
+zonnew <- zonals(coords.22, rasdir, topo.factors, type = 'coord', radius = 20)
 
-newcoords <- data.frame(
-  Site_ID = c('emerald','emerald2', 'cement 28', 'walrod1', 'walrod2', 'axtell1', 'coal north 2', 'wildcat1', 'scarp1', 'scarp2', 'scarp3', 'coal north 3', 'sr-pvg1', 'cc-cvs1'), 
-  Longitude = c(-107.047670, -107.047914, -106.8253285, -106.846080, -106.8472989, -107.0121336, -107.025286, -107.0357038, -107.067599, -107.0672603, -107.069762, -107.0204872, -107.0806799, -107.0353710), 
-  Latitude = c(39.010148, 39.014249, 38.8274440, 38.828859, 38.8292840, 38.8524498, 38.881999, 38.8608894, 38.876385, 38.8758445, 38.877791, 38.8751397, 38.9544081, 38.8608831))
+# Write out topo stats to csv
+write.csv(zonnew, '~/Desktop/EastRiver_Proposed_Sites_22_10.csv')
 
+########################################
+# Prepare coordinates to submit for review
+########################################
 
+# Bind existing coordinates df to new coordinates df
+allcoords <- rbind(coords.ext, coords.22)
 
+# Create sets of 'good' and 'bad' sites for inclusion/exclusion
+# goodsites <- c() # Use if good sites list is short
+badsites <- c('Ute Gulch 2',
+              'Baldy Mountain east 4', 
+              'Snodgrass NW slope 2', 
+              'Emerald 1',
+              'Cement Creek 28')
+goodsites <- coords.22[!coords.22$Location_ID %in% badsites, 'Location_ID']
 
-zon21 <- zonals(plots21, rasdir, topo.factors, type = 'sf')
-zon21 <- zon21[order(row.names(zon21)),]
-#zon21 <- zon21[order(zon21$usgs_205adjsouthness_100m),]
-write.csv(zon21, '~/Desktop/zonals.csv')
+# Filter all coordinates to those in goodsites
+submitcoords <- allcoords[allcoords$Location_ID %in% goodsites,]
 
-zon22 <- zonals(plots22, rasdir, topo.factors, type = 'sf')
-zonnew <- zonals(newcoords, rasdir, type = 'coord', radius = 20)
-#fullset <- rbind(zon20, zon21, zonnew)
-
-newcoords
-coords20 <- siteinfo20[,c(1,5:6)]
-coords21 <- siteinfo21[,c(1,5:6)]
-
-allcoords <- rbind(coords20, coords21, newcoords)
-
-goodsites <- c('Coal Creek Valley North 1B',
-               'coal north 2',
-               'coal north 3',
-               'cement 28',
-               '25 Granite Basin',
-               'emerald',
-               'Carbon 20',
-               #'axtell1',
-               'Point Lookout North 3',
-               'wildcat1', 
-               #'scarp1', 
-               'scarp2' 
-               #'scarp3'
-               )
-
-submitcoords <- allcoords[allcoords$Site_ID %in% goodsites,]
+# Rename rows to integer sequence
 rownames(submitcoords) <- seq(1, nrow(submitcoords))
-submitcoords
-write.csv(submitcoords, 'EastRiver_Coordinates_9_Final.csv')
-okok <- makepolys(submitcoords, 20, 'rectangle')
-okok.sf <- st_as_sf(okok)
-st_write(okok.sf, file.path(sfdir, 'Worsham_2021_SiteSelection', '2021_Proposed_Sites_All', 'Kueppers_EastRiver_ProposedSites_2021_9Final'), driver="ESRI Shapefile")
+
+# Write coordinates to CSV
+write.csv(
+  submitcoords, 
+  file.path(
+    fidir, 
+    'EastRiver_Proposed_Coordinates_2022_10.csv')
+  )
+
+#######################################################
+# Create hypothetical plot polygons and write to shp
+#######################################################
+
+# Make polygons from submission coordinates
+submitpolys <- makepolys(submitcoords, radius=20, shape='rectangle')
+submitpolys.sf <- st_as_sf(submitpolys)
+submitpolys.sf$Location_ID <- goodsites
+
+# Write polygons to shp
+st_write(
+  submitpolys, 
+  file.path(sfdir, 
+            'Worsham_2021_SiteSelection', 
+            '2022_Proposed_Sites', 
+            'Kueppers_EastRiver_Proposed_Sites_2022_10'), 
+  driver="ESRI Shapefile", append=F)
+
+# Check that shp is readable and plot
+plot(
+  rast(
+    list.files(
+      rasdir, 
+      recursive=T, 
+      full.names=T)[12]), 
+  col=gray.colors(12))
+
+plot(st_read(
+  file.path(
+    sfdir, 
+    'Worsham_2021_SiteSelection', 
+    '2022_Proposed_Sites', 
+    'Kueppers_EastRiver_Proposed_Sites_2022_10')),
+  lwd=6, 
+  border=magma(10), 
+  add=T)
+

@@ -5,37 +5,15 @@ get.rasters = function(x, dir){
   return(xras)
 }
 
-makepolys <- function(input, radius, shape='rectangle'){
+makepolys <- function(input, radius, shape='rectangle', target.crs=32613){
   xy = input[,c(2,3)]
-  spdf = SpatialPointsDataFrame(xy, 
-                                input, 
-                                proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-  sites = spTransform(spdf, crs(toporasters[[1]]))
-  
-  # Add extent points based on radius to centroid
-  yPlus <- sites$Latitude+radius
-  xPlus <- sites$Longitude+radius
-  yMinus <- sites$Latitude-radius
-  xMinus <- sites$Longitude-radius
-  
-  # Create squares using extent points
-  square=cbind(xMinus,yPlus,  # NW corner
-               xPlus, yPlus,  # NE corner
-               xPlus,yMinus,  # SE corner
-               xMinus,yMinus, # SW corner
-               xMinus,yPlus)  # NW corner again - close ploygon
+  xy = st_as_sf(xy, coords=c('Longitude', 'Latitude'), crs=4326)
+  sites = st_transform(xy, target.crs)
   
   # Create polygons with polys
-  ID=input$Site_ID
-  sites <- SpatialPolygons(mapply(function(poly, id)
-  {
-    latlon <- matrix(poly, ncol=2, byrow=TRUE)
-    Polygons(list(Polygon(latlon)), ID = id)
-  },
-  split(square, row(square)), ID),
-  proj4string=crs(toporasters[[1]]))
-  
-  site_names = names(sites)
+  ID = input$Location_ID
+  sites = st_buffer(sites, dist=radius, endCapStyle = 'SQUARE', joinStyle = 'MITRE')
+  site_names = input$Location_ID
   
   return(sites)
 }
@@ -47,35 +25,14 @@ zonals <- function(input, ras.source, topo.inputs, type=c('coord', 'sf'), radius
   # If it's a coordinate or list of coordinates...
   if(type == 'coord'){
     xy = input[,c(2,3)]
-    spdf = vect(xy,
-                input,
-                proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
-    sites = terra::project(spdf, crs(toporasters[[1]]))
-    
-    # Add extent points based on radius to centroid
-    yPlus <- sites$Latitude+radius
-    xPlus <- sites$Longitude+radius
-    yMinus <- sites$Latitude-radius
-    xMinus <- sites$Longitude-radius
-    
-    # Create squares using extent points
-    square=cbind(xMinus,yPlus,  # NW corner
-                 xPlus, yPlus,  # NE corner
-                 xPlus,yMinus,  # SE corner
-                 xMinus,yMinus, # SW corner
-                 xMinus,yPlus)  # NW corner again - close ploygon
+    xy = st_as_sf(xy, coords=c('Longitude', 'Latitude'), crs=4326)
+    sites = st_transform(xy, crs(toporasters[[1]]))
     
     # Create polygons with polys
-    ID=input$Site_ID
-    sites <- SpatialPolygons(mapply(function(poly, id)
-    {
-      latlon <- matrix(poly, ncol=2, byrow=TRUE)
-      Polygons(list(Polygon(latlon)), ID = id)
-    },
-    split(square, row(square)), ID),
-    proj4string = crs(toporasters[[1]]))
-    
-    site_names = names(sites)
+    ID = input$Site_ID
+    sites = st_buffer(sites, dist=radius, endCapStyle = 'SQUARE', joinStyle = 'MITRE')
+    sites = vect(sites)
+    site_names = input$Site_ID
   }
   
   # If it's a shapefile... 
@@ -86,8 +43,8 @@ zonals <- function(input, ras.source, topo.inputs, type=c('coord', 'sf'), radius
   }
   
   # Plot the coordinates on top of the DEM
-  plot(toporasters[[2]])
-  plot(sites, add = T)
+  #plot(toporasters[[2]])
+  #plot(sites, color='blue', size=20, add = T)
   
   # Extract values from specified factors
   topovals = lapply(toporasters, terra::extract, sites, fun = mean)
@@ -145,3 +102,111 @@ thl <- function(L, A, S, unit='deg', fold=180) {
   return(0.339+0.808*cos(L)*cos(S)-0.196*sin(L)*sin(S)-0.482*cos(A)*sin(S))
 }
 
+
+print.figs <- function(df){
+  #'''
+  # Function
+  # Input: a dataframe of sites and topographic variables
+  # Returns: a set of png files 
+  #'''
+  
+  # Define colors
+  colors = c("#3B9AB2",
+             "#E1AF00",
+             "#F21A00",
+             "#78B7C5",
+             "#00A08A",
+             "#F98400",
+             "#4DA64D",
+             "#DFB3F2", 
+             "#EBCC2A",
+             "#2A2A2A")
+  
+  varnames = c('Elevation (m)', 
+               'Slope angle (º)', 
+               'Aspect (º)', 
+               expression(Heat~Load~(MJ~cm^-2~y^-1)),
+               'Aspect Folded on 205º (º)',
+               'Southness Adjusted to 205º (º)',
+               'TWI [100 m]',
+               'TWI [1000 m]',
+               'TPI [1000 m]', 
+               'TPI [2000 m]')
+  
+  # Refactor Established 
+  df$Established <- factor(df$Established, levels = c('Established', 'Approved', 'Proposed'))
+  
+  # Loop through variables
+  for (t in seq(3,length(df))){
+    clr = colors[t-2]
+    varname = varnames[t-2]
+    
+    #LM coeff
+    lmv = df[order(df[, t]), t]
+    lmi = round(coefficients(lm(lmv ~ seq(1, nrow(df))))[1], 2)
+    lms = round(coefficients(lm(lmv ~ seq(1,nrow(df))))[2], 2)
+    lmr = round(summary(lm(lmv~seq(1,nrow(df))))$r.squared, 2)
+   
+    # 1:1 line coeff
+    i1 = round(min(df[, t])-(max(df[, t])-min(df[, t]))/(nrow(df)-1), 2)
+    s1 = round((max(df[, t])-min(df[, t]))/(nrow(df)-1), 2)
+    s2 = 2*(max(df[, t])-min(df[, t]))/(nrow(df)-1)
+    
+    # Open the png quartz image
+    png(file.path(fidir, 
+                  'Production_Images', 
+                  paste0(names(df[t]),'.png')), 
+        width = 12, height = 9, units = 'in', res = 180)
+    
+    # Print the plot to png
+    print(
+      ggplot(df, aes(x = reorder(Location_ID,  df[, t]), y = df[, t])) +
+        geom_point(aes(color = Elevation_m), size = 5) +
+        scale_color_viridis_c(
+          name='Elevation',
+          limits=c(
+            min(df$Elevation_m),
+            max(df$Elevation_m)),
+          breaks=c(
+            round(min(df$Elevation_m),0),
+            round(max(df$Elevation_m))),0) +
+        #scale_color_manual(values = c(clr, 'grey 30', 'grey 70')) +
+        scale_y_continuous(name = varname) +
+        labs(x = 'Plot ID', y = names(topos)[t]) +
+        theme_light(base_size = 20) +
+        theme(axis.text.x = element_text(angle = 90, hjust = 1),
+              legend.position="bottom", 
+              #legend.title = element_blank(), 
+              legend.key.size = unit(1, 'cm')) +
+        guides(scale = 'none',
+               fill=guide_legend(title="New Legend Title")) +
+        geom_abline(intercept=i1,
+                    slope=s1,
+                    color='black') +
+        geom_abline(intercept=lmi, 
+                    slope=lms,
+                    linetype='dashed',
+                    color='black') + 
+        geom_text(x=25, 
+                  y=min(df[, t]), 
+                  label=as.expression(
+                    substitute(
+                      italic(r)^2~"="~lmr)),
+                  hjust=1) +
+        geom_text(x=25, 
+                  y=min(df[, t])+s1, 
+                  label=as.expression(
+                    substitute(
+                      bold('linreg:')~italic(y)~"="~lmi~"+"~lms*italic(x))),
+                  hjust=1) + 
+        geom_text(x=25, 
+                  y=min(df[, t])+s2, 
+                  label=as.expression(
+                    substitute(
+                      bold('ideal:')~italic(y)~"="~i1~"+"~s1*italic(x))),
+                  hjust=1))
+    
+    
+    dev.off()  
+  }
+}
