@@ -63,24 +63,6 @@ plan(multisession)
 # Normalize height on full las catalog
 lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
 
-
-# Get trees
-ttops <- locate_trees(gn1, lmf(ws = 5))
-
-plot(sf::st_geometry(ttops), pch = 3)
-
-ws <- seq(3, 15, 5)
-th <- seq(0.1, 0.8, length.out = length(ws))
-las.cg <- classify_ground(gn1, algorithm = pmf(ws = ws, th = th))
-
-hist(gn1$Z)
-hist(gn1[gn1$Z>0]$Z)
-lidR::plot(gn1[gn1$Z>=0][1:50000], color='Z', bg='white', legend=T, nbreaks=6)
-rglwidget()
-
-
-
-
 #######################
 # Scratch
 #######################
