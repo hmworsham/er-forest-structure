@@ -11,12 +11,13 @@ library(RColorBrewer)
 library(viridis)
 
 
-strdir <- '~/Desktop/tifs'
+datadir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data')
+strdir <- file.path(datadir, 'LiDAR', 'tifs')
 wsdir <- file.path(getwd(), 'Watershed_Spatial_Dataset', 'Source', fsep = '/')
-rasdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
-sfdir <- file.path('/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Geospatial/RMBL_2020_EastRiver_SDP/RMBL_2020_EastRiver_SDP_Boundary')
-geodir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Wainwright_2021_Geology')
-scondir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Uhlemann_2021_RESubsurfaceResistivityMap')
+rasdir <- file.path(datadir, 'Geospatial', 'Worsham_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
+sfdir <- file.path(datadir, 'Geospatial', 'RMBL_2020_EastRiver_SDP', 'RMBL_2020_EastRiver_SDP_Boundary')
+geodir <- file.path(datadir, 'Geospatial', 'Wainwright_2021_Geology')
+scondir <- file.path(datadir, 'Geospatial', 'Uhlemann_2021_RESubsurfaceResistivityMap')
 
 aop <- st_read(file.path(sfdir, 'SDP_Boundary.shp'))
 
@@ -47,7 +48,7 @@ get.rasters <- function(x, dir){
 
 topos <- flatten(lapply(topo.factors, get.rasters, rasdir))
 
-geol <- raster(file.path(geodir, 'NEW_GeolGrid_Final1.tif'))
+geol <- raster(file.path(geodir, 'EastRiver_GeolGrid.tif'))
 geol <- projectRaster(geol, crs=crs(aop))
 geolm <- mask(geol, aop)
 
@@ -79,13 +80,12 @@ height <- cropfun(height, aop)
 explainers <- topos
 explainers <- sapply(explainers, cropfun, aop)
 explainers <- sapply(explainers, alignfun, diam)
-explainers
 
 geol  <- cropfun(geol, aop)
 geol <- alignfun(geol, diam, 'ngb')
-
-explainers[[14]] <- geol
-
+explainers
+explainers[[15]] <- geol
+explainers
 #explainers[[9]] <- sresist
 
 dnsty <- values(dnsty)
@@ -95,14 +95,14 @@ height <- values(height)
 elevation <- values(explainers[[8]])
 aspect <- values(explainers[[2]])
 #aspect <- cos(aspect*0.0174533)
-slope <- values(explainers[[10]])
+slope <- values(explainers[[9]])
 tpi <- values(explainers[[11]])
 twi <- values(explainers[[13]])
-geol <- values(explainers[[14]])
+geol <- values(explainers[[15]])
 #sresist <- values(explainers[[9]])
 
 vars <- data.frame(
-  diam,
+  dnsty,
   elevation,
   aspect,
   slope,
@@ -113,29 +113,32 @@ vars <- data.frame(
 
 #hist(vars$density, c='navy', breaks=16, border='white', main='Stand Density Frequency Distribution, 100m pixel')
 vars$geol <- as.factor(vars$geol)
-geol2 <- as.integer(geol)
-geol2 <- as.factor(geol2)
+#geol2 <- as.integer(geol)
+#geol2 <- as.factor(geol2)
 
 #gdc <- data.frame(dummy.code(geol2))
 
-vars <- cbind(vars, gdc, deparse.level = 0)
-vars <- vars[vars$height > 3,]
+#vars <- cbind(vars, gdc, deparse.level = 0)
+#vars <- vars[vars$height > 1,]
 
 vars2 <- data.frame(scale(vars[1:6]))
 #vars <- cbind(vars2, vars[8:21])
 vars <- cbind(vars2, vars[7])
+vars$geol <- as.factor(vars$geol)
 
-vars <- na.omit(vars)
+corvars <- vars[2:6]
+corvars <- na.omit(corvars)
 
-varcorr <- cor(vars)
-corrplot(varcorr, method='number', type = 'upper',   tl.col = "black", diag=F, tl.pos='td')
+varcorr <- cor(corvars)
+
+corrplot(varcorr, method='number', type = 'upper', tl.col = "black", diag=F, tl.pos='td')
 
 pairs.panels(varcorr,
-             smooth = TRUE,      # If TRUE, draws loess smooths
+             smooth = F,      # If TRUE, draws loess smooths
              scale = FALSE,      # If TRUE, scales the correlation text font
              density = TRUE,     # If TRUE, adds density plots and histograms
              ellipses = FALSE,    # If TRUE, draws ellipses
-             method = "pearson", # Correlation method (also "spearman" or "kendall")
+             method = "kendall", # Correlation method (also "spearman" or "kendall")
              pch = '.',           # pch symbol
              lm = FALSE,         # If TRUE, plots linear fit rather than the LOESS fit
              cor = TRUE,         # If TRUE, reports correlations
@@ -145,51 +148,55 @@ pairs.panels(varcorr,
              stars = TRUE,       # If TRUE, adds significance level with stars
              ci = TRUE)          # If TRUE, adds confidence intervals
 
-mod_lm <- lm(diam ~ elevation+slope+aspect+tpi+twi, data=vars)
-
-mod_lmm <- lm(height ~
-                elevation +
-                slope + 
-                aspect + 
-                tpi +
-                twi + 
-                tpi*elevation + 
-                aspect*elevation +
-                slope*elevation + 
-                twi*elevation +
-                slope*aspect + 
-                geol
-                # X20 +
-                # X21 +
-                # X33 +
-                # X34 +
-                # X28 +
-                # X22 +
-                # X25 +
-                # X31 +
-                # X35 +
-                # X20 +
-                # X32 +
-                # X26 +
-                # X30 +
-                # X27
-                , data=vars)
-
-summary(mod_lmm)
+# mod_lm <- lm(diam ~ elevation+slope+aspect+tpi+twi, data=vars)
+# 
+# mod_lmm <- lm(height ~
+#                 elevation +
+#                 slope + 
+#                 aspect + 
+#                 tpi +
+#                 twi + 
+#                 tpi*elevation + 
+#                 aspect*elevation +
+#                 slope*elevation + 
+#                 twi*elevation +
+#                 slope*aspect + 
+#                 geol
+#                 # X20 +
+#                 # X21 +
+#                 # X33 +
+#                 # X34 +
+#                 # X28 +
+#                 # X22 +
+#                 # X25 +
+#                 # X31 +
+#                 # X35 +
+#                 # X20 +
+#                 # X32 +
+#                 # X26 +
+#                 # X30 +
+#                 # X27
+#                 , data=vars)
+# 
+# summary(mod_lmm)
 
 mod_gam1 <- gam(dnsty ~ s(slope, bs='cr'), data=vars)
 
-mod_gam2 <- gam(height ~ 
-                  s(elevation) + 
-                  s(aspect) + 
-                  s(slope) + 
-                  s(tpi) + 
-                  s(twi),
+mod_gam2 <- gam(dnsty ~ 
+                  s(elevation, bs='cc') + 
+                  s(aspect, bs='cc') + 
+                  #s(slope, bs='cc') + 
+                  #tpi +
+                  twi + 
+                  geol,
                 data=vars)
 
+plot(mod_gam2)
 visreg(mod_gam2)
-summary(mod_lm)
+plot(mod_gam2, page = 1, scheme = 2)
+
 summary(mod_gam2)
+termplot(mod_gam2, all.terms=T)
 
 AIC(mod_lm)
 AIC(mod_gam2)
@@ -199,7 +206,7 @@ summary(mod_gam2)$sp.criterion
 
 visreg2d(mod_gam2, xvar='elevation', yvar='tpi', phi=30, theta=30, n.grid=500, border=NA)
 
-vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='90th percentile height (m)')
+vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Density (stems/ha)')
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
