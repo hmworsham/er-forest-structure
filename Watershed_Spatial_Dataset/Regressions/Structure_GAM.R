@@ -102,7 +102,7 @@ geol <- values(explainers[[15]])
 #sresist <- values(explainers[[9]])
 
 vars <- data.frame(
-  dnsty,
+  height,
   elevation,
   aspect,
   slope,
@@ -182,7 +182,7 @@ pairs.panels(varcorr,
 
 mod_gam1 <- gam(dnsty ~ s(slope, bs='cr'), data=vars)
 
-mod_gam2 <- gam(dnsty ~ 
+mod_gam2 <- gam(height ~ 
                   s(elevation, bs='cc') + 
                   s(aspect, bs='cc') + 
                   #s(slope, bs='cc') + 
@@ -204,9 +204,9 @@ AIC(mod_gam2)
 summary(mod_lm)$sp.criterion
 summary(mod_gam2)$sp.criterion
 
-visreg2d(mod_gam2, xvar='elevation', yvar='tpi', phi=30, theta=30, n.grid=500, border=NA)
+visreg2d(mod_gam2, xvar='elevation', yvar='aspect', phi=30, theta=30, n.grid=500, border=NA)
 
-vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Density (stems/ha)')
+vis.gam(mod_gam2, view=c('elevation','aspect'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Mean diameter')
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
