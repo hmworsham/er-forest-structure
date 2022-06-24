@@ -1,11 +1,26 @@
-# Load libraries
-library(future)
-library(lidR)
-library(RColorBrewer)
-library(rgl)
-library(sf)
-library(terra)
-library(tidyverse)
+# Regrid LAS catalog
+# Author: Marshall Worsham
+
+# Install and load libraries
+pkgs <- c('future',
+          'lidR',
+          'raster',
+          'rgl',
+          'RColorBrewer',
+          'sf',
+          'terra',
+          'tidyverse') # Name the packages you want to use here
+
+# Function to install new packages if they're not already installed
+load.pkgs <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+} 
+
+# Runs the function on the list of packages defined in pkgs
+load.pkgs(pkgs)
 
 # Define directories
 shapedir <- '/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary'
