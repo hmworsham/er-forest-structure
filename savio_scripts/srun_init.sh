@@ -1,4 +1,4 @@
 #!/bin/bash
-srun --job-name hpc -A fc_lmklab -p savio3_bigmem --nodes=1 -t 04:00:00 \
---ntasks-per-node=32 \
+srun --job-name checksums -A fc_lmklab -p savio --nodes=1 -t 03:00:00 \
+--ntasks-per-node=20 \
 --pty /bin/bash
