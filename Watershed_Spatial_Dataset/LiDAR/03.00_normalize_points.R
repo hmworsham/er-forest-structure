@@ -22,7 +22,7 @@ load.pkgs <- function(pkg){
 load.pkgs(pkgs)
 
 # Setup workspace
-scrdir <- '/global/scratch/users/worsham'
+scrdir <- file.path('global', 'scratch', 'users', 'worsham')
 shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
 datadir <- file.path(scrdir, 'las_regridded')
 geredir <- file.path(scrdir, 'geolocated_returns')
@@ -34,22 +34,24 @@ dir.create(outdir)
 # Prep data
 ############################
 
+# Ingest original las dtm
+dtm <- rast(file.path(scrdir, 'EastRiverInputs', 'dtm_mosaic.tif'))
+dtm <- raster(dtm) # Coerce to raster, as SpatRaster isn't serializable for pll processing
+
 # Ingest gridded points as las catalog
 infiles <- list.files(datadir, full.names=T)
+infiles <- infiles[(sapply(infiles, file.size) > 5e6)]
 lascat <- readLAScatalog(infiles)
 summary(lascat)
+plot(lascat, chunk=T)
 
 # Plot las catalog by number of points in file
 lascat <- lascat[lascat['Number.of.point.records']$Number.of.point.records>0,]
 plot(lascat['Number.of.point.records'])
 
-# Ingest original las dtm
-dtm <- rast(file.path(scrdir, 'EastRiverInputs', 'dtm_mosaic.tif'))
-dtm <- raster(dtm) # Coerce to raster, as SpatRaster isn't serializable for pll processing
-
 # Set chunk buffer and other catalog processing params
 #opt_chunk_size(lascat) <- 1000
-opt_chunk_buffer(lascat) <- 20
+opt_chunk_buffer(lascat) <- 5
 opt_output_files(lascat) <-  paste0(outdir, '/las_norm_{XLEFT}_{YBOTTOM}')
 opt_laz_compression(lascat) <- T
 
@@ -87,7 +89,7 @@ rglwidget()
 norm_height <- function(chunk, srf) {
   pc <- readLAS(chunk)                  # read the chunk
   if (is.empty(pc)) return(NULL)        # check if it actually contain points
-  lasnorm <- tryCatch({pc-srf}, 
+  lasnorm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)}, 
                       error=function(cond){message('Normalization error')
                         return(NULL)}
   ) # apply computation of interest
@@ -95,6 +97,7 @@ norm_height <- function(chunk, srf) {
 }
 
 output <- catalog_apply(lascat, norm_height, dtm)
+
 
 ## Attempt 2
 lascat_norm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)},
