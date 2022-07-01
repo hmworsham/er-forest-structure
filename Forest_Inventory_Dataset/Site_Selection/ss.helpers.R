@@ -103,7 +103,7 @@ thl <- function(L, A, S, unit='deg', fold=180) {
 }
 
 
-print.figs <- function(df){
+print.figs <- function(df, outdir){
   #'''
   # Function
   # Input: a dataframe of sites and topographic variables
@@ -153,24 +153,23 @@ print.figs <- function(df){
     s2 = 2*(max(df[, t])-min(df[, t]))/(nrow(df)-1)
     
     # Open the png quartz image
-    png(file.path(fidir, 
-                  'Production_Images', 
+    png(file.path(outdir,
                   paste0(names(df[t]),'.png')), 
         width = 12, height = 9, units = 'in', res = 180)
     
     # Print the plot to png
     print(
       ggplot(df, aes(x = reorder(Location_ID,  df[, t]), y = df[, t])) +
-        geom_point(aes(color = Elevation_m), size = 5) +
-        scale_color_viridis_c(
-          name='Elevation',
-          limits=c(
-            min(df$Elevation_m),
-            max(df$Elevation_m)),
-          breaks=c(
-            round(min(df$Elevation_m),0),
-            round(max(df$Elevation_m))),0) +
-        #scale_color_manual(values = c(clr, 'grey 30', 'grey 70')) +
+        geom_point(aes(color = Coring), size = 5) +
+        # scale_color_viridis_c(
+        #   name='Elevation',
+        #   limits=c(
+        #     min(df$Elevation_m),
+        #     max(df$Elevation_m)),
+        #   breaks=c(
+        #     round(min(df$Elevation_m),0),
+        #     round(max(df$Elevation_m))),0) +
+        scale_color_manual(values = c(clr, 'grey 70', 'grey 30')) +
         scale_y_continuous(name = varname) +
         labs(x = 'Plot ID', y = names(topos)[t]) +
         theme_light(base_size = 20) +
@@ -187,19 +186,19 @@ print.figs <- function(df){
                     slope=lms,
                     linetype='dashed',
                     color='black') + 
-        geom_text(x=25, 
+        geom_text(x=nrow(df), 
                   y=min(df[, t]), 
                   label=as.expression(
                     substitute(
                       italic(r)^2~"="~lmr)),
                   hjust=1) +
-        geom_text(x=25, 
+        geom_text(x=nrow(df), 
                   y=min(df[, t])+s1, 
                   label=as.expression(
                     substitute(
                       bold('linreg:')~italic(y)~"="~lmi~"+"~lms*italic(x))),
                   hjust=1) + 
-        geom_text(x=25, 
+        geom_text(x=nrow(df), 
                   y=min(df[, t])+s2, 
                   label=as.expression(
                     substitute(

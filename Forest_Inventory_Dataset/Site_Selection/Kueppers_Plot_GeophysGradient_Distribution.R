@@ -47,7 +47,8 @@ sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geos
 
 # Ingest 2020 Kueppers plot characteristics CSVs
 tmpfile <- tempfile()
-tmpfile <- drive_download('Kueppers_EastRiver_Site_Index', tmpfile)$local_path
+tmpfile <- drive_download('Kueppers_EastRiver_Site_Index', 
+                          tmpfile)$local_path
 siteinfo.21 <- read_excel(tmpfile)
 siteinfo.21$Established <- 'Established'
 siteinfo.21$RMBL_Approved <- as.character(siteinfo.21$RMBL_Approved)
@@ -61,7 +62,8 @@ siteinfo.22$Location_ID <- siteinfo.22$Location_Name
 ###############################################
 
 # Row bind 2021 and 2022 site info
-si.new <- bind_rows(siteinfo.21, siteinfo.22)
+#si.new <- bind_rows(siteinfo.21, siteinfo.22)
+si.new <- siteinfo.21
 
 # Select variables of interest from 2021 site info
 topos <- si.new[c('Location_ID',
@@ -85,31 +87,31 @@ outs <- NA
 #outs <- c()
 
 # Specify which plots are in 
-ins <- c(topos[topos$Established == 'Established', 'Location_ID'],
-         'SG-NWS1',
-         'ER-BME3',
-         'XX-FER1'#,
-         #'Cement Creek 28',
-         #'Emerald 1', 
-         #'Baldy Mountain east 3',
-         #'Brush Creek S 1',
-         #'Brush Creek S 2',
-         #'Baldy Mountain east 5',
-         #'Snodgrass NW slope 1'#,
-         #'Kebler 1',
-         #'Brush Creek N 1',
-         #'Brush Creek E 1',
-         #'Red Mountain 1',
-         #'Spring Creek E 1'
-         )
+# ins <- c(topos[topos$Established == 'Established', 'Location_ID'],
+#          'SG-NWS1',
+#          'ER-BME3',
+#          'XX-FER1',
+#          'Cement Creek 28',
+#          'Emerald 1',
+#          'Baldy Mountain east 3',
+#          'Brush Creek S 1',
+#          'Brush Creek S 2',
+#          'Baldy Mountain east 5',
+#          'Snodgrass NW slope 1',
+#          'Kebler 1',
+#          'Brush Creek N 1',
+#          'Brush Creek E 1',
+#          'Red Mountain 1',
+#          'Spring Creek E 1'
+#          )
 
 # Remove the cut sites from the dataframe
-topos_cut <- topos[topos$Location_ID %in% ins, ]
+#topos_cut <- topos[topos$Location_ID %in% ins, ]
 #topos_cut <- topos[!topos$Site_ID %in% outs, ]
-#topos_cut <- topos[topos$Established == 'Established', ]
+topos_cut <- topos[topos$Established == 'Established', ]
 
 # Add column for sensor presence
-topos_cut$Sensor <- F
+topos_cut$Sensor <- 'Sensors Absent'
 
 # Assign T for sites with sensors installed
 topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
@@ -121,13 +123,36 @@ topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
                                        'SG-SWR1',
                                        'SR-PVG1',
                                        'XX-CAR3',
-                                       'XX-PLN1'), 'Sensor'] <- T
+                                       'XX-PLN1'), 'Sensor'] <- 'Sensors Present'
+
+# Add column for cored sites
+topos_cut$Coring <- 'Not Cored'
+topos_cut[topos_cut$Location_ID %in% c('CC-UC1',
+                                       'ER-APL1', 
+                                       'ER-GT1', 
+                                       'ER-BME1', 
+                                       'SG-NES2',
+                                       'SG-SWR1',
+                                       'XX-PLN1',
+                                       'XX-PLN2',
+                                       'XX-CAR1',
+                                       'XX-CAR2'), 'Coring'] <- 'Cored'
+
+topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
+                                       'ER-APU1', 
+                                       'SG-NES1', 
+                                       'SR-PVG1',
+                                       'CC-EMN1'), 'Coring'] <- 'Proposed'
+
+# Subset only proposed coring sites
+#topos_coring <- topos_cut[!topos_cut$Coring=='Not Cored',]
 
 ##############################################
 # Batch create plots for individual variables
 ##############################################
 
 # Print figures to png
+outdir = file.path(fidir, 'Production_Images', 'Coring_Sites')
 print.figs(topos_cut)
 
 ############################
