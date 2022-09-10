@@ -40,6 +40,7 @@ fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset')
 wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset')
 rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
 sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial')
+potrdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Blonder_Aspen_Plots_2020')
 
 #############################
 # Ingest source data
@@ -63,7 +64,7 @@ siteinfo.22$Location_ID <- siteinfo.22$Location_Name
 
 # Row bind 2021 and 2022 site info
 #si.new <- bind_rows(siteinfo.21, siteinfo.22)
-si.new <- siteinfo.21
+#si.new <- siteinfo.21
 
 # Select variables of interest from 2021 site info
 topos <- si.new[c('Location_ID',
