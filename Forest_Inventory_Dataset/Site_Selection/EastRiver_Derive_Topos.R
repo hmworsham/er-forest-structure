@@ -36,8 +36,9 @@ source(file.path(dirname(rstudioapi::getSourceEditorContext()$path), 'ss.helpers
 erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', fsep='/')
 fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', 'Output', fsep = '/')
 wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset', 'Output', fsep = '/')
-rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
+rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
 sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial')
+potrdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Blonder_Aspen_Plots_2020')
 
 #############################
 # Ingest data
@@ -67,12 +68,17 @@ names(coords.22)[1] <- 'Location_ID'
 # Ingest boundaries of existing plots
 plots.ext <- list.files(file.path(sfdir, 'Kueppers_EastRiver_Plot_Shapefiles_WGS84UTM13N', 'AllPlots'), pattern = 'shp', full.names = T)
 
+# Ingest cored aspen coordinates
+aspen <- st_read(list.files(potrdir, full.names=T)[5])
+aspen.coords <- data.frame(Tree_Code=aspen$Tree_Code, Longitude=aspen$Longitude, Latitude=aspen$Latitude)
+aspen.coords <- na.omit(aspen.coords)
+
 #############################
 # Compute topographic stats
 #############################
 
 # Compute topo statistics for new plots
-zonnew <- zonals(coords.22, rasdir, topo.factors, type = 'coord', radius = 20)
+zonnew <- zonals(aspen.coords, rasdir, topo.factors, type = 'coord', radius = 5)
 
 # Write out topo stats to csv
 write.csv(zonnew, '~/Desktop/EastRiver_Proposed_Sites_22_10.csv')
