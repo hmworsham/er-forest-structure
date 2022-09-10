@@ -111,6 +111,11 @@ vars <- data.frame(
  geol
 )
 
+m <- mean(elevation, na.rm=T)
+s <- sd(elevation, na.rm=T)
+
+el.rescaled <- vars$elevation*s + m
+
 #hist(vars$density, c='navy', breaks=16, border='white', main='Stand Density Frequency Distribution, 100m pixel')
 vars$geol <- as.factor(vars$geol)
 #geol2 <- as.integer(geol)
@@ -186,14 +191,16 @@ mod_gam2 <- gam(height ~
                   s(elevation, bs='cc') + 
                   s(aspect, bs='cc') + 
                   #s(slope, bs='cc') + 
-                  #tpi +
-                  twi + 
+                  tpi +
+                  #twi + 
                   geol,
                 data=vars)
 
 plot(mod_gam2)
 visreg(mod_gam2)
 plot(mod_gam2, page = 1, scheme = 2)
+
+
 
 summary(mod_gam2)
 termplot(mod_gam2, all.terms=T)
@@ -206,7 +213,7 @@ summary(mod_gam2)$sp.criterion
 
 visreg2d(mod_gam2, xvar='elevation', yvar='aspect', phi=30, theta=30, n.grid=500, border=NA)
 
-vis.gam(mod_gam2, view=c('elevation','aspect'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Mean diameter')
+vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Mean diameter')
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
