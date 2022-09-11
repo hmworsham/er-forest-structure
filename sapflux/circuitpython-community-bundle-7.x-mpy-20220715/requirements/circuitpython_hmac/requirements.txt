@@ -1,2 +1,0 @@
-Adafruit-Blinka
-Adafruit-CircuitPython-Hashlib
