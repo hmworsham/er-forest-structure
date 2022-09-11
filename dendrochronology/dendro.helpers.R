@@ -42,6 +42,7 @@
 #########################################
 # Rename sites in ITRDB format
 ##########################################
+
 `fix.names` <- function(rwfile, sitenamekey){
   if(
     grep('[A-Z][A-Z]-[A-Z][A-Z][0-9]', rwfile) == 0 || 
