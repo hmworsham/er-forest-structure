@@ -146,17 +146,25 @@
   
   sd.long = rbindlist(series.dated, use.names=F, idcol='series')
   names(sd.long) = c('Series', 'Ref_Year', 'Ring_Width')
-  sud.long = rbindlist(series.undated, use.names=F, idcol='series')
-  names(sud.long) = c('Series', 'Ref_Year', 'Ring_Width')
+  
+  if(length(series.undated)==0){
+    sud.long = NULL
+  }
+  else{
+    sud.long = rbindlist(series.undated, use.names=F, idcol='series')
+    names(sud.long) = c('Series', 'Ref_Year', 'Ring_Width')
+  }
   
   # Create matrices of ring widths aligned by date
   # Get range of years from dated chronologies
   rw.dated.range = data.frame(
     'Ref_Year'=seq(min(sd.long$Ref_Year, na.rm=T), 
                    max(sd.long$Ref_Year, na.rm=T)))
-  rw.undated.range = data.frame(
-    'Ref_Year'=seq(min(sud.long$Ref_Year, na.rm=T), 
-                   max(sud.long$Ref_Year, na.rm=T)))
+  if(!is.null(sud.long)){
+    rw.undated.range = data.frame(
+      'Ref_Year'=seq(min(sud.long$Ref_Year, na.rm=T), 
+                     max(sud.long$Ref_Year, na.rm=T)))
+  }
   
   # Add the dated series' full year range as first column
   series.dated[[length(series.dated)+1]] <- rw.dated.range
@@ -165,10 +173,12 @@
     1:length(series.dated)-1)]
   
   # Add the undated series' full time point range as first column
-  series.undated[[length(series.undated)+1]] <- rw.undated.range
-  rw.undated <- series.undated[c(
-    length(series.undated), 
-    1:length(series.undated)-1)]
+  if(!is.null(sud.long)){
+    series.undated[[length(series.undated)+1]] <- rw.undated.range
+    rw.undated <- series.undated[c(
+      length(series.undated), 
+      1:length(series.undated)-1)]
+  }
   
   # Make a matrix of ring widths by site along the full year range
   rw.d.mat <- rw.dated %>%
@@ -176,20 +186,31 @@
   rownames(rw.d.mat) <- rw.d.mat$Ref_Year
   
   # Make a matrix of ring widths by site along the full range of relative time points
-  rw.ud.mat <- rw.undated %>%
-    reduce(left_join, by='Ref_Year')
-  rownames(rw.ud.mat) <- rw.ud.mat$Ref_Year
+  if(!is.null(sud.long)){
+    rw.ud.mat <- rw.undated %>%
+      reduce(left_join, by='Ref_Year')
+    rownames(rw.ud.mat) <- rw.ud.mat$Ref_Year
+  }
   
   # Drop the year and time point columns
   rw.d.mat <- rw.d.mat[2:length(rw.d.mat)]
-  rw.ud.mat <- rw.ud.mat[2:length(rw.ud.mat)]
+  if(!is.null(sud.long)){
+    rw.ud.mat <- rw.ud.mat[2:length(rw.ud.mat)]
+  }
   
   # Convert to rwl
   dated.rwl <- as.rwl(rw.d.mat)
-  undated.rwl <- as.rwl(rw.ud.mat)
-  
+  if(!is.null(sud.long)){
+    undated.rwl <- as.rwl(rw.ud.mat)
+  } else {
+    undated.rwl <- NULL
+  }
   # Return dated and undated series as list
-  return(list('dated'=dated.rwl, 'undated'=undated.rwl))
+  if(!is.null(undated.rwl)){
+    return(list('dated'=dated.rwl, 'undated'=undated.rwl))
+  } else {
+    return(list('dated'=dated.rwl))
+  }
 }
 
 #####################################################
@@ -541,14 +562,9 @@
 `write.tcsn` <- function(i, rwls, ids, hdrs, outdir) {
   
   rwl.d = rwls[[i]][[1]]
-  rwl.ud = rwls[[i]][[2]]
-  
   outpath.d = file.path(outdir, paste(str_replace(ids[[i]], ' ', '_'), 'dated.rwl', sep='_'))
-  outpath.ud = file.path(outdir, paste(str_replace(ids[[i]], ' ', '_'), 'undated.rwl', sep='_'))
-  
   hdr.d = hdrs[[i]][[1]]
-  hdr.ud = hdrs[[i]][[2]]
-  
+
   df.to.tucson(rwl.d,
                outpath.d,
                hdr.d,
@@ -556,10 +572,18 @@
                prec=0.001,
                long.names=T)
   
-  df.to.tucson(rwl.ud,
-               outpath.ud,
-               hdr.ud,
-               append=F,
-               prec=0.001,
-               long.names=T)
+  if(length(rwls[[i]])==2){
+    rwl.ud = rwls[[i]][[2]]
+    outpath.ud = file.path(outdir, paste(str_replace(ids[[i]], ' ', '_'), 'undated.rwl', sep='_'))
+    hdr.ud = hdrs[[i]][[2]]
+    
+    df.to.tucson(rwl.ud,
+                 outpath.ud,
+                 hdr.ud,
+                 append=F,
+                 prec=0.001,
+                 long.names=T)
+  } else {
+    print(paste('Note: No undated series for', ids[[i]]))
+  }
 }
