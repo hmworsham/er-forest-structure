@@ -18,6 +18,7 @@ rasdir <- file.path(datadir, 'Geospatial', 'Worsham_SiteSelection', '2021_Analys
 sfdir <- file.path(datadir, 'Geospatial', 'RMBL_2020_EastRiver_SDP', 'RMBL_2020_EastRiver_SDP_Boundary')
 geodir <- file.path(datadir, 'Geospatial', 'Wainwright_2021_Geology')
 scondir <- file.path(datadir, 'Geospatial', 'Uhlemann_2021_RESubsurfaceResistivityMap')
+soildir <- file.path('~/Downloads/gSSURGO_CO')
 
 aop <- st_read(file.path(sfdir, 'SDP_Boundary.shp'))
 
@@ -55,6 +56,9 @@ geolm <- mask(geol, aop)
 plot(aop$geometry, col='NA', border='black', add=T)
 plot(geolm, col=viridis(20), add=T)
 
+soil <- soils.ras
+plot(soil)
+
 # resist <- read.csv(file.path(scondir, 'AEM_Res_19m_Kriging.csv'))
 # resist[resist==-999.9] <- NA
 # sresist <- raster(xmn=min(resist$X), xmx=max(resist$X), ymn=min(resist$Y), ymx=max(resist$Y), res=100, crs="+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs")
@@ -81,12 +85,16 @@ explainers <- topos
 explainers <- sapply(explainers, cropfun, aop)
 explainers <- sapply(explainers, alignfun, diam)
 
+length(explainers)
+
 geol  <- cropfun(geol, aop)
 geol <- alignfun(geol, diam, 'ngb')
-explainers
+
+soil <- raster(soil)
+soil <- cropfun(soil, aop)
+soil <- alignfun(soil, diam, 'ngb')
 explainers[[15]] <- geol
-explainers
-#explainers[[9]] <- sresist
+explainers[[16]] <- soil
 
 dnsty <- values(dnsty)
 diam <- values(diam)
@@ -99,16 +107,19 @@ slope <- values(explainers[[9]])
 tpi <- values(explainers[[11]])
 twi <- values(explainers[[13]])
 geol <- values(explainers[[15]])
+soil <- values(explainers[[16]])
+
 #sresist <- values(explainers[[9]])
 
 vars <- data.frame(
-  height,
+  dnsty,
   elevation,
   aspect,
-  slope,
+  #slope,
   tpi,
-  twi,
- geol
+  #twi,
+ geol, 
+ soil
 )
 
 m <- mean(elevation, na.rm=T)
@@ -118,6 +129,7 @@ el.rescaled <- vars$elevation*s + m
 
 #hist(vars$density, c='navy', breaks=16, border='white', main='Stand Density Frequency Distribution, 100m pixel')
 vars$geol <- as.factor(vars$geol)
+vars$soil <- as.factor(vars$soil)
 #geol2 <- as.integer(geol)
 #geol2 <- as.factor(geol2)
 
@@ -126,10 +138,10 @@ vars$geol <- as.factor(vars$geol)
 #vars <- cbind(vars, gdc, deparse.level = 0)
 #vars <- vars[vars$height > 1,]
 
-vars2 <- data.frame(scale(vars[1:6]))
+vars2 <- data.frame(scale(vars[1:4]))
 #vars <- cbind(vars2, vars[8:21])
-vars <- cbind(vars2, vars[7])
-vars$geol <- as.factor(vars$geol)
+vars <- cbind(vars2, vars[c(5,6)])
+
 
 corvars <- vars[2:6]
 corvars <- na.omit(corvars)
@@ -192,15 +204,17 @@ mod_gam2 <- gam(height ~
                   s(aspect, bs='cc') + 
                   #s(slope, bs='cc') + 
                   tpi +
-                  #twi + 
-                  geol,
+                  #twi +
+                  s(elevation, by=aspect) +
+                  s(elevation, by = tpi) +
+                  s(aspect, by = tpi) +
+                  geol +
+                  soil,
                 data=vars)
 
 plot(mod_gam2)
 visreg(mod_gam2)
 plot(mod_gam2, page = 1, scheme = 2)
-
-
 
 summary(mod_gam2)
 termplot(mod_gam2, all.terms=T)
@@ -213,7 +227,7 @@ summary(mod_gam2)$sp.criterion
 
 visreg2d(mod_gam2, xvar='elevation', yvar='aspect', phi=30, theta=30, n.grid=500, border=NA)
 
-vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='topo', zlab='Mean diameter')
+vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='gray', zlab='90th pctl height')
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
