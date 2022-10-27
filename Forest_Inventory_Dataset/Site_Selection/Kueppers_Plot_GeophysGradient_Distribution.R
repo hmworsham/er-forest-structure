@@ -64,7 +64,7 @@ siteinfo.22$Location_ID <- siteinfo.22$Location_Name
 
 # Row bind 2021 and 2022 site info
 #si.new <- bind_rows(siteinfo.21, siteinfo.22)
-#si.new <- siteinfo.21
+si.new <- siteinfo.21
 
 # Select variables of interest from 2021 site info
 topos <- si.new[c('Location_ID',
@@ -128,16 +128,21 @@ topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
 
 # Add column for cored sites
 topos_cut$Coring <- 'Not Cored'
-topos_cut[topos_cut$Location_ID %in% c('CC-UC1',
-                                       'ER-APL1', 
-                                       'ER-GT1', 
-                                       'ER-BME1', 
+topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
+                                       'CC-UC1',
+                                       'ER-APL1',
+                                       'ER-APU1',
+                                       'ER-BME1',
+                                       'ER-GT1',
+                                       'SG-NES1',
                                        'SG-NES2',
                                        'SG-SWR1',
-                                       'XX-PLN1',
-                                       'XX-PLN2',
+                                       'SR-PVG1',
                                        'XX-CAR1',
-                                       'XX-CAR2'), 'Coring'] <- 'Cored'
+                                       'XX-CAR2',
+                                       'XX-CAR3',
+                                       'XX-PLN1',
+                                       'XX-PLN2'), 'Coring'] <- 'Cored'
 
 topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
                                        'ER-APU1', 
@@ -146,7 +151,7 @@ topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
                                        'CC-EMN1'), 'Coring'] <- 'Proposed'
 
 # Subset only proposed coring sites
-#topos_coring <- topos_cut[!topos_cut$Coring=='Not Cored',]
+topos_coring <- topos_cut[topos_cut$Coring=='Cored',]
 
 ##############################################
 # Batch create plots for individual variables
@@ -154,7 +159,7 @@ topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
 
 # Print figures to png
 outdir = file.path(fidir, 'Production_Images', 'Coring_Sites')
-print.figs(topos_cut)
+print.figs(topos_coring, outdir)
 
 ############################
 # Facet grid all variables
