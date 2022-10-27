@@ -1,18 +1,27 @@
 # Load libraries
-#library(readxl)
 library(tidyverse)
 library(ggplot2)
 library(data.table)
 library(dplR)
+library(readxl)
 
+# Set up workspace
+dendrodir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data', 'Dendrochronology')
+cddir <- file.path(dendrodir, 'Crossdating')
 
-dendrodir <- '/Volumes/GoogleDrive/My Drive/Research/RMBL/RMBL-East River Watershed Forest Data/Data/Dendrochronology'
-rwdir <- file.path(dendrodir, 'Skeleton_Data')
+# Ingest crossdating spreadsheet
+cd.data <- read_xlsx(file.path(cddir, 'Crossdating_Master.xlsx'))
 
-cd.data <- read.csv(file.path(rwdir, 'Crossdating_Master.csv'))
+# Specify site and species of interest
+site = 'CRB'
+spp = 'ABLA'
 
-erapl1.abla <- cd.data[(cd.data$Site=='ER-APL1') & (cd.data$Species=='ABLA') & (cd.data$Series!='Master'),]
+# Get all marker years for site and spp of interest
+site.spp <- cd.data[
+  (cd.data$ITRDB_SiteID==site) & 
+    (cd.data$Species==spp) & 
+    (cd.data$Series!='Master'),]
 
-abla.freq <- data.frame(table(unlist(as.list(erapl1.abla[5:29]))))
+# Calculate frequency of occurrence of marker years
+abla.freq <- data.frame(table(unlist(as.list(site.abla[10:length(site.abla)]))))
 abla.freq <- abla.freq[order(abla.freq$Freq, decreasing = T),]
-View(abla.freq)
