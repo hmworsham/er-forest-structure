@@ -169,13 +169,15 @@ print.figs <- function(df, outdir){
         #   breaks=c(
         #     round(min(df$Elevation_m),0),
         #     round(max(df$Elevation_m))),0) +
-        scale_color_manual(values = c(clr, 'grey 70', 'grey 30')) +
+        # scale_color_manual(values = c(clr, 'grey 70', 'grey 30')) +
+        scale_color_manual(values = c(clr)) +
         scale_y_continuous(name = varname) +
         labs(x = 'Plot ID', y = names(topos)[t]) +
         theme_light(base_size = 20) +
         theme(axis.text.x = element_text(angle = 90, hjust = 1),
-              legend.position="bottom", 
-              #legend.title = element_blank(), 
+              legend.position='bottom',
+              #legend.position=element_blank(), 
+              legend.title = element_blank(), 
               legend.key.size = unit(1, 'cm')) +
         guides(scale = 'none',
                fill=guide_legend(title="New Legend Title")) +
