@@ -48,7 +48,7 @@ load_all('~/Repos/rwaveform')
 datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
 
 # Name output directory
-outdir <- '/global/scratch/users/worsham/geolocated_returns_v2'
+outdir <- '/global/scratch/users/worsham/geolocated_returns'
 
 # Name logpath
 logpath = '/global/scratch/users/worsham/logs/sbatch_pwf_log.txt'
