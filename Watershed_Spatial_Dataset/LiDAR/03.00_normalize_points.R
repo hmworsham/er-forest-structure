@@ -24,9 +24,9 @@ load.pkgs(pkgs)
 # Setup workspace
 scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
 shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_regridded2')
+datadir <- file.path(scrdir, 'las_regridded')
 geredir <- file.path(scrdir, 'geolocated_returns')
-outdir <- file.path(scrdir, 'las_normalized2')
+outdir <- file.path(scrdir, 'las_resampled2')
 dir.create(outdir)
 
 ############################
