@@ -1,4 +1,4 @@
-# Downsample (decimate) points to 
+# Downsample (decimate) points to uniform density
 # Load libraries
 options(rgl.useNULL=TRUE)
 
@@ -17,15 +17,15 @@ load.pkgs <- function(pkg){
   sapply(pkg, require, character.only = TRUE)
 } 
 
-# Runs the function on the list of packages defined in pkgs
+# Runs load.pkgs on the list of packages defined in pkgs
 load.pkgs(pkgs)
 
 # Setup workspace
 scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
 shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_normalized')
+datadir <- file.path(scrdir, 'las_regridded')
 neondir <- file.path(scrdir, 'neon_las_regridded')
-outdir <- file.path(scrdir, 'las_decimated')
+outdir <- file.path(scrdir, 'las_resampled2')
 dir.create(outdir)
 
 ############################
@@ -33,7 +33,7 @@ dir.create(outdir)
 ############################
 
 # Ingest gridded points
-infiles <- list.files(datadir, full.names=T)[40:1577]
+infiles <- list.files(datadir, full.names=T)
 
 # Read as catalog
 lascat <- readLAScatalog(infiles)
@@ -43,14 +43,22 @@ las_check(lascat)
 
 # Plot n returns
 lascat <- lascat[lascat['Number.of.point.records']$Number.of.point.records>0,]
+st_crs(lascat) <- '+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs'
+summary(lascat)
 plot(lascat['Number.of.point.records'], main='N points per grid cell')
 
-#############
-# Downsample
-#############
+# View a sample las file
+# las <- readLAS(infiles[1492])
+# plot(las[1:500000], bg='white')
+# rglwidget()
+# hist(las$Z)
+
+######################################
+# Filter to aboveground (Z>0) points
+######################################
 
 # Set chunk buffer and other catalog processing params
-opt_chunk_buffer(lascat) <- 5
+opt_chunk_buffer(lascat) <- 0
 opt_output_files(lascat) <- file.path(outdir, 'las_decimated_{XLEFT}_{YBOTTOM}')
 opt_laz_compression(lascat) <- T
 
@@ -68,22 +76,55 @@ aboveground <- function(chunk){
 plan(multisession)
 test1 <- catalog_apply(lascat, aboveground)
 
+#############################################################
 # Downsample (decimate) points with homogenization function
-dp <- decimate_points(lascat, homogenize(16, 10))
+#############################################################
+
+# Check las density (should = 9.4 pts/m2)
+summary(lascat)
+
+# Check neon density (should = 5.1 pts/m2)
+neonlas <- readLAScatalog(list.files(neondir, full.names=T))
+st_crs(neonlas) <- '+proj=utm +zone=13 +datum=WGS84 +units=m +no_defs'
+neonlas <- neonlas[neonlas['Number.of.point.records']$Number.of.point.records>0,]
+summary(neonlas)
+plot(neonlas['Number.of.point.records'], main='N points per grid cell')
+
+# lascat.sub <- readLAScatalog(infiles[150:175])
+# summary(lascat.sub)
+# lascat.sub <- lascat.sub[lascat.sub['Number.of.point.records']$Number.of.point.records>0,]
+# plot(lascat.sub['Number.of.point.records', main='N points per grid cell'])
+
+# Test decimation
+opt_output_files(lascat) <- file.path(outdir, 'las_resampled_{XLEFT}_{YBOTTOM}')
+opt_chunk_buffer(lascat) <- 0
+opt_laz_compression(lascat) <- T
+
+# Decimate in parallel
+plan(multisession, workers = 30L)
+dp <- decimate_points(lascat, homogenize(48, 1))
+
+# check decimation results
+dp <- dp[dp['Number.of.point.records']$Number.of.point.records>0,]
+summary(dp)
+plot(lascat['Number.of.point.records'], main='N points per grid cell')
+
+
 
 las <- readLAS(infiles[9])
 plot(las[1:50000])
 hist(las$Z)
 rglwidget()
 
-LASfile <- system.file("extdata", "Megaplot.laz", package="lidR")
-las <- readLAS(LASfile, select = "xyz")
-plot(las)
-rglwidget()
 # Select points randomly to reach an overall density of 1
 thinned1 <- decimate_points(las, random(1))
-#plot(rasterize_density(las))
+plot(rasterize_density(las))
 plot(rasterize_density(thinned1))
+
+plot(las, bg='white', legend=T)
+rglwidget()
+
+plot(thinned1, bg='white', legend=T)
 rglwidget()
 
 # Select points randomly to reach an homogeneous density of 1

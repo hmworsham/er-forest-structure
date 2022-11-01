@@ -29,4 +29,4 @@ resample_las <- function(las, outdir){
   write.las(newlas, xx@header, xx@data)
 }
 
-mclapply(list.files(datadir, full.names=T), resample_las, outdir, mc.cores=getOption('mc.cores', 24L))
+mclapply(list.files(datadir, full.names=T)[190:1627], resample_las, outdir, mc.cores=getOption('mc.cores', 24L))

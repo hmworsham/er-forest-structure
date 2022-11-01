@@ -22,12 +22,11 @@ load.pkgs <- function(pkg){
 load.pkgs(pkgs)
 
 # Setup workspace
-scrdir <- file.path('global', 'scratch', 'users', 'worsham')
+scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
 shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_regridded')
+datadir <- file.path(scrdir, 'las_regridded2')
 geredir <- file.path(scrdir, 'geolocated_returns')
-neondir <- file.path(scrdir, 'neon_las_regridded')
-outdir <- file.path(scrdir, 'las_normalized')
+outdir <- file.path(scrdir, 'las_normalized2')
 dir.create(outdir)
 
 ############################
@@ -42,25 +41,27 @@ dtm <- raster(dtm) # Coerce to raster, as SpatRaster isn't serializable for pll 
 infiles <- list.files(datadir, full.names=T)
 infiles <- infiles[(sapply(infiles, file.size) > 5e6)]
 lascat <- readLAScatalog(infiles)
-summary(lascat)
-plot(lascat, chunk=T)
+#summary(lascat)
+#plot(lascat, chunk=T)
 
 # Plot las catalog by number of points in file
 lascat <- lascat[lascat['Number.of.point.records']$Number.of.point.records>0,]
+summary(lascat)
 plot(lascat['Number.of.point.records'])
 
 # Set chunk buffer and other catalog processing params
 #opt_chunk_size(lascat) <- 1000
-opt_chunk_buffer(lascat) <- 5
+opt_chunk_buffer(lascat) <- 10
 opt_output_files(lascat) <-  paste0(outdir, '/las_norm_{XLEFT}_{YBOTTOM}')
 opt_laz_compression(lascat) <- T
 
 # Plot catalog showing buffered chunks to process
-plot(lascat, chunk = TRUE)
-summary(lascat)
+#plot(lascat, chunk = TRUE)
+#summary(lascat)
 
 # Set up parallel processing
-plan(multisession)
+plan(multisession, workers = 24L)
+set_lidr_threads(24L)
 
 # Normalize height on full las catalog
 lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
@@ -70,45 +71,46 @@ lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
 #######################
 
 # Normalize height with 2 methods
-las <- readLAS(infiles[1])
-
-# Method 1 = simple subtraction
-gn1 <- las - dtm
-gn1 <- gn1[gn1$Z>=0]
-gn1
-
-# Method 2 = `normalize_height` interpolating over dtm
-gn2 <- normalize_height(las, tin(), dtm = dtm)
-fc10 = c('#654321', forest.colors(15))
-lidR::plot(gn2[gn2$Z>=0][1:50000], pal=fc10, color='Z', bg='white', legend=T, nbreaks=15)
-rglwidget()
-
-# Attemps at a safe function for normalization
-
-## Attempt 1
-norm_height <- function(chunk, srf) {
-  pc <- readLAS(chunk)                  # read the chunk
-  if (is.empty(pc)) return(NULL)        # check if it actually contain points
-  lasnorm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)}, 
-                      error=function(cond){message('Normalization error')
-                        return(NULL)}
-  ) # apply computation of interest
-  return(lasnorm) # output
-}
-
-output <- catalog_apply(lascat, norm_height, dtm)
-
-
-## Attempt 2
-lascat_norm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)},
-                        error=function(cond) {
-                          message('Oops!')
-                          message("Here's the original error message:")
-                          message(cond)
-                          # Choose a return value in case of error
-                          return(NA)})
-
-output <- lapply(list.files(datadir, full.names=T), norm_height, dtm)
+# las <- readLAS(infiles[1])
+# 
+# # Method 1 = simple subtraction
+# gn1 <- las - dtm
+# gn1 <- gn1[gn1$Z>=0]
+# gn1
+# 
+# # Method 2 = `normalize_height` interpolating over dtm
+# gn2 <- normalize_height(las, tin(), dtm = dtm)
+# fc10 = c('#654321', forest.colors(15))
+# lidR::plot(gn2[gn2$Z>=0][1:50000], pal=fc10, color='Z', bg='white', legend=T, nbreaks=15)
+# rglwidget()
+# 
+# # Attemps at a safe function for normalization
+# 
+# ## Attempt 1
+# norm_height <- function(chunk, srf) {
+#   pc <- readLAS(chunk)                  # read the chunk
+#   if (is.empty(pc)) return(NULL)        # check if it actually contain points
+#   lasnorm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)}, 
+#                       error=function(cond){message('Normalization error')
+#                         return(NULL)}
+#   ) # apply computation of interest
+#   return(lasnorm) # output
+# }
+# 
+# output <- catalog_apply(lascat, norm_height, dtm)
+# 
+# 
+# ## Attempt 2
+# lascat_norm <- tryCatch({normalize_height(lascat, tin(), dtm=dtm)},
+#                         error=function(cond) {
+#                           message('Oops!')
+#                           message("Here's the original error message:")
+#                           message(cond)
+#                           # Choose a return value in case of error
+#                           return(NA)})
+# 
+# output <- lapply(list.files(datadir, full.names=T), norm_height, dtm)
+# 
 
 # Screwing around with plotting merged file in RGB
 # rgbmap <- terra::rast(file.path(scrdir, 'EastRiverInputs/aop_naip_ortho.tif'))

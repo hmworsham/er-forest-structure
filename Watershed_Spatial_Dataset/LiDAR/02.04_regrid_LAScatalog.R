@@ -24,8 +24,8 @@ load.pkgs(pkgs)
 
 # Define directories
 shapedir <- '/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary'
-datadir <- '/global/scratch/users/worsham/las_resampled'
-outdir <- '/global/scratch/users/worsham/las_regridded'
+datadir <- '/global/scratch/users/worsham/las_ungridded'
+outdir <- '/global/scratch/users/worsham/las_regridded2'
 neondir <- '/global/scratch/users/worsham/neon_las'
 ngdir <- '/global/scratch/users/worsham/neon_las_gaps'
 dir.create(outdir)
