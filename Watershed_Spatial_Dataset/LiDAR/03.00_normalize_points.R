@@ -5,10 +5,11 @@ options(rgl.useNULL=TRUE)
 
 # Install and load libraries
 pkgs <- c('future',
-          'lidR',
           'raster',
           'rgl',
-          'terra') # Name the packages you want to use here
+          'terra',
+          'lidR', 
+          'stringr') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
 load.pkgs <- function(pkg){
@@ -24,9 +25,9 @@ load.pkgs(pkgs)
 # Setup workspace
 scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
 shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_regridded')
+datadir <- file.path(scrdir, 'las_downsampled')
 geredir <- file.path(scrdir, 'geolocated_returns')
-outdir <- file.path(scrdir, 'las_resampled2')
+outdir <- file.path(scrdir, 'las_normalized3')
 dir.create(outdir)
 
 ############################
@@ -34,34 +35,31 @@ dir.create(outdir)
 ############################
 
 # Ingest original las dtm
-dtm <- rast(file.path(scrdir, 'EastRiverInputs', 'dtm_mosaic.tif'))
+dtm <- terra::rast(file.path(scrdir, 'EastRiverInputs', 'dtm_mosaic.tif'))
 dtm <- raster(dtm) # Coerce to raster, as SpatRaster isn't serializable for pll processing
 
 # Ingest gridded points as las catalog
 infiles <- list.files(datadir, full.names=T)
-infiles <- infiles[(sapply(infiles, file.size) > 5e6)]
 lascat <- readLAScatalog(infiles)
-#summary(lascat)
-#plot(lascat, chunk=T)
 
 # Plot las catalog by number of points in file
-lascat <- lascat[lascat['Number.of.point.records']$Number.of.point.records>0,]
-summary(lascat)
+#lascat <- lascat[lascat['Number.of.point.records']$Number.of.point.records>0,]
 plot(lascat['Number.of.point.records'])
+which(lascat['Number.of.point.records']$Number.of.point.records==0,)
 
 # Set chunk buffer and other catalog processing params
 #opt_chunk_size(lascat) <- 1000
-opt_chunk_buffer(lascat) <- 10
+opt_chunk_buffer(lascat) <- 20
 opt_output_files(lascat) <-  paste0(outdir, '/las_norm_{XLEFT}_{YBOTTOM}')
 opt_laz_compression(lascat) <- T
 
 # Plot catalog showing buffered chunks to process
-#plot(lascat, chunk = TRUE)
-#summary(lascat)
+plot(lascat, chunk = TRUE)
+summary(lascat)
 
 # Set up parallel processing
-plan(multisession, workers = 24L)
-set_lidr_threads(24L)
+plan(multisession, workers = 26L)
+set_lidr_threads(26L)
 
 # Normalize height on full las catalog
 lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
@@ -69,6 +67,21 @@ lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
 #######################
 # Scratch
 #######################
+
+# # Deal with incomplete/error-prone chunks
+# inf <- list.files(datadir)
+# inf <- str_replace(inf, 'downsampled', 'norm')
+# #inf <- inf[(sapply(infiles, file.size) > 7e6)]
+# did <- list.files(outdir)
+# 
+# lascat.did <- readLAScatalog(file.path(outdir, did))
+# plot(lascat.did['Number.of.point.records'])
+# 
+# notdid <- inf[which(!inf %in% did)]
+# notdid <- str_replace(notdid, 'norm', 'downsampled')
+# length(notdid)
+# notdid <- notdid[138:length(notdid)]
+# lascat <- readLAScatalog(file.path(datadir, notdid))
 
 # Normalize height with 2 methods
 # las <- readLAS(infiles[1])
@@ -137,41 +150,41 @@ lascat_norm <- normalize_height(lascat, tin(), dtm=dtm)
 
 
 # Screwing around with ground classification
-las <- readLAS(infiles[99])
-ws <- seq(3, 15, 5)
-th <- seq(0.1, 0.8, length.out = length(ws))
-
-las.cg <- classify_ground(las, algorithm = pmf(ws = ws, th = th))
-las <- classify_ground(las, algorithm = csf(sloop_smooth = TRUE, class_threshold = 1, cloth_resolution = 0.85, time_step = 0.9))
-
-#cg1 <- classify_ground(las1, mcc())
-plot(las.cg[1:50000], color = "Classification", size = 3, bg = "white") 
-rglwidget()
-
-p1 <- c(330363, 4316560)
-p2 <- c(330500, 4316570)
-plot_crossection <- function(las,
-                             p1 = c(min(las@data$X), mean(las@data$Y)),
-                             p2 = c(max(las@data$X), mean(las@data$Y)),
-                             width = 4, colour_by = NULL)
-{
-  colour_by <- enquo(colour_by)
-  data_clip <- clip_transect(las, p1, p2, width)
-  p <- ggplot(data_clip@data, aes(X,Z)) + geom_point(size = 0.5) + coord_equal() + theme_minimal()
-  
-  if (!is.null(colour_by))
-    p <- p + aes(color = !!colour_by) + labs(color = "")
-  
-  return(p)
-}
-
-plot_crossection(las, colour_by = factor(Classification))
-
-gnd <- filter_ground(las[1:50000])
-plot(gnd, size = 3, bg = "white") 
-rglwidget()
-
-dtm <- rasterize_terrain(las, 1, knnidw())
-
-gn1 <- normalize_height(las, knnidw())
-gn2 <- classify_ground(gn1, algorithm = pmf(ws = ws, th = th))
+# las <- readLAS(infiles[99])
+# ws <- seq(3, 15, 5)
+# th <- seq(0.1, 0.8, length.out = length(ws))
+# 
+# las.cg <- classify_ground(las, algorithm = pmf(ws = ws, th = th))
+# las <- classify_ground(las, algorithm = csf(sloop_smooth = TRUE, class_threshold = 1, cloth_resolution = 0.85, time_step = 0.9))
+# 
+# #cg1 <- classify_ground(las1, mcc())
+# plot(las.cg[1:50000], color = "Classification", size = 3, bg = "white") 
+# rglwidget()
+# 
+# p1 <- c(330363, 4316560)
+# p2 <- c(330500, 4316570)
+# plot_crossection <- function(las,
+#                              p1 = c(min(las@data$X), mean(las@data$Y)),
+#                              p2 = c(max(las@data$X), mean(las@data$Y)),
+#                              width = 4, colour_by = NULL)
+# {
+#   colour_by <- enquo(colour_by)
+#   data_clip <- clip_transect(las, p1, p2, width)
+#   p <- ggplot(data_clip@data, aes(X,Z)) + geom_point(size = 0.5) + coord_equal() + theme_minimal()
+#   
+#   if (!is.null(colour_by))
+#     p <- p + aes(color = !!colour_by) + labs(color = "")
+#   
+#   return(p)
+# }
+# 
+# plot_crossection(las, colour_by = factor(Classification))
+# 
+# gnd <- filter_ground(las[1:50000])
+# plot(gnd, size = 3, bg = "white") 
+# rglwidget()
+# 
+# dtm <- rasterize_terrain(las, 1, knnidw())
+# 
+# gn1 <- normalize_height(las, knnidw())
+# gn2 <- classify_ground(gn1, algorithm = pmf(ws = ws, th = th))
