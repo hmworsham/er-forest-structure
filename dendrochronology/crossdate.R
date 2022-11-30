@@ -39,22 +39,22 @@ mean(series.sum$ar1)
 mean(interseries.cor(series, method='spearman')[,1])
 
 # Get RWL correlations
-series.cor <- corr.rwl.seg(series, seg.length=50, pcrit=0.01, method='spearman', bin.floor=10)
+series.cor <- corr.rwl.seg(series, seg.length=30, pcrit=0.01, method='spearman', bin.floor=10)
 
 ################################################
 # Evaluate a problematic core
 ################################################
-target <- 'CRB5503A'
+target <- 'BMA1268A'
   
 # View single-core correlations over time series
 cor.50 <- corr.series.seg(rwl=series, series=target, seg.length=30, bin.floor=10)
-xskel.ccf.plot(rwl=series, series=target, win.start=1800, win.width=100, prewhiten=T)
+xskel.ccf.plot(rwl=series, series=target, win.start=1930, win.width=60, prewhiten=T)
 
 # Check problematic segment using n-year window
-win <- 1820:1900
+win <- 1920:1990
 series.yrs <- time(series)
 series.trunc <- series[series.yrs %in% win,]
-ccf.30 <- ccf.series.rwl(rwl=series.trunc, series=target, prewhiten=T, seg.length=20, bin.floor=0)
+ccf.30 <- ccf.series.rwl(rwl=series.trunc, series=target, prewhiten=T, seg.length=30, bin.floor=0)
 
 ##########################################################
 # Iteratively drop cores to find optimal correlation score
