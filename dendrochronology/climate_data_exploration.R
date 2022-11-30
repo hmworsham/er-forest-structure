@@ -22,7 +22,6 @@ rwldir <- file.path(dendrodir, 'rwl')
 climdir <- file.path(datadir, 'Climate')
 precipdir <- file.path(climdir, 'NOAA_CDO', 'COOP', 'Crested_Butte')
 tempdir <- file.path(climdir, 'Berkeley_Earth', 'CrestedButte_927113_T_Breakpoint_Corrected')
-tempdir <- file.path('/')
 
 ###################################
 # Generate ring-width time series
@@ -90,10 +89,7 @@ precip <-  precip %>%
                                 (P_ANOM_STD <= 0.5 & P_ANOM_STD > -0.5) ~ 'Mean conditions',
                                 (P_ANOM_STD <= 1 & P_ANOM_STD > 0.5) ~ 'Moderate high',
                                 (P_ANOM_STD >= 1) ~ 'Extreme high',
-                                TRUE ~ 'NA')) %>%
-  ungroup() %>%
-  group_by(MONTH) %>%
-  mutate(P_
+                                TRUE ~ 'NA'))
 
 p.anom <- precip[c('YEAR', 'P_ANOM_STD', 'P_ANOM_CAT')]
 p.anom.rep <- p.anom[rep(seq_len(nrow(p.anom)), length(crn)),]
