@@ -63,7 +63,7 @@ all(sapply(ringwidths, function(x) dim(x)[2]==6))
 
 # List sites and species to process
 sites <-  c('CRB', 'GTA', 'CRA', 'APL', 'BMA', 'SNB')
-spps <- c('ABLA', 'PIEN')
+spps <- c('PIEN')
 names(sites) <- sites
 names(spps) <- spps
 
@@ -77,5 +77,5 @@ sss = outer(sites, spps, split.site.spp)
 rwl <- generate.rwl(sites, spps, sss, dendroindex, outdir=rwldir)
 
 # Check it worked
-ts <- read.tucson(file.path(rwldir, 'BMA_ABLA_dated.rwl'))
+ts <- read.tucson(file.path(rwldir, 'SNB_PIEN_dated.rwl'))
 spag.plot(ts, zfac=0.5)

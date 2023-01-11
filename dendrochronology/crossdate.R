@@ -19,7 +19,7 @@ rwldir <- file.path(dendrodir, 'rwl')
 ################################################
 
 # Read in one series
-series <- read.tucson(file.path(rwldir, 'BMA_ABLA_dated.rwl'))
+series <- read.tucson(file.path(rwldir, 'SNB_PIEN_dated.rwl'))
 #series <- series[!names(series) %in% c('CRB5503A')]
 
 # Spaghetti plot
@@ -39,7 +39,7 @@ mean(series.sum$ar1)
 mean(interseries.cor(series, method='spearman')[,1])
 
 # Get RWL correlations
-series.cor <- corr.rwl.seg(series, seg.length=30, pcrit=0.01, method='spearman', bin.floor=10)
+series.cor <- corr.rwl.seg(series, seg.length=50, pcrit=0.01, method='spearman', bin.floor=10)
 
 ################################################
 # Evaluate a problematic core

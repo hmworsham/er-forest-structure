@@ -244,7 +244,32 @@ crn.p.order <- crn.p %>%
 ggplot(crn.p.order, aes(x=value, y=SP, fill=P_CAT)) +
   geom_boxplot() + 
   scale_fill_brewer(palette='RdYlBu') +
-  coord_flip()
+  coord_flip() + 
+  labs(title='Ring growth responds to precipitation extremes',
+       x='Ring-width index',
+       y='Species', 
+       fill='Precipitation anomaly magnitude') +
+  theme_minimal() + 
+  theme(axis.title=element_text(size=16),
+        axis.text=element_text(size=14),
+        title=element_text(size=16, hjust=0.5),
+        asp=1)
+
+crn.p.lo <- crn.p.order[crn.p.order$P_CAT=='Extreme low' | crn.p.order$P_CAT=='Moderate low',]
+
+ggplot(crn.p.lo, aes(x=value, y=SITE, fill=SITE)) +
+  geom_boxplot() + 
+  scale_fill_brewer(palette='RdYlBu') +
+  coord_flip() + 
+  labs(title='Ring growth responds to precipitation extremes',
+       x='Species',
+       y='Ring-width index', 
+       fill='Precipitation anomaly magnitude') +
+  theme_minimal() + 
+  theme(axis.title=element_text(size=16),
+        axis.text=element_text(size=14),
+        title=element_text(size=16, hjust=0.5),
+        asp=1)
 
 #######################
 # ANOVA
@@ -260,6 +285,11 @@ library(car)
 leveneTest(value ~ factor(P_ANOM_CAT), data=crn.p)
 
 plot(crn.p.aov,1)
+
+crn.p.sp.aov <- aov(value ~ SITE, data=crn.p.lo)
+summary(crn.p.sp.aov)
+TukeyHSD(crn.p.sp.aov)
+
 
 #########################
 # Time series smoothing
