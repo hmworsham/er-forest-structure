@@ -6,7 +6,7 @@ library(data.table)
 
 # Define paths
 erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data')
-smdir <- file.path(erdir, 'Sensors', 'Soil_Moisture')
+smdir <- file.path(erdir, 'Sensors', 'Soil_VWC-T-EC')
 climdir <- file.path(erdir, 'Climate', 'NOAA_CDO')
 
 # List soil moisture data input files
@@ -60,25 +60,25 @@ p2$Site <- sort(rep(unique(sites), 10224))
 # Rbind everything to have all data together
 sm <- rbindlist(smdata.by.site, fill=T)
 sm.vwc <- select(sm, matches('DateTime|VWC_mean|Site'))
-head(sm.vwc)
+sm.vwc <- sm.vwc[!duplicated(sm.vwc)]
 
 # Melt to get a tidy long dataframe
 sm1.vwc <- melt(sm.vwc, id=c('DateTime', 'Site'))
 #sm.p.long <- melt(sm.precip, id=c('DateTime', 'Site'))
-
+sm.p.long <- sm1.vwc
 # Merge with precip data
 sm.p.long <- merge(sm1.vwc, p2, by=c('DateTime', 'Site'))
 
 # Subset to one month
 sm1.vwc.augoct <- sm.p.long[
-  (sm.p.long$DateTime > as.POSIXct('2021-05-15')) 
-  & sm.p.long$DateTime < as.POSIXct('2021-10-15'),]
+  (sm.p.long$DateTime > as.POSIXct('2021-10-15')) 
+  & sm.p.long$DateTime < as.POSIXct('2022-09-15'),]
 sm1.vwc.augoct$DateTime <- as.POSIXct(sm1.vwc.augoct$DateTime)
 
 # Plot with sites as facets
 my_colors <- RColorBrewer::brewer.pal(8, "Blues")[c(3,5,7)]
 ggplot(sm1.vwc.augoct, aes(x=DateTime)) +
-  geom_line(aes(y=Precip/100), color='grey30') + 
+  #geom_line(aes(y=Precip/100), color='grey30') + 
   geom_line(aes(y=value, color=variable), size = 0.6) +
   scale_color_manual(values = my_colors,
                      labels = c('10 cm',
@@ -87,10 +87,11 @@ ggplot(sm1.vwc.augoct, aes(x=DateTime)) +
   #scale_color_brewer(palette='Greens') +
   scale_y_continuous(
     name=bquote('Volumetric Soil Moisture' (m^3 ~m^-3)),
-    sec.axis = sec_axis(~.*100, name=bquote('Precipitation' (mm ~d^-1)))) +
-  scale_x_datetime(date_breaks='5 days',
-                   limits=c(as.POSIXct('2021-06-01'), NA)) +
-  labs(title = 'Soil Volumetric Water Content at 10 Mixed Conifer Sites, Aug-Sep 2021',
+    #sec.axis = sec_axis(~.*100, name=bquote('Precipitation' (mm ~d^-1)))
+    ) +
+  scale_x_datetime(date_breaks='30 days',
+                   limits=c(as.POSIXct('2021-10-15'), NA)) +
+  labs(title = 'Soil Volumetric Water Content at 10 Mixed Conifer Sites, Oct 2021 - Sep 2022',
        color = 'VWC at Depth') +
   xlab('Date') +
   facet_wrap(~Site, ncol=5) +
