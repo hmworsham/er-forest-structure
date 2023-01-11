@@ -160,7 +160,7 @@ print.figs <- function(df, outdir){
     # Print the plot to png
     print(
       ggplot(df, aes(x = reorder(Location_ID,  df[, t]), y = df[, t])) +
-        geom_point(aes(color = Coring), size = 5) +
+        geom_point(aes(color = Established), size = 5) +
         # scale_color_viridis_c(
         #   name='Elevation',
         #   limits=c(
@@ -175,8 +175,8 @@ print.figs <- function(df, outdir){
         labs(x = 'Plot ID', y = names(topos)[t]) +
         theme_light(base_size = 20) +
         theme(axis.text.x = element_text(angle = 90, hjust = 1),
-              legend.position='bottom',
-              #legend.position=element_blank(), 
+              #legend.position='bottom',
+              legend.position='none', 
               legend.title = element_blank(), 
               legend.key.size = unit(1, 'cm')) +
         guides(scale = 'none',
