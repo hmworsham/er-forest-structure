@@ -78,7 +78,8 @@ topos <- si.new[c('Location_ID',
                    'TWI_100',
                    'TWI_1000',
                    'TPI_1000',
-                   'TPI_2000')]
+                   'TPI_2000',
+                   'Within_SDP_Boundary')]
 
 # Make df of topo variables
 topos <- as.data.frame(topos)
@@ -151,15 +152,18 @@ topos_cut[topos_cut$Location_ID %in% c('CC-CVS1',
                                        'CC-EMN1'), 'Coring'] <- 'Proposed'
 
 # Subset only proposed coring sites
-topos_coring <- topos_cut[topos_cut$Coring=='Cored',]
+# topos_coring <- topos_cut[topos_cut$Coring=='Cored',]
+
+# Subset only plots in aop domain
+topos_aop <- topos_cut[topos_cut$Within_SDP_Boundary=='Yes',]
 
 ##############################################
 # Batch create plots for individual variables
 ##############################################
 
 # Print figures to png
-outdir = file.path(fidir, 'Production_Images', 'Coring_Sites')
-print.figs(topos_coring, outdir)
+outdir = file.path(fidir, 'Production_Images', 'AOP_Sites')
+print.figs(topos_aop, outdir)
 
 ############################
 # Facet grid all variables
