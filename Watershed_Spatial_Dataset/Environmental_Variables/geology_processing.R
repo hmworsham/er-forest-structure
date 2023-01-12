@@ -17,6 +17,7 @@ extent(ras) <- extent(aop)
 crs(ras) <- crs(aop)
 ras <- projectRaster(ras, crs=crs(aop))
 geol$MapUnit_Index <- factor(geol$MapUnit, labels = seq(1,9))
+View(geol)
 geol <- rasterize(geol, ras, 'MapUnit_Index')
 
 # Plot geology to check
