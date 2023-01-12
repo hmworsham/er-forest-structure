@@ -1,3 +1,7 @@
 # eastriver
 
-Scripts for processing waveform and discrete-return LiDAR data to derive structural metrics for forest cover in the East River watershed, Colorado, USA.
+This is a repository for code used to clean, process, and analyze forest inventory and waveform LiDAR data collected in the East River watershed of Colorado by members of the Kueppers Lab at the University of California, Berkeley.
+
+The scripts in this repository were authored by several people, including Marshall Worsham, who maintains the repository (worsham@berkeley.edu).
+
+![waveform](https://github.com/hmworsham/eastriver/blob/main/leading_edge_detection.png)
