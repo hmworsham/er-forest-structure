@@ -209,8 +209,8 @@ target.vars <- c('folded_aspect_205',
                 'k',
                 #'cec',
                 'td',
-                'swe',
-                'delta_swe')
+                'swe')
+                #'delta_swe')
 
 # Isolate the variables selected in the list above
 sapply(explainers, names)
@@ -252,6 +252,31 @@ vars2 <- vars[!names(vars) %in% 'geology']
 vars2 <- data.frame(scale(vars2))
 #vars <- cbind(vars2, vars[8:21])
 vars <- cbind(vars2, vars[names(vars) %in% 'geology'])
+vars$geology <- 
+  case_when(vars$geology==1~'KJde',
+            vars$geology==2~'Km',
+            vars$geology==3~'Kmv',
+            vars$geology==4~'Pm',
+            vars$geology==5~'PPm',
+            vars$geology==6~'Qd',
+            vars$geology==7~'Ql',
+            vars$geology==8~'Tmi',
+            vars$geology==9~'Two'
+            )
+
+vars$geology <- 
+  case_when(vars$geology==1~'Dakota Sandstone',
+            vars$geology==2~'Mancos Shale',
+            vars$geology==3~'Mesa Verde Formation (Sand/Silt/Coal)',
+            vars$geology==4~'Gothic Formation (Sand/Shale)',
+            vars$geology==5~'Maroon Formation (Red Sand/Mud/Conglomerate)',
+            vars$geology==6~'Glacial Drift',
+            vars$geology==7~'Landslide Deposits',
+            vars$geology==8~'Middle-Tertiary Granodioritic Laccoliths',
+            vars$geology==9~'Wasatch Formation (Claystone-Shale)'
+  )
+
+vars$geology <- as.factor(vars$geology)
 
 #############################
 # Correlation matrix
@@ -340,27 +365,74 @@ mod_gam2 <- gam(density ~
                   s(elevation, bs='cc') + 
                   s(folded_aspect_205, bs='cc') + 
                   s(slope, bs='cc') + 
-                  tpi_1km +
-                  twi_100m +
-                  heat_load +
+                  s(tpi_1km, bs='cc') +
+                  #s(twi_100m, bs='cc') +
+                  s(heat_load, bs='cc') +
                   s(elevation, by=folded_aspect_205) +
                   s(elevation, by = tpi_1km) +
+                  s(elevation, by = swe) + 
                   s(folded_aspect_205, by = tpi_1km) +
+                  s(elevation, by=geology) +
+                  #s(folded_aspect_205, by=geology) + 
+                  #s(tpi_1km, by=geology) +
                   geology +
-                  awc + 
-                  om +
-                  k + 
+                  s(awc, bs='cc') + 
+                  s(om, bs='cc') +
+                  s(k, bs='cc') + 
                   #cec + 
-                  td + 
-                  swe + 
-                  delta_swe,
+                  s(td, bs='cc') + 
+                  s(swe, bs='cc'),
                 data=vars)
 
-plot(mod_gam2)
-#visreg(mod_gam2)
-plot(mod_gam2, page = 1, scheme = 2)
-
 summary(mod_gam2)
+
+names(mod_gam2$coefficients)
+par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
+plot.gam(mod_gam2, scheme=1, ylim=c(-5,5))
+
+varnms <- c('Elevation',
+  'Folded Aspect',
+  'Slope',
+  'TPI',
+  'Heat Load',
+  'Elevation:Folded Aspect',
+  'Elevation:TPI',
+  'Elevation:SWE',
+  'Folded Aspect:TPI',
+  'Elevation:KJde',
+  'Elevation:Km',
+  'Elevation:Kmv',
+  'Elevation:Pm',
+  'Elevation:PPm',
+  'Elevation:Qd',
+  'Elevation:Ql',
+  'Elevation:Tmi',
+  'Elevation:Two',
+  'Soil AWC',
+  'Soil Percent OM',
+  'Soil k',
+  'Soil Total Depth',
+  'SWE')
+?mar
+par(mfcol=c(1,4), mar=c(4,2,4,1), lwd=2)
+for(i in 19:22){
+  plot.gam(mod_gam2, 
+           scheme=1, 
+           ylim=c(-5,5), 
+           select=i, 
+           main=varnms[i],
+           ylab='Stand density (stems/ha)',
+           xlab=paste('Standardized', varnms[i]),
+           cex.lab=2, 
+           cex.main=2.5)
+}
+
+ggplot(vars, aes(x=density, y=elevation, color=geology)) + 
+  geom_point() +
+  geom_abline()
+
+#visreg(mod_gam2)
+
 termplot(mod_gam2, all.terms=T)
 
 AIC(mod_lm)
@@ -369,9 +441,10 @@ AIC(mod_gam2)
 summary(mod_lm)$sp.criterion
 summary(mod_gam2)$sp.criterion
 
-visreg2d(mod_gam2, xvar='elevation', yvar='aspect', phi=30, theta=30, n.grid=500, border=NA)
-
-vis.gam(mod_gam2, view=c('elevation','tpi'), type='response', plot.type='persp', phi=18, theta=48, border=NA, color='gray', zlab='90th pctl height')
+visreg2d(mod_gam2, xvar='elevation', yvar='swe', phi=20, theta=50, n.grid=500, border=NA)
+mod_gam2$coefficients
+par(mfcol=c(1,3), mar=c(2,2,4,2))
+vis.gam(mod_gam2, view=c('elevation','tpi_1km'), type='response', plot.type='persp', phi=20, theta=48, border=NA, color='topo', zlab='90th pctl height', contour.col='black', main='Density v Elevation v TPI', xlab='Standardized elevation', ylab='standardized TPI', cex.lab=2, cex.main=2.5)
 
 summary(mod_gam2)
 summary(mod_lm)$r.sq
