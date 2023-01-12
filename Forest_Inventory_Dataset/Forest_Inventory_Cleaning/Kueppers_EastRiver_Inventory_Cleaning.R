@@ -1,6 +1,6 @@
-# Cleaning existing Kueppers inventory data (up to 2020)
+# Cleaning existing Kueppers inventory data (up to 2021)
 # Marshall Worsham
-# Update 03-10-2021
+# Updated 12-30-22
 
 # Load packages
 library(dplyr)
@@ -10,21 +10,21 @@ library(ggplot2)
 library(googledrive)
 
 # Set data directories
-fidir <- paste0(getwd(), '/Desktop/RMBL/Projects/Forest_Inventory_Dataset/Source/')
-wsdir <- paste0(getwd(), '/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Source/')
+erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL')
+dendrodir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Inventory Plots')
+workdir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', 'Source')
 
 ##########################################################################
 # Download inventory data from Google Drive
 ##########################################################################
-
-invsheets <- drive_ls(path = as_id('1twTtetxdIAwN8wCMXy8oagGjHVa56ZU8'), pattern = 'inventory_data', type = 'spreadsheet', recursive = T)
+invsheets <- drive_find(pattern='inventory_data', type='spreadsheet')
 invnames <- invsheets$name
 invids <- invsheets$id
 
-for(j in invids){
+for(j in seq(length(invids))){
   drive_download(
-    as_id(paste0('https://docs.google.com/spreadsheets/d/', j)),
-    path = paste0(fidir, 'Inventory_Files_21-03-14/', j, '.xlsx'),
+    as_id(paste0('https://docs.google.com/spreadsheets/d/', invids[j])),
+    path = file.path(workdir, 'Inventory_Files_22-12-02', paste0(invnames[j], '.xlsx')),
     overwrite = T
   )
 }
@@ -34,7 +34,7 @@ for(j in invids){
 ##########################################################################
 
 # Define files to import
-datadir <- paste0(fidir, 'Inventory_Files_21-03-14')
+datadir <- file.path(workdir, 'Inventory_Files_22-12-02')
 files <- list.files(datadir, full.names = T)
 
 # Define column types
@@ -80,43 +80,73 @@ df <- lapply(files, function(file) {
   data.frame(read_xlsx(file, 
                        sheet = 1,
                        col_types = coltypes,
-                       na = 'NA'
-            ))})
+                       na = 'NA'))
+  }
+  )
 
 # Bind the dataframes into one and filter rows with all NA values
 alldata <- bind_rows(df)
-invdata <- alldata %>%
-  filter_all(any_vars(!is.na(.)))
+invdata <- alldata[rowSums(is.na(alldata)) != length(alldata), ]
 
 # Count entries by site name
-invdata %>%
+View(invdata %>%
   group_by(Site_Name) %>%
-  count()
+  count())
+
 ##########################################################################
 # Cleaning and deduplicating
 ##########################################################################
 
-# Filter out plots we didn't inventory in 2020 and records without tag numbers
-inv <- invdata %>%
-  #filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-PLN2', 'XX-PLN1')) %>%
-  filter(!is.na(Tag_Number)) # remove all "NT" tag numbers (coded NA)
-nrow(inv)
-length(inv) == 44 #Check that there are 44 columns in resulting df
-View(inv)
+# Find records missing tag numbers
+nt <- invdata[which(is.na(invdata$Tag_Number)),]
 
-##################
-# QUADRUPLICATES
-##################
+# Find date range of missing tag numbers
+unique(nt$Census_Start)
+# All seem to be in 2018 and 2019, except for one (associated with SG-NWS1, which had Census_Start entered incorrectly)
+
+# Find entries where the tag number is missing but shouldn't be (ie, DBH>10 cm but no associated tag number)
+nt.gt10 <- nt[which(nt$DBH_1_CM>10),]
+nt.gt10 %>% 
+  group_by(Site_Name, Census_Start) %>%
+  summarise(n())
+# It's only a few, and they're all from 2018/2019 so we can assume subsequent censuses captured them, or that it's otherwise OK to drop these observations
+
+# Remove all NA tag numbers and all "NT" tag numbers (which are coded NA on read)
+inv <- invdata %>%
+  filter(!is.na(Tag_Number)) 
+
+# Check results
+assertthat::are_equal(length(which(is.na(invdata$Tag_Number))), nrow(invdata)-nrow(inv))
+length(which(is.na(inv$Tag_Number))) # Check number of NA tag numbers (should = 0)
+
+# Filter records in sites outside AOP domain
+# inv <- inv %>%
+#   filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-PLN2', 'XX-PLN1', 'SG-NWS1'))
+
+# Check site names
+unique(inv$Site_Name)
+length(unique(inv$Site_Name))
+
+# Check dimensions of inv
+dim(inv)
+
+# Add column to inv that merges site ID and tag number
+inv$SiTag <- paste(inv$Site_Name, inv$Tag_Number, sep='_')
+
+####################################
+# DEAL WITH QUADRUPLICATE ENTRIES
+####################################
 
 # Subset where the same tree tag has 4 entries
 tag4 <- inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 3) %>%
   ungroup()
 
-quadrupes <- inv[(inv$Tag_Number %in% tag4$Tag_Number),]
-quadrupes
+quadrupes <- inv[(inv$SiTag %in% tag4$SiTag),]
+View(quadrupes)
+# There should be no instances of 4 or more observations of any tree
 
 ##################
 # TRIPLICATES
@@ -124,59 +154,59 @@ quadrupes
 
 # Subset where the same tree tag has 3 entries
 tag3 <- inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n == 3) %>%
   ungroup()
 
-trips <- inv[(inv$Tag_Number %in% tag3$Tag_Number),]
+trips <- inv[(inv$SiTag %in% tag3$SiTag),]
 nrow(tag3)
 nrow(trips)
 View(trips)
 
 # Find where tag numbers with three entries have multiple height entries
 trips_ht <- trips %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(Height_1_M)) %>%
   count() %>%
   filter(n > 1)
 
 # Find where tag numbers with three entries have multiple DBH entries
 trips_dbh <- trips %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(DBH_1_CM)) %>%
   count() %>%
   filter(n>1)
 
 # Find where tag numbers with three entries have multiple canopy position entries
 trips %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(CII)) %>%
   count() %>%
   filter(n > 1)
 
 # Find where tag numbers with three entries have multiple latitude entries
 trips %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(Latitude)) %>%
   count() %>%
   filter(n > 1)
 
 # Remove erroneous duplicate height or dbh entries
-inv[inv$Tag_Number %in% trips_ht$Tag_Number,]
-inv[inv$Tag_Number %in% trips_dbh$Tag_Number,]
+View(inv[inv$SiTag %in% trips_ht$SiTag,])
+View(inv[inv$SiTag %in% trips_dbh$SiTag,])
 
-inv <- inv[-c(2666, # tag 364
-                 1054 # tag 1139
-),]
+inv <- inv[-c(which((inv$Tag_Number==364)&(inv$Height_1_M==24.9)),
+       which((inv$Tag_Number==1139)&(inv$DBH_1_CM==22.6))
+       ),]
 
 tag3 <- inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n == 3) %>%
   ungroup()
 
-trips <- inv[(inv$Tag_Number %in% tag3$Tag_Number),]
+trips <- inv[(inv$SiTag %in% tag3$SiTag),]
 nrow(tag3)
 nrow(trips)
 
@@ -186,7 +216,7 @@ k <- function(x){
 
 # Merge triplicates on most recent observation to produce unique entries per tag number
 inv_detrip <- trips %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   mutate(Site_Name = k(Site_Name),
          Census_Number = k(Census_Number),
          Census_Start = as.Date.POSIXct(k(Census_Start)), 
@@ -226,10 +256,11 @@ inv_detrip <- trips %>%
 
 #Check
 detrip_reps <- inv_detrip %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 1) %>%
   ungroup()
+
 dim(detrip_reps)
 
 ##################
@@ -238,53 +269,53 @@ dim(detrip_reps)
 
 # Subset where the same tree tag has 2 entries
 tag2 <- inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n == 2) %>%
   ungroup()
 nrow(tag2)
-dupes <- inv[(inv$Tag_Number %in% tag2$Tag_Number),]
+dupes <- inv[(inv$SiTag %in% tag2$SiTag),]
 nrow(dupes)
 View(dupes)
 
-# Find where tag numbers with two entries have multiple height entries
+# Find where tag numbers with two entries have two height observations
 dupes2ht <- dupes %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(Height_1_M)) %>%
   count() %>%
   filter(n > 1)
-dupes2ht <- inv[inv$Tag_Number %in% dupes2ht$Tag_Number,]
+dupes2ht <- inv[inv$SiTag %in% dupes2ht$SiTag,]
 View(dupes2ht)
 
-# Find where tag numbers with two entries have multiple DBH entries
+# Find where tag numbers with two entries have two DBH observations
 dupes2dbh <- dupes %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(DBH_1_CM)) %>%
   count() %>%
   filter(n>1)
-dupes2dbh <- inv[inv$Tag_Number %in% dupes2dbh$Tag_Number,]
+dupes2dbh <- inv[inv$SiTag %in% dupes2dbh$SiTag,]
 View(dupes2dbh)
 
 # Find where tag numbers with two entries have multiple canopy position entries
 dupes %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(Canopy_Position)) %>%
   count() %>%
   filter(n > 1)
 
-# Find where tag numbers with two entries have multiple latitude entries
+# Find where tag numbers with two entries have two latitude entries
 dupeslat <- dupes %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   filter(!is.na(Latitude)) %>%
   count() %>%
   filter(n > 1)
-dupeslat <- inv[inv$Tag_Number %in% dupeslat$Tag_Number,]
+dupeslat <- inv[inv$SiTag %in% dupeslat$SiTag,]
 nrow(dupeslat)
 View(dupeslat)
 
-# Merge triplicates on various criteria to produce unique entries per tag number
+# Merge duplicates on various criteria to produce unique entries per tag number
 inv_dedupe <- dupes %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   arrange(desc(Height_Date), by.group = T) %>%
   mutate(Site_Name = k(Site_Name),
          Census_Number = k(Census_Number),
@@ -329,11 +360,12 @@ View(inv_dedupe)
 
 #Check
 dedupe_reps <- inv_dedupe %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 1) %>%
   ungroup()
 dim(dedupe_reps)
+dedupe_reps
 
 ################
 # SINGLETONS
@@ -341,11 +373,12 @@ dim(dedupe_reps)
 
 # Find singleton entries
 singletons <- inv %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n == 1) %>%
   ungroup()
-singletons <- inv[(inv$Tag_Number %in% singletons$Tag_Number),]
+singletons <- inv[(inv$SiTag %in% singletons$SiTag),]
+
 
 ##########################################################################
 # Create a merged set of unique entries per tag number
@@ -353,7 +386,8 @@ singletons <- inv[(inv$Tag_Number %in% singletons$Tag_Number),]
 
 full_unq_inv <- rbind(singletons, inv_dedupe, inv_detrip)
 row.names(full_unq_inv) <- NULL
-dim(full_unq_inv) == c(4207, 44)
+dim(full_unq_inv)
+dim(full_unq_inv) == c(8312, 45)
 # The final dataset should have 4207 entries, all unique, including the XX-CAR and XX-PLN sites
 
 ##########################################################################
@@ -362,14 +396,15 @@ dim(full_unq_inv) == c(4207, 44)
 
 # Check for repeat entries
 finalrepeats <- full_unq_inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 2) %>%
   ungroup()
+
 dim(finalrepeats) == c(0,2)
 
 all_reps <- full_unq_inv %>% 
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 1) %>%
   ungroup()
@@ -378,10 +413,10 @@ dim(dedupe_reps)
 
 # Find species ID conflicts
 sppcon <- inv %>% 
-  group_by(Tag_Number, Sp_Code) %>%
+  group_by(SiTag, Sp_Code) %>%
   count() %>%
   ungroup %>%
-  group_by(Tag_Number) %>%
+  group_by(SiTag) %>%
   count() %>%
   filter(n > 1)
 sppcon
@@ -397,10 +432,12 @@ misses20 <- cenpre2020[!cenpre2020$Tag_Number %in% cen2020$Tag_Number, which(col
   filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-PLN2', 'XX-PLN1'))
 
 misses20 <- full_unq_inv[full_unq_inv$Tag_Number %in% misses20$Tag_Number,]
+misses20
 # Yes, we missed 20.
 write.csv(misses20, 'EastRiver_2020_Missed_Measurements.csv')
 
 ##########################################################################
 # Export full clean dataset
 ##########################################################################
-write.csv(full_unq_inv, 'EastRiver_AllPlots_Inventory_Data_2018-2020_Collated.csv')
+write.csv(full_unq_inv, '~/Desktop/EastRiver_AllPlots_Inventory_Data_2018-2021_Collated.csv')
+dim(full_unq_inv)
