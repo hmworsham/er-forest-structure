@@ -112,7 +112,7 @@ rglwidget()
 # Select points randomly to reach an homogeneous density of 1
 thinned2 <- decimate_points(las, homogenize(1,5))
 #plot(rasterize_density(thinned2))
-?homogenize
+
 # Select the highest point within each pixel of an overlayed grid
 thinned3 = decimate_points(las, highest(5))
 #plot(thinned3)
