@@ -28,7 +28,7 @@ source(file.path(dirname(rstudioapi::getSourceEditorContext()$path), 'ss.helpers
 erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', fsep='/')
 fidir <- file.path(erdir, 'Working_Files', 'Forest_Inventory_Dataset', 'Output', fsep = '/')
 wsdir <- file.path(erdir, 'Working_Files', 'Watershed_Spatial_Dataset', 'Output', fsep = '/')
-rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_2021_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
+rasdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Worsham_SiteSelection', '2021_Analysis_Layers', 'USGS_1-9_arcsec_DEM')
 sfdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data')
 
 ##################################
@@ -40,6 +40,10 @@ dem <- rast(file.path(rasdir, 'DEM', 'USGS_13_n39-40_w107-108_mosaic_wgs84utm13n
 dem1000 <- aggregate(dem, fact=100)
 dem100 <- aggregate(dem, fact=10)
 dem30 <- aggregate(dem, fact=3)
+
+writeRaster(dem1000, file.path(rasdir, 'DEM', 'usgs_dem_1km.tif'))
+writeRaster(dem100, file.path(rasdir, 'DEM', 'usgs_dem_100m.tif'))
+writeRaster(dem30, file.path(rasdir, 'DEM', 'usgs_dem_30m.tif'))
 
 # slope
 slope <- terrain(dem100, v = 'slope', unit = 'degrees')
@@ -73,9 +77,9 @@ names(a.southness) <- 'usgs_205adjsouthness_100m'
 writeRaster(a.southness, file.path(rasdir, 'Aspect', 'usgs_205adjsouthness_100m.tif'))
 
 # THL
-thl <- thl(38, slope, aspect, fold=205)
+thl <- thl(38, aspect, slope, fold=205)
 names(thl) <- 'usgs_heatload_100m'
-writeRaster(thl, file.path(rasdir, 'Heat_Load', 'usgs_heatload_100m.tif'))
+writeRaster(thl, file.path(rasdir, 'Heat_Load', 'usgs_heatload_100m.tif'), overwrite=T)
 
 # Curvature
 curvature <- spatialEco::curvature(dem, type = c('total', 'bolstad'))
@@ -94,6 +98,14 @@ writeRaster(tpi_2000, file.path(rasdir, 'TPI', 'usgs_tpi_2km.tif'))
 tpi_2000 <- NULL
 
 # TWI
+topmod <- dynatopmodel::build_layers(raster(dem), fill.sinks = T)
+twi_100 <- topmod[[3]]
+twi_100 <- disaggregate(twi_100, fact = 10)
+writeRaster(twi_100, file.path(rasdir, 'TWI', 'usgs_twi_100m.tif'), overwrite = T)
+twi_100 <- NULL
+plot(rast(file.path(rasdir, 'TWI', 'usgs_twi_100m.tif')))
+
+
 topmod <- dynatopmodel::build_layers(raster(dem100), fill.sinks = T)
 twi_100 <- topmod[[3]]
 twi_100 <- disaggregate(twi_100, fact = 10)
