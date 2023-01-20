@@ -20,6 +20,7 @@
 pkgs <- c('dplyr',
           'tidyverse',
           'ggplot2',
+          'rwaveform',
           'raster',
           'data.table',
           'devtools',
@@ -42,7 +43,6 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
-load_all('~/Repos/rwaveform')
 
 ################################
 # Setup workspace

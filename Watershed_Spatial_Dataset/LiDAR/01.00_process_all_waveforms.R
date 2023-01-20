@@ -9,14 +9,8 @@
 
 # Install non-CRAN libraries
 #Sys.setenv(GDAL_DATA = '/global/home/groups/consultsw/sl-7.x86_64/modules/gdal/2.2.3/share/gdal/')
-#libproj::libproj_install_proj_data()
-#usethis::edit_r_profile() 
-#install.packages('libproj', repos = "https://paleolimbot.r-universe.dev")
-#devtools::install_github("jrminter/rPeaks") # rPeaks for deconv/decomp
-#devtools::install_github('tankwin08/waveformlidar') # waveformlidar for general processing
-#devtools::install_github('lwasser/neon-aop-package/neonAOP') #neonAOP for reading binary data
 
-# Install and load typical libraries
+# Install and load libraries
 pkgs <- c('dplyr',
           'caTools',
           'tidyverse',
@@ -27,6 +21,7 @@ pkgs <- c('dplyr',
           'parallel',
           'pbapply',
           'plyr',
+          'rwaveform',
           'rlist') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
@@ -38,7 +33,6 @@ load.pkgs <- function(pkg){
 } 
 # Runs the function on the list of packages defined in pkgs
 load.pkgs(pkgs)
-load_all('~/Repos/rwaveform')
 
 ################################
 # Setup workspace

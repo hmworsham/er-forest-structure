@@ -1,7 +1,7 @@
 # Load libraries
 library('caTools')
 library('devtools')
-load_all('~/Repos/rwaveform')
+library('rwaveform')
 
 # Define x sequences
 x1 <- seq(1,28)
