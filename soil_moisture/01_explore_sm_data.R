@@ -37,13 +37,14 @@ colnames(smdata.by.site$`SG-SWR1`)[11:13] <- c("VWC_A80", "T_A80", "EC_A80" )
 # Add a column to each resulting dataframe with the site name
 for(i in 1:length(smdata.by.site)){
   nm = names(smdata.by.site)[[i]]
+  smdata.by.site[[i]][smdata.by.site[[i]]==0] <- NA
   if('VWC_B10' %in% colnames(smdata.by.site[[i]])) {
-    smdata.by.site[[i]]$VWC_mean10 = rowMeans(smdata.by.site[[i]][,c('VWC_A10', 'VWC_B10')]) # mean10
+    smdata.by.site[[i]]$VWC_mean10 = rowMeans(smdata.by.site[[i]][,c('VWC_A10', 'VWC_B10')], na.rm=T) # mean10
   } else {
     smdata.by.site[[i]]$VWC_mean10 = smdata.by.site[[i]]$VWC_A10
     }
-    smdata.by.site[[i]]$VWC_mean30 = rowMeans(smdata.by.site[[i]][,c('VWC_A30', 'VWC_B30')]) # mean30
-    smdata.by.site[[i]]$VWC_mean60 = rowMeans(smdata.by.site[[i]][,c('VWC_A60', 'VWC_B60')]) # mean60
+    smdata.by.site[[i]]$VWC_mean30 = rowMeans(smdata.by.site[[i]][,c('VWC_A30', 'VWC_B30')], na.rm=T) # mean30
+    smdata.by.site[[i]]$VWC_mean60 = rowMeans(smdata.by.site[[i]][,c('VWC_A60', 'VWC_B60')], na.rm=T) # mean60
     smdata.by.site[[i]]$Site = nm # name
 }
 
@@ -69,32 +70,140 @@ sm.p.long <- sm1.vwc
 # Merge with precip data
 sm.p.long <- merge(sm1.vwc, p2, by=c('DateTime', 'Site'))
 
-# Subset to one month
-sm1.vwc.augoct <- sm.p.long[
-  (sm.p.long$DateTime > as.POSIXct('2021-10-15')) 
-  & sm.p.long$DateTime < as.POSIXct('2022-09-15'),]
-sm1.vwc.augoct$DateTime <- as.POSIXct(sm1.vwc.augoct$DateTime)
+# Subset to date range
+sm.sub <- sm.p.long[
+  (sm.p.long$DateTime > as.POSIXct('2022-05-01')) 
+  & sm.p.long$DateTime < as.POSIXct('2022-10-31'),]
+sm.sub$DateTime <- as.POSIXct(sm.sub$DateTime)
+
+# Take out problematic sites
+sm.sub <- sm.sub[!sm.sub$Site %in% c('CC-CVS1', 'XX-CAR3'),]
+
+# Calculate daily mean vwc
+sm.sub <- sm.sub %>%
+  mutate(day=format(DateTime, "%d"),
+         month = format(DateTime, "%m"), 
+         year = format(DateTime, "%Y"), 
+         )
+
+sm.sub.vwc.d <- sm.sub %>%
+  group_by(Site, variable, day, month, year) %>%
+  summarise(value = mean(value, na.rm=T)) %>%
+  mutate(DateTime = as.POSIXct(make_date(year, month, day)))
+
+# Calculate monthly use
+sm.sub.mon.use <- sm.sub %>%
+  group_by(Site, variable, day, month, year) %>%
+  summarise(value = (max(value, na.rm=T)-min(value, na.rm=T))*60) %>%
+  mutate(DateTime = as.POSIXct(make_date(year,month,day))) %>%
+  #ungroup() %>%
+  #group_by(Site, day, month, year) %>%
+  #summarise(value=sum(value, na.rm=T)) %>%
+  ungroup() %>%
+  group_by(Site, variable, month, year) %>%
+  summarise(value = mean(value, na.rm=T))
+
+View(sm.sub.mon.use)
+
+# Calculate HR
+sm.sub.mon.hr <- sm.sub %>%
+  group_by(Site, variable, day, month, year) %>%
+  summarise(min_d0=min(value, na.rm=T),
+            max_d0=max(value,na.rm=T)) %>%
+  ungroup()
+sm.sub.mon.hr$max_d1=lead(sm.sub.mon.hr$max_d0, 1)
+
+sm.sub.mon.hr <- sm.sub.mon.hr %>%
+  mutate(dd0 = max_d1-min_d0) %>%
+  ungroup() %>%
+  group_by(Site, month, year) %>%
+  summarise(hr = dd0*60) %>%
+  ungroup() %>%
+  group_by(Site, month, year) %>%
+  summarise(hr_m = mean(hr, na.rm=T))
+
+View(sm.sub.mon.hr)
+
+suntimes <- function(sd, ed, lat, lon){
+  sunlight_times <- getSunlightTimes(as.Date(sd), lat=lat, lon=lon)
+  return(sunlight_times)
+}
+
+suntimes(sm.sub$DateTime[1], sm.sub$DateTime[1], 38.916667, -106.933333)
+View(sm.sub)
+sunlight_times <- getSunlightTimes(as.Date(st), lat = lat, lon = lon)
+sunset <- sunlight_times$sunset
+sunrise <- sunlight_times$sunrise
+sec_night <- sec_day <- 0
+View(sm1.vwc.augoct)
 
 # Plot with sites as facets
 my_colors <- RColorBrewer::brewer.pal(8, "Blues")[c(3,5,7)]
-ggplot(sm1.vwc.augoct, aes(x=DateTime)) +
+ggplot(sm.sub.vwc.d, aes(x=DateTime)) +
   #geom_line(aes(y=Precip/100), color='grey30') + 
   geom_line(aes(y=value, color=variable), size = 0.6) +
   scale_color_manual(values = my_colors,
+                     name = 'Depth',
                      labels = c('10 cm',
                                 '30 cm', 
                                 '60 cm')) +
   #scale_color_brewer(palette='Greens') +
   scale_y_continuous(
-    name=bquote('Volumetric Soil Moisture' (m^3 ~m^-3)),
+    name=bquote('Volumetric Soil Moisture ' (m^3 ~m^-3)),
     #sec.axis = sec_axis(~.*100, name=bquote('Precipitation' (mm ~d^-1)))
     ) +
-  scale_x_datetime(date_breaks='30 days',
-                   limits=c(as.POSIXct('2021-10-15'), NA)) +
-  labs(title = 'Soil Volumetric Water Content at 10 Mixed Conifer Sites, Oct 2021 - Sep 2022',
+  scale_x_datetime(date_breaks='15 days',
+                   limits=c(as.POSIXct('2022-05-01'), NA)) +
+  labs(title = 'Soil Volumetric Water Content at 10 Mixed Conifer Sites, May 2022 - Sep 2022',
        color = 'VWC at Depth') +
   xlab('Date') +
-  facet_wrap(~Site, ncol=5) +
+  facet_wrap(~Site, ncol=4) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90),
+        axis.title.x = element_text(size=14),
+        axis.title.y = element_text(size=14),
+        plot.title = element_text(size=20))
+
+
+ggplot(sm.sub.mon.use, aes(x=month, y=value, fill=Site)) + 
+  geom_col(position='dodge') + 
+  scale_fill_manual(values = my_colors,
+                    name = 'Depth',
+                    labels = c('10 cm',
+                               '30 cm', 
+                               '60 cm')) +
+  xlab('Month') +
+  scale_y_continuous(name=bquote('Volumetric Soil Moisture ' (m^3 ~m^-3)),)
+  
+
+ggplot(sm.sub.mon.use, aes(x=month, y=value, fill=variable)) + 
+  geom_col(position='dodge') +
+  scale_fill_manual(values = my_colors,
+                     name = 'Depth',
+                     labels = c('10 cm',
+                                '30 cm', 
+                                '60 cm')) +
+  xlab('Month') +
+  scale_y_continuous(name=bquote('Soil Water Depletion ' (mm ~day^-1)),) +
+  facet_wrap(~Site, ncol=4) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90),
+        axis.title.x = element_text(size=14),
+        axis.title.y = element_text(size=14),
+        plot.title = element_text(size=20))
+
+
+ggplot(sm.sub.mon.hr, aes(x=month, y=hr_m, group=Site, color=Site)) + 
+  geom_point() + 
+  geom_smooth()
+  scale_fill_manual(values = my_colors,
+                    name = 'Depth',
+                    labels = c('10 cm',
+                               '30 cm', 
+                               '60 cm')) +
+  xlab('Month') +
+  scale_y_continuous(name=bquote('Volumetric Soil Moisture ' (m^3 ~m^-3)),) #+
+  facet_wrap(~Site, ncol=4) + 
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90),
         axis.title.x = element_text(size=14),
