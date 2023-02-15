@@ -5,6 +5,7 @@ default:
  pkgs:
   - tidyverse
   - googledrive
+  - readxl
   - sf
   - terra
  extdata:
