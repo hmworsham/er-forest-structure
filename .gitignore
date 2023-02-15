@@ -7,3 +7,4 @@
 
 # Slurm stuff
 slurm*.out
+.Rproj.user
