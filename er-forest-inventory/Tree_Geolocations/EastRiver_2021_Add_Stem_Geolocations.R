@@ -1,95 +1,37 @@
-# Load packages
-library(dplyr)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(googledrive)
-library(googlesheets4)
+# Add stem geolocations to inventory datasheets
+# Reads in tree stem locations from shapefile and appends longitude-latitude
+# values in CRS EPSG:4326 to forest inventory datasheets.
+# Author: Marshall Worsham
+# Created: 02-06-23
+# Revised: 02-15-23
 
-# Set data directories
-wkdir = file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'Working_Files')
-fidir = file.path(wkdir, 'Forest_Inventory_Dataset', 'Source')
-wsdir <- file.path(wkdir, 'Watershed_Spatial_Dataset', 'Source')
-erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL')
-stemdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Kueppers_EastRiver_Stem_Geolocations_WGS84UTM13N')
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-##########################################################################
-# Download inventory data from Google Drive
-##########################################################################
+# Load packages and local functions
+devtools::load_all()
+load.pkgs(config$pkgs)
+
+#### Set data directories ####
+# wkdir = file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'Working_Files')
+# fidir = file.path(wkdir, 'Forest_Inventory_Dataset', 'Source')
+# wsdir <- file.path(wkdir, 'Watershed_Spatial_Dataset', 'Source')
+# erdir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL')
+# stemdir <- file.path(erdir, 'RMBL-East River Watershed Forest Data', 'Data', 'Geospatial', 'Kueppers_EastRiver_Stem_Geolocations_WGS84UTM13N')
+
+#### Download inventory data from Google Drive ####
 invsheets <- drive_find(pattern='inventory_data', type='spreadsheet')
 invnames <- invsheets$name
 invids <- invsheets$id
+invdf <- lapply(invnames, dl.inv)
 
-for(j in seq(length(invids))){
-  drive_download(
-    as_id(paste0('https://docs.google.com/spreadsheets/d/', invids[j])),
-    path = file.path(fidir, 'Inventory_Files_23-01-04', paste0(invnames[j], '.xlsx')),
-    overwrite = T
-  )
-}
-
-drive_download(as_id('115wWuKrivjCsWh7J9CaiWs9hnUmmMwJe6liFyzDQFAw'), path = paste0(fidir, 'Inventory_Files_21-03-10/', i, '.xlsx'))
-
-##########################################################################
-# Import inventory data
-##########################################################################
-
-# Define files to import
-datadir <- file.path(fidir, 'Inventory_Files_23-01-04')
-files <- list.files(datadir, full.names = T)
-
-# Define column types
-coltypes = c('text', #site name
-             'numeric', #census number
-             'date', #censusstart
-             'date', #census end
-             'numeric', #tag number
-             'numeric', #previous tag number
-             'date', #tag date
-             rep('text',6), #spp data
-             rep('numeric',3), #heights
-             'date', #height date
-             'text', #height method
-             rep('numeric', 3), #dbh data
-             'date', #dbh date
-             'text', #dbh method
-             'numeric', #dbh hom
-             'numeric', #cii
-             'date', #cii date
-             'text', #canopy position
-             'date', # canopy position date
-             'text', #beetles qual
-             'numeric', #beetles index
-             'date', # beetles date
-             rep('text',3), #status, health, comments
-             'logical', #geotagged
-             'numeric', #geotag assoc ref
-             'numeric', #geotag assoc dist
-             'text', #geotag assoc dir
-             'date', #geotag date
-             rep('numeric',2), #lat lon
-             'text', #gps filename
-             'date', #entry date
-             'text' #entry personnel
-)
-
-# Check length of column types to ensure match
-length(coltypes)==44
-
-# Import files with read_xlsx
-df <- lapply(files, function(file) {
-  data.frame(read_xlsx(file, 
-                       sheet = 1,
-                       col_types = coltypes,
-                       na = 'NA'))
-}
-)
+#### Import tree geolocation shapefiles ####
 
 treesdir <- file.path(fidir, 'TreeCoords')
 trees <- list.files(treesdir, full.names = T)
 
 treesdf <- lapply(trees, function(file){
-  data.frame(read.csv(file, 
+  data.frame(read.csv(file,
                       colClasses = c("X" = 'double', "Y" = 'double'),
                       row.names=1))
 })
@@ -112,7 +54,7 @@ View(data20)
 # Find records of trees tagged in prior years and missed in 2020
 invtrees[!invtrees$Tag_Number %in% alldata$Tag_Number,]
 
-# Find duplicate records and drop those not needed 
+# Find duplicate records and drop those not needed
 dupts <- alltrees[duplicated(alltrees$Tag_Number),]$Tag_Number
 alltrees[alltrees$Tag_Number %in% dupts,]
 alltrees.drop <- alltrees[-c(50,1501,1475,1406),]
@@ -212,7 +154,7 @@ row.names(er_bme2) <- NULL
 er_bme2[duplicated(er_bme2$Tag_Number),] # 0 duplicates
 nrow(er_bme2[(is.na(er_bme2$Longitude)) | (is.na(er_bme2$Latitude)), ]) # Missing 1 coordinate
 # One tree was mislabeled in the gps data; the steps below correct that and associate coordinates of (incorrect) 2123 with (correct) 4123
-er_bme2[er_bme2$Tag_Number == 4123,]$Latitude <- er_bme2[er_bme2$Tag_Number == 2123,]$Latitude 
+er_bme2[er_bme2$Tag_Number == 4123,]$Latitude <- er_bme2[er_bme2$Tag_Number == 2123,]$Latitude
 er_bme2[er_bme2$Tag_Number == 4123,]$Longitude <- er_bme2[er_bme2$Tag_Number == 2123,]$Longitude
 er_bme2 <- er_bme2[-c(1),]
 nrow(er_bme2[(is.na(er_bme2$Longitude)) | (is.na(er_bme2$Latitude)), ]) # Now missing 0 coordinates
