@@ -1,0 +1,20 @@
+# er-forest-inventory_config.yml
+
+default:
+ key1: default
+ pkgs:
+  - tidyverse
+  - googledrive
+  - sf
+  - terra
+ extdata:
+   siteindex: '1KPpaiTZSfrq0RYMJQwNdwgCU-4rWucheW5KUN_maERs'
+ dat_raw: './data/raw'
+ dat_int: './data/intermediate'
+ dat_pro: './data/processed'
+
+test:
+  key1: test
+
+production:
+  key1: production
