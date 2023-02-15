@@ -53,6 +53,28 @@ height <- raster(file.path(strdir, 'height_90pctl.tif'))
 diam <- raster(file.path(strdir, 'mean_diam_100m.tif'))
 response <- list('density'=dnsty, 'height'=height, 'diam'=diam)
 
+# PLOT RESPONSE VARIABLES!!!!!
+list.files(strdir)
+responses <- lapply(list.files(strdir, full.names=T, pattern='*.tif$')[1:9], raster)
+responses[[10]] <- (responses[[7]]/2)**2*pi
+names(responses[[10]]) <- 'basal-area'
+values(responses[[9]])[values(responses[[9]]==1)] <- NA
+par(mfrow=c(2,3),
+    mar=c(1,1,1,1))
+names <- str_replace(list.files(strdir)[1:9], '.tif', '')
+names <- str_replace(names, '_fromtrees', '')
+names <- str_replace(names, '_', ' ')
+names <- str_replace(names, '_', ' ')
+names[10] <- 'basal_area'
+
+toplot <- c(9, 10, 5,8,7,9)
+
+for(i in seq_along(toplot)) {
+  terra::plot(responses[[toplot[i]]],
+              col=viridis(n=20, option=LETTERS[i]),
+              main=names[toplot[i]])
+}
+
 # Check forest structure rasters
 crs(dnsty)
 values(dnsty)
