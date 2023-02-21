@@ -63,3 +63,75 @@ load.inventory <- function(filename){
 
   return(df)
 }
+
+
+# Function to load tree geolocation shapefiles
+load.trees <- function(path, pattern) {
+  treeobj <- drive_ls(
+    path=path,
+    pattern=pattern
+  )
+
+  tmpfiles <- apply(treeobj, 1, function(x) {
+    tmpfile <- drive_download(
+      as_id(x[['id']]),
+      path=file.path(
+        tempdir(),
+        x[['name']]),
+      overwrite=T)$local_path
+    return(tmpfile)
+  })
+
+  shpfiles <- tmpfiles[file_ext(tmpfiles)=='shp']
+
+  sfs <- lapply(shpfiles, function(x){
+    shp <- st_read(x)
+    names(shp)[c(1,2,3,16)] <- c(
+      'Site_Name',
+      'Tag_Number',
+      'Sp_Code',
+      'Geotag_Association')
+    shp <- st_transform(shp, 'EPSG:4326')
+    shp$X <- st_coordinates(shp)[,1]
+    shp$Y <- st_coordinates(shp)[,2]
+    shp$Sp_Code <- as.character(shp$Sp_Code)
+    shp$Geotag_Association <- as.numeric(shp$Geotag_Association)
+    shp$Comment <- as.character(shp$Comment)
+    shp
+  })
+
+  return(sfs)
+
+}
+
+
+# Function to load raw GPS files
+load.rawgps <- function(path, pattern, nmax=950) {
+
+  gpsobj <- drive_ls(
+    path=path,
+    q=sprintf('name contains "%s"', pattern),
+    recursive=T,
+    n_max=nmax
+  )
+
+  tmpfiles <- apply(gpsobj, 1, function(x) {
+    tmpfile <- drive_download(
+      as_id(x[['id']]),
+      path=file.path(
+        tempdir(),
+        x[['name']]),
+      overwrite=T)$local_path
+    return(tmpfile)
+  })
+
+  shpfiles <- tmpfiles[file_ext(tmpfiles)=='shp']
+  rawgps <- lapply(shpfiles, st_read)
+  rawgps <- bind_rows(rawgps)
+  rawgps[is.na(rawgps$Other),]$Other <- rawgps[is.na(rawgps$Other),]$Other2
+  names(rawgps)[5] <- 'Tag_Number'
+  rawgps <- as.data.frame(rawgps)
+
+  return(rawgps)
+
+}
