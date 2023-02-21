@@ -8,8 +8,12 @@ default:
   - readxl
   - sf
   - terra
+  - xfun
  extdata:
-   siteindex: '1KPpaiTZSfrq0RYMJQwNdwgCU-4rWucheW5KUN_maERs'
+   invpattern: 'inventory_data'
+   stemid: '1qkZSAQsqbfPX_r8tkorAQs5dRbCcIXPg'
+   stempattern: 'Stem_Geolocations_WGS84UTM13N'
+   rawgpsid: '1MC4ucuVidD7BpvXe_EImcjLDVDgEPFq8'
  dat_raw: './data/raw'
  dat_int: './data/intermediate'
  dat_pro: './data/processed'
