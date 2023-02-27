@@ -11,3 +11,4 @@ slurm*.out
 
 # Auth stuff
 er-forest-inventory/config/eastriver-r-googledrive-clientsecret.json
+er-forest-inventory/config/config/eastriver-r-driveauth.txt
