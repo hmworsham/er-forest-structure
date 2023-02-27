@@ -10,4 +10,4 @@ slurm*.out
 .Rproj.user
 
 # Auth stuff
-config/eastriver-r-googledrive-clientsecret.json 
+er-forest-inventory/config/eastriver-r-googledrive-clientsecret.json
