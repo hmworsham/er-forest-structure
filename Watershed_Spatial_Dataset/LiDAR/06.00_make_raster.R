@@ -57,8 +57,15 @@ alltrees <- rbindlist(trees)
 # Create a dataframe based on tree geometries
 head(alltrees)
 
+# Remove unlikely trees
+alltrees <- alltrees[alltrees$Z<=32,]
+
 # Add diameter predictions to trees
 alltrees$D <- -8.1946+16.2768*log(alltrees$Z)
+View(alltrees$D)
+
+# 
+
 
 # Create a shapefile of all trees
 ptsf <- st_as_sf(alltrees, coords = c('X', 'Y'), crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
