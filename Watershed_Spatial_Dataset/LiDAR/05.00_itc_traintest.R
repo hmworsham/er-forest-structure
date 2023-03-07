@@ -53,6 +53,7 @@ dir.create(outdir)
 
 # Ingest full las catalog
 infiles <- list.files(datadir, full.names=T)
+las <- readLAS(infiles[[992]])
 lascat <- readLAScatalog(infiles)
 
 # Ingest plot boundaries
@@ -91,10 +92,30 @@ aoi.quads <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
 
 # Ingest field data
-invfiles <- list.files(fidir, pattern='_inventory_data_20', recursive=T, full.names=T)
+# Doesn't work - blocked by Savio
+# library(googledrive)
+# drive_auth_configure(path='~/.ssh/eastriver-r-googledrive-clientsecret.json', api_key='AIzaSyAi6a0sP-zwcv68MEhOJqbjk1V24M026Yo')
+# drive_auth(email='worsham@berkeley.edu')
+# drive_find(pattern='EastRiver_Census1_Data_Collated')
+
+invfiles <- list.files(fidir, pattern='EastRiver_Census1_Data_Collated.csv', recursive=T, full.names=T)
 invfiles
-inv = read_excel(invfiles[1], sheet='inventory_data')
-df = data.frame('Z'=as.numeric(inv$Height_Avg_M), 'X'=as.numeric(inv$Longitude), 'Y'=as.numeric(inv$Latitude))
+inv <- read.csv(invfiles[1])
+inv <- (inv[grep(
+  paste('out of plot', 
+        '^oop$',
+        '^OOP$',
+        'outside plot',
+        'Outside plot',
+        'not in plot',
+        'Not in plot',
+        sep='|'),
+  inv$Comments,
+  invert=T),])
+
+df = data.frame('Z'=as.numeric(inv$Height_Avg_M), 
+                'X'=as.numeric(inv$Longitude), 
+                'Y'=as.numeric(inv$Latitude))
 df = na.omit(df)
 
 #############################
@@ -340,3 +361,16 @@ xx <- itcdelineate(testlas, aoi, 'li2012')
 xx <- segment_trees(testlas, watershed())
 xx
 plot(xx)
+
+
+ttops = find_trees(las, ptrees(c(30,15), 1.3, 7L))
+st   = segment_trees(las[1:50000], ptrees(c(30,15)))
+x = plot(las[1:10000])
+add_treetops3d(x, ttops)
+crowns = crown_metrics(st, func=NULL, geom='concave', attribute='treeID')
+
+clean_dat <- st[st$treeID %in% names(which(table(st$treeID) > 4)), ]
+dim(clean_dat)
+crowns <- crown_metrics(clean_dat, func=NULL, geom='convex', attribute='treeID')
+plot(crowns)
+
