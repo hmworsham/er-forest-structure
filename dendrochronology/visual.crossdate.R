@@ -14,7 +14,7 @@ cd.data <- read_xlsx(file.path(cddir, 'Crossdating_Master.xlsx'),
                      col_types = c(rep('text', 3),
                                    'numeric',
                                    'numeric',
-                                   'text', 
+                                   'text',
                                    'numeric',
                                    'logical',
                                    'text',
@@ -22,14 +22,15 @@ cd.data <- read_xlsx(file.path(cddir, 'Crossdating_Master.xlsx'),
 
 # Specify site and species of interest
 site = 'SNB'
-spp = 'PIEN'
+spp = 'ABLA'
 
 # Get all marker years for site and spp of interest
 site.spp <- cd.data[
-  (cd.data$ITRDB_SiteID==site) & 
-    (cd.data$Species==spp) & 
+  (cd.data$ITRDB_SiteID==site) &
+    (cd.data$Species==spp) &
     (cd.data$Series!='Master') &
-    cd.data$MY_1>=1000,]
+    (cd.data$MY_1>=1000),]
+site.spp <- site.spp[!rowSums(is.na(site.spp))==ncol(site.spp),]
 
 site.spp.t <- t(site.spp[10:length(site.spp)])
 minyr <- apply(site.spp.t, 2, min, na.rm=T, simplify=T)
@@ -49,21 +50,22 @@ my.freq$Dec <- floor(my.freq$Year/10)*10
 my.freq <- merge(my.freq, dec.freq, by='Dec', all.x=T)
 my.freq <- my.freq %>%
   mutate(FreqNorm = Freq/Ncores,
-         FreqThresh = case_when(Freq>=3 ~ Freq), 
-         FreqNormThresh = case_when(FreqNorm>0.5 ~ FreqNorm))  
+         FreqThresh = case_when(Freq>=3 ~ Freq),
+         FreqNormThresh = case_when(FreqNorm>0.5 ~ FreqNorm))
 
 # Plot gross frequency
 ggplot(my.freq, aes(x=Year, y=Freq)) +
-  geom_area(aes(x=Year, y=Ncores), alpha=.2) + 
-  geom_col(fill=mrmoose::icolors('mario')[2], color='grey90', width=1) + 
-  geom_text(aes(y=FreqThresh, label=Year), nudge_y=0.1, colour="black", size=2.5) + 
+  geom_area(aes(x=Year, y=Ncores), alpha=.2) +
+  geom_col(fill=nifty::icolors('mario')[2], width=1) +
+  geom_text(aes(y=FreqThresh, label=Year), nudge_y=0.1, colour="black", size=2.5) +
   scale_y_continuous(sec.axis = sec_axis(~., name='N Cores'))
-  
+
 # Plot frequency normalized to number of cores that include a marker year's decade
 ggplot(my.freq, aes(x=Year, y=FreqNorm)) +
-  geom_area(aes(x=Year, y=Ncores/10), alpha=.2) + 
-  geom_col(fill=mrmoose::icolors('mario')[2], color='grey90', width=1) + 
-  geom_text(aes(y=FreqNormThresh, label=Year), nudge_y=0.01, colour="black", size=2.5) + 
-  scale_y_continuous(sec.axis=sec_axis(~.*10, 
-                                       name='N Cores', 
+  geom_area(aes(x=Year, y=Ncores/10), alpha=.2) +
+  geom_col(fill=nifty::icolors('mario')[2], width=1) +
+  geom_text(aes(y=FreqNormThresh, label=Year), nudge_y=0.01, colour="black", size=2.5) +
+  scale_y_continuous(sec.axis=sec_axis(~.*10,
+                                       name='N Cores',
                                        breaks=seq(1,max(my.freq$Ncores),1)))
+
