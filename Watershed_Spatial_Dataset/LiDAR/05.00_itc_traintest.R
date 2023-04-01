@@ -23,7 +23,8 @@ pkgs <- c('dplyr',
           'rgl',
           'broom',
           'plot3D',
-          'readxl') # Name the packages you want to use here
+          'readxl', 
+          'googledrive') # Name the packages you want to use here
 
 # Function to install new packages if they're not already installed
 load.pkgs <- function(pkg){
@@ -90,17 +91,20 @@ for (i in 1:nrow(plotsf)){
 plotsf <- sf::st_as_sf(data.table::rbindlist(ls)) # superfast
 aoi.quads <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
-
 # Ingest field data
-# Doesn't work - blocked by Savio
-# library(googledrive)
-# drive_auth_configure(path='~/.ssh/eastriver-r-googledrive-clientsecret.json', api_key='AIzaSyAi6a0sP-zwcv68MEhOJqbjk1V24M026Yo')
-# drive_auth(email='worsham@berkeley.edu')
-# drive_find(pattern='EastRiver_Census1_Data_Collated')
+httr::with_verbose(drive_auth(path='~/.ssh/eastriver-308601-65de0446573f.json'))
 
-invfiles <- list.files(fidir, pattern='EastRiver_Census1_Data_Collated.csv', recursive=T, full.names=T)
-invfiles
-inv <- read.csv(invfiles[1])
+invsource <- drive_find(path=pattern='EastRiver_Census1_Data_Collated.csv')
+invid <- invsource$id
+
+tmpfile <- drive_download(
+    as_id(invid),
+    type='csv',
+    path=file.path(tempdir(), invsource$name),
+    overwrite=T)$local_path
+
+inv <- read.csv(tmpfile)
+
 inv <- (inv[grep(
   paste('out of plot', 
         '^oop$',
