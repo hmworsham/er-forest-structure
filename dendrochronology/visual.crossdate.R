@@ -21,8 +21,8 @@ cd.data <- read_xlsx(file.path(cddir, 'Crossdating_Master.xlsx'),
                                    rep('numeric', 100)))
 
 # Specify site and species of interest
-site = 'SNB'
-spp = 'ABLA'
+site = 'PLA'
+spp = 'PIEN'
 
 # Get all marker years for site and spp of interest
 site.spp <- cd.data[
@@ -56,16 +56,15 @@ my.freq <- my.freq %>%
 # Plot gross frequency
 ggplot(my.freq, aes(x=Year, y=Freq)) +
   geom_area(aes(x=Year, y=Ncores), alpha=.2) +
-  geom_col(fill=nifty::icolors('mario')[2], width=1) +
+  geom_col(fill=nifty::icolors('mario')[2], color='grey90', width=1) +
   geom_text(aes(y=FreqThresh, label=Year), nudge_y=0.1, colour="black", size=2.5) +
   scale_y_continuous(sec.axis = sec_axis(~., name='N Cores'))
 
 # Plot frequency normalized to number of cores that include a marker year's decade
 ggplot(my.freq, aes(x=Year, y=FreqNorm)) +
   geom_area(aes(x=Year, y=Ncores/10), alpha=.2) +
-  geom_col(fill=nifty::icolors('mario')[2], width=1) +
+  geom_col(fill=nifty::icolors('mario')[2], color='grey90', width=1) +
   geom_text(aes(y=FreqNormThresh, label=Year), nudge_y=0.01, colour="black", size=2.5) +
   scale_y_continuous(sec.axis=sec_axis(~.*10,
                                        name='N Cores',
                                        breaks=seq(1,max(my.freq$Ncores),1)))
-
