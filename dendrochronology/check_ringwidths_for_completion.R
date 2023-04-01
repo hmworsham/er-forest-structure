@@ -14,7 +14,7 @@ files.did <- unlist(lapply(strsplit(files, '_'), '[', 1))
 idx.did
 
 # List all core IDs in measurement files
-files.did       
+files.did
 
 # Find duplicate core IDs in index and measurement files
 files.did[which(duplicated(files.did))]

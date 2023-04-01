@@ -26,7 +26,7 @@ rasdir <- file.path(datadir, 'Geospatial', 'Worsham_SiteSelection', '2021_Analys
 sfdir <- file.path(datadir, 'Geospatial', 'RMBL_2020_EastRiver_SDP', 'RMBL_2020_EastRiver_SDP_Boundary')
 geodir <- file.path(datadir, 'Geospatial', 'Colorado_Geological_Survey')
 scondir <- file.path(datadir, 'Geospatial', 'Uhlemann_2021_RESubsurfaceResistivityMap')
-soildir <- file.path('~/Downloads/gSSURGO_CO')
+soildir <- file.path(datadir, 'Soil', 'SSURGO', 'Processed')
 snowdir <- file.path(datadir, 'Geospatial', 'ASO_Snow', 'Processed')
 list.files(strdir)
 
@@ -60,7 +60,7 @@ responses[[10]] <- (responses[[7]]/2)**2*pi
 names(responses[[10]]) <- 'basal-area'
 values(responses[[9]])[values(responses[[9]]==1)] <- NA
 par(mfrow=c(2,3),
-    mar=c(1,1,1,1))
+    mar=c(1,1,1,1)+.5)
 names <- str_replace(list.files(strdir)[1:9], '.tif', '')
 names <- str_replace(names, '_fromtrees', '')
 names <- str_replace(names, '_', ' ')
@@ -70,9 +70,12 @@ names[10] <- 'basal_area'
 toplot <- c(9, 10, 5,8,7,9)
 
 for(i in seq_along(toplot)) {
-  terra::plot(responses[[toplot[i]]],
+  terra::plot(raster::projectRaster(responses[[toplot[i]]], crs='EPSG:4326'),
               col=viridis(n=20, option=LETTERS[i]),
-              main=names[toplot[i]])
+              main=names[toplot[i]],
+              title(names[toplot[i]], line=2, cex=3),
+              cex.main=3
+              )
 }
 
 # Check forest structure rasters
@@ -103,9 +106,10 @@ geol <- raster(file.path(geodir, 'Processed', 'COGS_eastriver_geology.tif'))
 geol <- projectRaster(geol, crs=crs(aop))
 
 #### SSURGO soil ####
-#soil <- soils.ras
-#plot(soil)
-soil <- soil.rast.ls
+#soil <- soil.rast.ls
+# list.files(file.path(ssurgo.dir))
+soil <- lapply(list.files(soildir, full.names=T, pattern='tif$'), raster)
+lapply(soil, plot)
 
 #### ASO snow ####
 snow <- raster(file.path(snowdir, 'mean_swe_18-22.tif'))
@@ -120,7 +124,7 @@ snow.delta <- raster(file.path(snowdir, 'mean_delta_swe.tif'))
 # Append all explainers to one list
 explainers <- append(topos, c(geol, soil, snow, snow.delta))
 sapply(explainers, names)
-length(explainers) == 28
+length(explainers) == 31
 
 # Clean up names of explainers
 varnames <- c('adj_southness_205',
@@ -231,7 +235,7 @@ target.vars <- c('folded_aspect_205',
                 #'sand',
                 #'silt',
                 'om',
-                'k',
+                'ksat',
                 #'cec',
                 'td',
                 'swe')
@@ -305,7 +309,6 @@ vars$geology <-
 
 vars$geology <- as.factor(vars$geology)
 
-
 #############################
 # Correlation matrix
 #############################
@@ -334,7 +337,8 @@ pairs.panels(varcorr,
 # Simple linear model
 #############################
 mod_lm <- lm(diam ~ folded_aspect_205+swe, data=vars)
-
+plot(vars$diam, vars$elevation)
+plot(mod_lm)
 mod_lm <- lm(diam ~ elevation+slope+folded_aspect_205+tpi_1km+twi_100m+awc+om+k+geology, data=vars)
 summary(mod_lm)
 plot(mod_lm)
@@ -406,11 +410,13 @@ mod_gam2 <- gam(density ~
                   geology +
                   s(awc, bs='cc') + 
                   s(om, bs='cc') +
-                  s(k, bs='cc') + 
+                  #s(k, bs='cc') + 
                   #cec + 
                   s(td, bs='cc') + 
                   s(swe, bs='cc'),
                 data=vars)
+
+View(vars)
 
 dens_gam <- gam(density ~ 
                   s(elevation, bs='cc') + 
@@ -429,11 +435,13 @@ dens_gam <- gam(density ~
                   geology +
                   s(awc, bs='cc') + 
                   s(om, bs='cc') +
-                  s(k, bs='cc') + 
+                  s(ksat, bs='cc') + 
                   #cec + 
                   s(td, bs='cc') + 
                   s(swe, bs='cc'),
                 data=vars)
+
+summary(dens_gam)
 
 ht_gam <- gam(height ~ 
                   s(elevation, bs='cc') + 
@@ -452,7 +460,7 @@ ht_gam <- gam(height ~
                   geology +
                   s(awc, bs='cc') + 
                   s(om, bs='cc') +
-                  s(k, bs='cc') + 
+                  s(ksat, bs='cc') + 
                   #cec + 
                   s(td, bs='cc') + 
                   s(swe, bs='cc'),
@@ -463,7 +471,7 @@ diam_gam <- gam(diam ~
                   s(folded_aspect_205, bs='cc') + 
                   s(slope, bs='cc') + 
                   s(tpi_1km, bs='cc') +
-                  #s(twi_100m, bs='cc') +
+                  s(twi_100m, bs='cc') +
                   s(heat_load, bs='cc') +
                   s(elevation, by=folded_aspect_205) +
                   s(elevation, by = tpi_1km) +
@@ -475,7 +483,7 @@ diam_gam <- gam(diam ~
                   geology +
                   s(awc, bs='cc') + 
                   s(om, bs='cc') +
-                  s(k, bs='cc') + 
+                  s(ksat, bs='cc') + 
                   #cec + 
                   s(td, bs='cc') + 
                   s(swe, bs='cc'),
@@ -498,7 +506,7 @@ ba_gam <- gam(ba ~
                   geology +
                   s(awc, bs='cc') + 
                   s(om, bs='cc') +
-                  s(k, bs='cc') + 
+                  s(ksat, bs='cc') + 
                   #cec + 
                   s(td, bs='cc') + 
                   s(swe, bs='cc'),
@@ -561,7 +569,7 @@ ggplot(vars, aes(x=density, y=elevation, color=geology)) +
   geom_point() +
   geom_abline()
 
-#visreg(mod_gam2)
+visreg(mod_gam2)
 
 termplot(dens_gam)
 
@@ -571,24 +579,29 @@ AIC(mod_gam2)
 summary(mod_lm)$sp.criterion
 summary(mod_gam2)$sp.criterion
 
-#g <- list(
-visreg2d(dens_gam, xvar='elevation', yvar='swe', plot.type='gg', main='Total stem density')+
-  scale_fill_viridis(name='Density') + 
-  theme_minimal(base_size = 18)
-visreg2d(ht_gam, xvar='elevation', yvar='slope', plot.type='gg') + 
-  scale_fill_viridis(name='Height') +
-  theme_minimal(base_size = 18)
-visreg2d(diam_gam, xvar='elevation', yvar='awc', plot.type='gg') + 
-  scale_fill_viridis(name='QMD') + 
-  theme_minimal(base_size = 18)
+g <- list(
+visreg2d(dens_gam, xvar='elevation', yvar='swe', plot.type='gg') +
+  scale_fill_viridis(name='density') + 
+  theme_minimal(base_size = 16) + 
+  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
+visreg2d(ht_gam, xvar='elevation', yvar='ksat', plot.type='gg') + 
+  scale_fill_viridis(name='height') +
+  theme_minimal(base_size = 16) + 
+  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
+visreg2d(diam_gam, xvar='elevation', yvar='heat_load', plot.type='gg') + 
+  scale_fill_viridis(name='dbh') + 
+  theme_minimal(base_size = 16) + 
+  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
 visreg2d(ba_gam, xvar='elevation', yvar='om', plot.type='gg') + 
-  scale_fill_viridis(name='Basal area') + 
-  theme_minimal(base_size = 18)
-#)
+  scale_fill_viridis(name='basal area') + 
+  theme_minimal(base_size = 16) + 
+  theme(legend.title=element_text(size=14), legend.position = 'bottom')
+)
 g
 g + facet_grid()
-marrangeGrob(g, nrow=2, ncol=2, top='')
-
+library(gridExtra)
+marrangeGrob(g, nrow=2, ncol=2)
+?marrangeGrob()
 mod_gam2$coefficients
 par(mfcol=c(1,3), mar=c(2,2,4,2))
 vis.gam(mod_gam2, view=c('elevation','swe'), type='response', plot.type='persp', phi=20, theta=48, border=NA, color='topo', zlab='90th pctl height', contour.col='black', main='Density v Elevation v TPI', xlab='Standardized elevation', ylab='standardized TPI', cex.lab=2, cex.main=2.5)

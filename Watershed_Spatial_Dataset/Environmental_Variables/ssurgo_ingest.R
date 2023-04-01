@@ -204,9 +204,8 @@ rasterize.fun <- function(in.sf, ncol, nrow, target.sf) {
   ra.ls = ra.ls[5:(length(soil_spatial)-1)]
   for(i in seq_along(ra.ls)){
     names(ra.ls[[i]]) <- names(soil_spatial)[4+i]
+    crs(ra.ls[[i]]) <- 'EPSG:32613'
   }
-  
-  return(ra.ls)
 }
 
 # Rasterize mapunit--level estimates
@@ -216,7 +215,7 @@ soil.rast.ls <- rasterize.fun(soil_spatial, ncol=237, nrow=208, aop)
 par(mfcol=c(3,3), mar=c(rep(1,2), rep(3,2)))
 for(i in seq(3, length(soil.rast.ls))) {
   plot(soil.rast.ls[[i]], 
-       col=mrmoose::icolors('crayons'),
+       col=nifty::icolors('crayons'),
        asp=1, 
        main=names(soil.rast.ls[[i]]))
 }
@@ -225,7 +224,14 @@ for(i in seq(3, length(soil.rast.ls))) {
 # Write rasters out
 #######################
 # Write out
-lapply(soil.rast.ls, function(x) writeRaster(x, file.path(outdir, paste0(names(x), '.tif')), driver='GTiff', overwrite=T))
+lapply(soil.rast.ls, function(x) {
+  writeRaster(
+    x, 
+    file.path(outdir, paste0(names(x), '.tif')), 
+    crs='EPSG:32613',
+    driver='GTiff', 
+    overwrite=T)
+})
 
 # Check validity of saved tif
 plot(raster(file.path(outdir, paste0(names(soil.rast.ls[[5]]),'.tif'))), asp=1)
