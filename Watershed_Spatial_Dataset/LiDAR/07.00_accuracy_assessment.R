@@ -102,8 +102,9 @@ df = data.frame('Site_Name'=inv$Site_Name,
                 'Y'=as.numeric(inv$Latitude))
 df = na.omit(df)
 unique(df$Site_Name)
+dim(inv)
 dim(inv[inv$Geotagged==T,])
-dim(!is.na(inv[inv$Latitude,]))
+dim(inv[!is.na(inv$Latitude),])
 
 datadir <- '/global/scratch/users/worsham/trees_100K'
 trfiles <- list.files(datadir, full.names=T)
