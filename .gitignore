@@ -1,5 +1,6 @@
 # R logs
 .Rhistory
+.Rproj.user
 
 # VSCode stuff
 .vscode
@@ -7,7 +8,6 @@
 
 # Slurm stuff
 slurm*.out
-.Rproj.user
 
 # Auth stuff
 er-forest-structure/config/eastriver-r-googledrive-clientsecret.json
