@@ -12,6 +12,6 @@ module load r r-packages r-spatial
 while true
 do
 R CMD BATCH --no-save \
-~/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/03.00_normalize_points.R \
+../notebooks/LiDAR/03.00_normalize_points.R \
 /global/scratch/users/worsham/logs/Rout_normalize.Rout
 done
