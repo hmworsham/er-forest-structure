@@ -1,6 +1,6 @@
-# eastriver
+# er-forest-structure
 
-This is a repository for code used to clean, process, and analyze forest inventory and waveform LiDAR data collected in the East River watershed of Colorado by members of the Kueppers Lab at the University of California, Berkeley.
+This is a repository for code used to clean, process, and analyze forest structure using waveform LiDAR and field data collected in the East River watershed of Colorado by members of the Kueppers Lab at the University of California, Berkeley.
 
 The scripts in this repository were authored by several people, including Marshall Worsham, who maintains the repository (worsham@berkeley.edu).
 
