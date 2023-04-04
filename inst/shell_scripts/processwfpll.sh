@@ -9,5 +9,5 @@
 ## Command(s) to run (example):
 module load r r-packages r-spatial
 R CMD BATCH --no-save \
-../inst/notebooks/LiDAR/01_process_all_waveforms.R \
+../notebooks/LiDAR/01_process_all_waveforms.R \
 run-reports/processwf.Rout

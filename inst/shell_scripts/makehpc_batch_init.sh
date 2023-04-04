@@ -12,6 +12,6 @@ module load r r-packages r-spatial
 while true
 do
 R CMD BATCH --no-save \
-../inst/notebooks/LiDAR/03_hyperpointcloud.R \
+../notebooks/LiDAR/03_hyperpointcloud.R \
 /global/scratch/users/worsham/logs/Rout_hpc.Rout
 done

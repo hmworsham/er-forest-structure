@@ -16,4 +16,4 @@
 
 # Command(s) to run:
 module load python/3.7
-python ../inst/notebooks/LiDAR/00_unzipwf.py > unzip.pyout
+python ../notebooks/LiDAR/00_unzipwf.py > unzip.pyout
