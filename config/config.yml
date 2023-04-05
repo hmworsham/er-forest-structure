@@ -1,1 +1,43 @@
-# config.yml
+# er-forest-structure_config.yml
+
+default:
+ key1: default
+ driveauth: 'config/eastriver-r-googledrive-clientsecret.json'
+ drivekey: 'config/eastriver-r-googledrive_auth.txt'
+ drivesa: '~/.ssh/eastriver-308601-65de0446573f.json'
+ pkgs:
+  - devtools
+  - xfun
+  - tidyverse
+  - ggplot2
+  - terra
+  - sf
+  - parallel
+  - lidR
+  - lidRplugins
+  - rlas
+  - rgl
+  - broom
+  - plot3D
+  - readxl
+  - googledrive
+  - rwaveform
+ extdata:
+  scratch: '/global/scratch/users/worsham'
+  las_dec: '/global/scratch/users/worsham/las_decimated'
+  las_reg: '/global/scratch/users/worsham/las_regridded'
+  trees: '/global/scratch/users/worsham/trees'
+  invpattern: 'EastRiver_Census1_Data_Collated.csv'
+  invid: '17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9'
+  plotid: '17y17SPt8xcowTeKjfGWmzuar-LI_5sl7'
+  plotpattern: 'Kueppers_EastRiver_AllPlots_poly_2021_WGS84UTM13N'
+ data: 
+  raw: './data/raw'
+  int: './data/intermediate'
+  pro: './data/processed'
+
+test:
+  key1: test
+
+production:
+  key1: production
