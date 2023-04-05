@@ -1,42 +1,22 @@
-# Individual tree crown segmentation on LiDAR points
+# Training individual tree crown segmentation on LiDAR points
 # Author: Marshall Worsham | worsham@berkeley.edu.
 # Created: 04-08-21
-# Revised: 06-30-22
+# Revised: 04-04-23
 
 #########################
 # Front matter
 ########################
 
-# Install and load libraries
-pkgs <- c('dplyr',
-          'tidyverse',
-          'ggplot2',
-          'raster',
-          'devtools',
-          'plotly',
-          'sf', 
-          'terra',
-          'parallel',
-          'lidR',
-          'lidRplugins',
-          'rlas',
-          'rgl',
-          'broom',
-          'plot3D',
-          'readxl', 
-          'googledrive') # Name the packages you want to use here
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Function to install new packages if they're not already installed
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} 
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
+#load_all('~/Repos/rwaveform')
 
-# Runs the function on the list of packages defined in pkgs
-load.pkgs(pkgs)
-load_all('~/Repos/rwaveform')
+# Configure Drive auth (using service account)
+drive_auth(path=config$drivesa)
 
 # Name directories
 scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
@@ -53,29 +33,43 @@ dir.create(outdir)
 ################
 
 # Ingest full las catalog
-infiles <- list.files(datadir, full.names=T)
-las <- readLAS(infiles[[992]])
+infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 
 # Ingest plot boundaries
-plotsf <- st_read(list.files(shapedir, pattern='.shp', full.names=T))
+plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
+                     pattern=config$extdata$plotpattern)
+plotsf <- st_read(plotsf)
+
+# Ingest field data
+tmpfile <- drive_download(
+  as_id(config$extdata$invid),
+  type='csv',
+  path=file.path(tempdir(), inv.src$name),
+  overwrite=T)$local_path
+inv <- read.csv(tmpfile)
+
+#############
+# Munge data
+#############
+
 aois <- plotsf$PLOT_ID
-aois <- c('SG-SWR1', 
-          'CC-UC1', 
-          'WG-WGM1', 
-          'ER-APL1', 
-          'CC-UC2', 
-          'SG-NES2', 
-          'ER-BME2', 
-          'ER-BME1', 
-          'ER-APU1', 
-          'ER-GT1', 
-          'SG-NES3', 
-          'SR-PVG1', 
+aois <- c('SG-SWR1',
+          'CC-UC1',
+          'WG-WGM1',
+          'ER-APL1',
+          'CC-UC2',
+          'SG-NES2',
+          'ER-BME2',
+          'ER-BME1',
+          'ER-APU1',
+          'ER-GT1',
+          'SG-NES3',
+          'SR-PVG1',
           'SG-NES1',
-          'CC-CVN2', 
-          'CC-EMN1', 
-          'CC-CVS1', 
+          'CC-CVN2',
+          'CC-EMN1',
+          'CC-CVS1',
           'CC-CVN2')
 
 # Split plots into quadrants
@@ -91,22 +85,8 @@ for (i in 1:nrow(plotsf)){
 plotsf <- sf::st_as_sf(data.table::rbindlist(ls)) # superfast
 aoi.quads <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
-# Ingest field data
-httr::with_verbose(drive_auth(path='~/.ssh/eastriver-308601-65de0446573f.json'))
-
-invsource <- drive_find(path=pattern='EastRiver_Census1_Data_Collated.csv')
-invid <- invsource$id
-
-tmpfile <- drive_download(
-    as_id(invid),
-    type='csv',
-    path=file.path(tempdir(), invsource$name),
-    overwrite=T)$local_path
-
-inv <- read.csv(tmpfile)
-
 inv <- (inv[grep(
-  paste('out of plot', 
+  paste('out of plot',
         '^oop$',
         '^OOP$',
         'outside plot',
@@ -117,8 +97,8 @@ inv <- (inv[grep(
   inv$Comments,
   invert=T),])
 
-df = data.frame('Z'=as.numeric(inv$Height_Avg_M), 
-                'X'=as.numeric(inv$Longitude), 
+df = data.frame('Z'=as.numeric(inv$Height_Avg_M),
+                'X'=as.numeric(inv$Longitude),
                 'Y'=as.numeric(inv$Latitude))
 df = na.omit(df)
 
@@ -185,11 +165,11 @@ li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3, threads=30L, workers=30L){
   return(segtrees)
 }
 
-testli <- mcmapply(li2012.opt, 
-                   g[,1], 
-                   g[,2], 
-                   g[,3], 
-                   g[,4], 
+testli <- mcmapply(li2012.opt,
+                   g[,1],
+                   g[,2],
+                   g[,3],
+                   g[,4],
                    MoreArgs=list(pc=lasplots[[1]], hmin=1.3),
                    mc.cores = getOption("mc.cores", 64L))
 
@@ -296,14 +276,14 @@ aois
 # DEBUGGING
 ###########
 itcdelineate <- function(nlas, aoi, algo='li2012'){
-  
+
   # Get plot boundary for aoi
-  plotpath = list.files(shapedir, 
+  plotpath = list.files(shapedir,
                         pattern = glob2rx(paste0(aoi,"*shp")),
                         full.names = T)
   plotsf = vect(plotpath)
   geoextent = as.list(ext(plotsf))
-  
+
   # Run itcSegment delineation algorithm
   if(algo == 'dalponte2016'){
     chm = grid_canopy(nlas, 0.5, pitfree(subcircle = 0.4))
@@ -315,49 +295,49 @@ itcdelineate <- function(nlas, aoi, algo='li2012'){
     }
     ft = find_trees(nlas, lmf(f))
     alg = dalponte2016(chm,
-                       ft, 
-                       th_tree = 1.5, 
-                       th_seed = 0.01, 
+                       ft,
+                       th_tree = 1.5,
+                       th_seed = 0.01,
                        th_cr = 0.05,
                        max_cr = 12)
     itc = segment_trees(nlas, alg)
     plot(itc, bg = "white", size = 4, color = "treeID") # visualize trees
     crowns = delineate_crowns(itc)
   }
-  
+
   if(algo == 'li2012'){
-    alg = li2012(dt1 = 0.8, 
-                 dt2 = 2, 
-                 R = 1, 
-                 Zu = 12, 
-                 hmin = 1, 
+    alg = li2012(dt1 = 0.8,
+                 dt2 = 2,
+                 R = 1,
+                 Zu = 12,
+                 hmin = 1,
                  speed_up = 6.5)
     itc = segment_trees(nlas, alg) # segment point cloud
     plot(itc, bg = "white", size = 4, color = "treeID") # visualize trees
     crowns = delineate_crowns(itc, 'convex')
   }
-  
-  #   
-  # itc = itcLiDAR(X = ld$X, 
-  #                Y = ld$Y, 
-  #                Z = ld$Z, 
-  #                epsg=26913, 
-  #                resolution = 0.3, 
+
+  #
+  # itc = itcLiDAR(X = ld$X,
+  #                Y = ld$Y,
+  #                Z = ld$Z,
+  #                epsg=26913,
+  #                resolution = 0.3,
   #                MinSearchFilSize = 3,
-  #                MaxSearchFilSize = 5, 
+  #                MaxSearchFilSize = 5,
   #                TRESHSeed = 0.6,
   #                TRESHCrown = 0.85,
   #                minDIST = 1.1,
   #                maxDIST = 9,
   #                HeightThreshold = 1.5,
   #                cw = 1)
-  # 
-  
+  #
+
   clipitc = raster::crop(crowns, plotsf)
   #plot(clipitc)
   #destdir = '~/Desktop/RMBL/Projects/Watershed_Spatial_Dataset/Output/itc'
   #writeOGR(obj=clipitc, dsn=destdir, layer=paste0(aoi, '_itc'), driver="ESRI Shapefile")
-  
+
   return(clipitc)
 }
 
