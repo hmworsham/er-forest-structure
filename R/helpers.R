@@ -22,20 +22,20 @@ load.plot.sf <- function(path, pattern) {
   )
 
   tmpfiles <- apply(plotobj, 1, function(x) {
-    tmpfile <- drive_download(
-      as_id(x[['id']]),
-      path=file.path(
-        tempdir(),
-        x[['name']]),
-      overwrite=T)$local_path
+    if(!file_ext(x[['name']]) == 'kmz') {
+      tmpfile <- drive_download(
+        as_id(x[['id']]),
+        path=file.path(
+          tempdir(),
+          x[['name']]),
+        overwrite=T)$local_path}
+    else tmpfile <- NULL
     return(tmpfile)
   })
 
-  shpfiles <- tmpfiles[file_ext(tmpfiles)=='shp']
-  sfs <- lapply(shpfiles, function(x) {
-    shp <- st_read(x)
-    shp <- st_transform(shp, 'EPSG:32613')
-    shp
-  })
-  return(sfs)
+  shpfile <- tmpfiles[file_ext(tmpfiles)=='shp']
+  shp <- st_read(shpfile)
+  shp <- st_transform(shp, 'EPSG:32613')
+
+  return(shp)
 }
