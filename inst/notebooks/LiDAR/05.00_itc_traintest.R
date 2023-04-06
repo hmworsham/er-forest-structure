@@ -19,14 +19,14 @@ load.pkgs(config$pkgs)
 drive_auth(path=config$drivesa)
 
 # Name directories
-scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
-datadir <- file.path(scrdir, 'las_decimated')
-regriddir <- file.path(scrdir, 'las_regridded')
-shapedir <- file.path(scrdir, 'EastRiverInputs', 'Plot_Shapefiles', 'AllPlots')
-fidir <- file.path(scrdir, 'EastRiverInputs', 'Inventory_Plots')
-gpsdir <- file.path(scrdir, 'EastRiverInputs', 'StemGeolocations')
-outdir <- file.path(scrdir, 'trees')
-dir.create(outdir)
+# scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
+# datadir <- file.path(scrdir, 'las_decimated')
+# regriddir <- file.path(scrdir, 'las_regridded')
+# shapedir <- file.path(scrdir, 'EastRiverInputs', 'Plot_Shapefiles', 'AllPlots')
+# fidir <- file.path(scrdir, 'EastRiverInputs', 'Inventory_Plots')
+# gpsdir <- file.path(scrdir, 'EastRiverInputs', 'StemGeolocations')
+# outdir <- file.path(scrdir, 'trees')
+# dir.create(outdir)
 
 ################
 # Ingest data
@@ -38,14 +38,13 @@ lascat <- readLAScatalog(infiles)
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
-                     pattern=config$extdata$plotpattern)
-plotsf <- st_read(plotsf)
+                       pattern=config$extdata$plotpattern)
 
 # Ingest field data
 tmpfile <- drive_download(
   as_id(config$extdata$invid),
   type='csv',
-  path=file.path(tempdir(), inv.src$name),
+  #path=file.path(tempdir(), inv.src$name),
   overwrite=T)$local_path
 inv <- read.csv(tmpfile)
 
@@ -54,23 +53,9 @@ inv <- read.csv(tmpfile)
 #############
 
 aois <- plotsf$PLOT_ID
-aois <- c('SG-SWR1',
-          'CC-UC1',
-          'WG-WGM1',
-          'ER-APL1',
-          'CC-UC2',
-          'SG-NES2',
-          'ER-BME2',
-          'ER-BME1',
-          'ER-APU1',
-          'ER-GT1',
-          'SG-NES3',
-          'SR-PVG1',
-          'SG-NES1',
-          'CC-CVN2',
-          'CC-EMN1',
-          'CC-CVS1',
-          'CC-CVN2')
+aois <- aois[grep('XX', aois, invert=T)]
+
+plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 
 # Split plots into quadrants
 div <- 2 # Number of divisions
@@ -82,25 +67,22 @@ for (i in 1:nrow(plotsf)){
   xx$QUADRANT <- sapply(seq(1:4), function(x) paste(plotsf[i,]$PLOT_ID, x, sep='.'))
   ls[[i]] <- xx
 }
+
 plotsf <- sf::st_as_sf(data.table::rbindlist(ls)) # superfast
+
 aoi.quads <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
-inv <- (inv[grep(
-  paste('out of plot',
-        '^oop$',
-        '^OOP$',
-        'outside plot',
-        'Outside plot',
-        'not in plot',
-        'Not in plot',
-        sep='|'),
-  inv$Comments,
-  invert=T),])
+# Filter out trees not meeting criteria
+inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
+inv <- inv[inv$Status == 'Live',] # Living stems
+inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
 
-df = data.frame('Z'=as.numeric(inv$Height_Avg_M),
+#
+stem.xyz = data.frame('Z'=as.numeric(inv$Height_Avg_M),
                 'X'=as.numeric(inv$Longitude),
                 'Y'=as.numeric(inv$Latitude))
-df = na.omit(df)
+
+stem.xyz = na.omit(stem.xyz)
 
 #############################
 # Plotting for verification
@@ -113,7 +95,9 @@ df = na.omit(df)
 # extent(plotsf[1,1])
 
 # Read in one las file
-# las1 <- readLAS(infiles[960])
+las1 <- readLAS(infiles[960])
+plot(las1)
+rglwidget()
 
 # Crop las by 5m square [not sure why this is in here...]
 # ex <- extent(las1)-5
@@ -130,11 +114,11 @@ df = na.omit(df)
 # Ingest point cloud at all plots with a given buffer
 lasplots <- mclapply(aoi.quads, function(x){
   p = plotsf[plotsf$QUADRANT==x,][1]
-  bnd = st_buffer(p$geometry, 5)
+  bnd = st_buffer(p$geometry, endCapStyle='ROUND', 0.5)
   pc = clip_roi(lascat, bnd)
   return(pc)
   },
-  mc.cores = getOption("mc.cores", 64L))
+  mc.cores = getOption("mc.cores", 30L))
 
 # Check
 assertthat::are_equal(length(lasplots), length(aoi.quads), 68)
