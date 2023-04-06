@@ -1,6 +1,7 @@
 # R logs
 .Rhistory
 .Rproj.user
+.RData
 
 # VSCode stuff
 .vscode
