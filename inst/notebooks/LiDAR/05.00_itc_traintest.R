@@ -18,6 +18,11 @@ load.pkgs(config$pkgs)
 # Configure Drive auth (using service account)
 drive_auth(path=config$drivesa)
 
+# Set up multinode cluster for parallel computing
+workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
+workerNodes <- rep(workerNodes, 32)
+cl <- parallel::makeCluster(workerNodes)
+
 # Name directories
 # scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
 # datadir <- file.path(scrdir, 'las_decimated')
@@ -34,6 +39,7 @@ drive_auth(path=config$drivesa)
 
 # Ingest full las catalog
 infiles <- list.files(config$extdata$las_dec, full.names=T)
+set_lidr_threads(90)
 lascat <- readLAScatalog(infiles)
 
 # Ingest plot boundaries
@@ -51,9 +57,10 @@ inv <- read.csv(tmpfile)
 #############
 # Munge data
 #############
+
+# Subset plot shapefiles to areas of interest (those within AOP flights)
 aois <- plotsf$PLOT_ID
 aois <- aois[grep('XX', aois, invert=T)]
-
 plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 
 # Split plots into quadrants
@@ -69,14 +76,15 @@ for (i in 1:nrow(plotsf)){
 
 plotsf <- sf::st_as_sf(data.table::rbindlist(ls)) # superfast
 
-aoi.quads <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
+# Store plot quadrant names
+quad.names <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
 # Filter out trees not meeting criteria
 inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
 inv <- inv[inv$Status == 'Live',] # Living stems
 inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
 
-#
+# Keep stem x,y,z data
 stem.xyz = data.frame('Z'=as.numeric(inv$Height_Avg_M),
                 'X'=as.numeric(inv$Longitude),
                 'Y'=as.numeric(inv$Latitude))
@@ -113,14 +121,11 @@ stem.xyz = na.omit(stem.xyz)
 # Ingest point cloud at all plots with a given buffer
 lasplots <- mclapply(aoi.quads, function(x){
   p = plotsf[plotsf$QUADRANT==x,][1]
-  bnd = st_buffer(p$geometry, endCapStyle='ROUND', 0.5)
+  bnd = st_buffer(p$geometry, endCapStyle='ROUND', 5)
   pc = clip_roi(lascat, bnd)
   return(pc)
   },
-  mc.cores = getOption("mc.cores", 30L))
-
-clip_roi(lascat, plotsf)
-lasplots
+  mc.cores = getOption("mc.cores", 90L))
 
 # Check
 assertthat::are_equal(length(lasplots), length(aoi.quads), 68)
@@ -141,28 +146,38 @@ g <- expand.grid(dt1.seq, dt2.seq, R.seq, Zu.seq)
 # # or
 # mapply(f, g[, 1], g[, 2])
 
-workerNodes <- c(rep('n0014.savio3', 36), rep('n0243.savio3', 36))
-cl <- parallel::makeCluster(workerNodes)
-
 # Initialize Li 2012
-li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3, threads=30L, workers=30L){
+li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3, threads=30L, workers=30L) {
   algo = li2012(dt1, dt2, R, Zu, hmin)
   segtrees = segment_trees(pc, algo) # segment point cloud
   return(segtrees)
 }
 
-testli <- lapply(lasplots, function (x) {
-  set <- mcmapply(li2012.opt,
+testli <- mcmapply(li2012.opt,
                    g[,1],
                    g[,2],
                    g[,3],
                    g[,4],
-                   MoreArgs=list(pc=x, hmin=1.3),
-                   mc.cores = getOption("mc.cores", 64L))
-  return(set)
-})
+                   MoreArgs=list(pc=lasplots[[1]], hmin=1.3),
+                   mc.cores = getOption("mc.cores", 90L))
 
-### pseudocode
+P isapathfromvtou
+α,β are edges (u,v)
+A is a augmenting path being evaluated
+1: 2: 3: 4: 5: 6: 7: 8: 9:
+  10:
+  11: 12: 13:
+  procedure Graph G((u, v),E), Matching M
+
+# A is a set of algorithms being evaluated
+# P is a matrix of parameters used to force algorithm, where each p is a combination of parameters
+# k is a plot
+# 1. Procedure optimize tree detection
+# 2.  for i in A do
+# 3.    for p in P
+# 4.      segment trees from point cloud with i,p
+# 5.      delineate trees from segmented points
+# 6.
 # 1. define parameter set to test algorithm
   # 2. run the algorithm with ps_1 on plots 1:k-1 >>> compute loss, store result
   # 3. run the algorithm with ps_2 on plots 1:k-1 >>> compute loss, store result
