@@ -12,6 +12,7 @@ default:
   - ggplot2
   - terra
   - sf
+  - future
   - parallel
   - lidR
   - lidRplugins
@@ -31,7 +32,7 @@ default:
   invid: '17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9'
   plotid: '17y17SPt8xcowTeKjfGWmzuar-LI_5sl7'
   plotpattern: 'Kueppers_EastRiver_AllPlots_poly_2021_WGS84UTM13N'
- data: 
+ data:
   raw: './data/raw'
   int: './data/intermediate'
   pro: './data/processed'
