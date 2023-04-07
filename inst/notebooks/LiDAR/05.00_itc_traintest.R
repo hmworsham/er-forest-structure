@@ -44,14 +44,13 @@ plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
 tmpfile <- drive_download(
   as_id(config$extdata$invid),
   type='csv',
-  #path=file.path(tempdir(), inv.src$name),
+  path=file.path(tempdir(), config$extdata$invid),
   overwrite=T)$local_path
 inv <- read.csv(tmpfile)
 
 #############
 # Munge data
 #############
-
 aois <- plotsf$PLOT_ID
 aois <- aois[grep('XX', aois, invert=T)]
 
@@ -95,9 +94,9 @@ stem.xyz = na.omit(stem.xyz)
 # extent(plotsf[1,1])
 
 # Read in one las file
-las1 <- readLAS(infiles[960])
-plot(las1)
-rglwidget()
+# las1 <- readLAS(infiles[960])
+# plot(las1)
+# rglwidget()
 
 # Crop las by 5m square [not sure why this is in here...]
 # ex <- extent(las1)-5
@@ -120,6 +119,9 @@ lasplots <- mclapply(aoi.quads, function(x){
   },
   mc.cores = getOption("mc.cores", 30L))
 
+clip_roi(lascat, plotsf)
+lasplots
+
 # Check
 assertthat::are_equal(length(lasplots), length(aoi.quads), 68)
 
@@ -139,7 +141,7 @@ g <- expand.grid(dt1.seq, dt2.seq, R.seq, Zu.seq)
 # # or
 # mapply(f, g[, 1], g[, 2])
 
-workerNodes <- c(rep('n0014.savio3',36), rep('n0243.savio3', 36))
+workerNodes <- c(rep('n0014.savio3', 36), rep('n0243.savio3', 36))
 cl <- parallel::makeCluster(workerNodes)
 
 # Initialize Li 2012
@@ -149,13 +151,27 @@ li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3, threads=30L, workers=30L){
   return(segtrees)
 }
 
-testli <- mcmapply(li2012.opt,
+testli <- lapply(lasplots, function (x) {
+  set <- mcmapply(li2012.opt,
                    g[,1],
                    g[,2],
                    g[,3],
                    g[,4],
-                   MoreArgs=list(pc=lasplots[[1]], hmin=1.3),
+                   MoreArgs=list(pc=x, hmin=1.3),
                    mc.cores = getOption("mc.cores", 64L))
+  return(set)
+})
+
+### pseudocode
+# 1. define parameter set to test algorithm
+  # 2. run the algorithm with ps_1 on plots 1:k-1 >>> compute loss, store result
+  # 3. run the algorithm with ps_2 on plots 1:k-1 >>> compute loss, store result
+  # 4. run the algorithm with ps_3 on plots 1:k-1 >>> compute loss, store result
+  # 5. repeat for ps_4:n
+# 3.
+# 4.
+# 5.
+
 
 # or
 do.call(mapply, c("f", unname(as.list(g))))
