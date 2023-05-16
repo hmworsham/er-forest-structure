@@ -18,6 +18,7 @@ default:
   - lidRplugins
   - rlas
   - rgl
+  - nngeo
   - broom
   - plot3D
   - readxl
