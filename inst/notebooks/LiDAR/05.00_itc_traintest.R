@@ -13,15 +13,16 @@ config <- config::get(file=file.path('config', 'config.yml'))
 # Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
-#load_all('~/Repos/rwaveform')
+load_all('~/Repos/rwaveform')
 
 # Configure Drive auth (using service account)
 drive_auth(path=config$drivesa)
 
 # Set up multinode cluster for parallel computing
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
-workerNodes <- rep(workerNodes, 32)
+workerNodes <- rep(workerNodes, 40)
 cl <- parallel::makeCluster(workerNodes)
+set_lidr_threads(length(workerNodes)-2)
 
 # Name directories
 # scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
@@ -39,7 +40,6 @@ cl <- parallel::makeCluster(workerNodes)
 
 # Ingest full las catalog
 infiles <- list.files(config$extdata$las_dec, full.names=T)
-set_lidr_threads(90)
 lascat <- readLAScatalog(infiles)
 
 # Ingest plot boundaries
@@ -85,11 +85,19 @@ inv <- inv[inv$Status == 'Live',] # Living stems
 inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
 
 # Keep stem x,y,z data
-stem.xyz = data.frame('Z'=as.numeric(inv$Height_Avg_M),
-                'X'=as.numeric(inv$Longitude),
-                'Y'=as.numeric(inv$Latitude))
-
+stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
+                      'Z'=as.numeric(inv$Height_Avg_M),
+                      'X'=as.numeric(inv$Longitude),
+                      'Y'=as.numeric(inv$Latitude))
 stem.xyz = na.omit(stem.xyz)
+
+# Turn stem.xyz into sf object
+stem.sf <- st_as_sf(stem.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
+stem.sf <- st_transform(stem.sf, crs=st_crs(plotsf))
+
+# Find intersection of stems and quadrants
+# Returns an `sf` object with each tree associated with a quadrant (and its parent plot)
+stems.in.quads <- st_intersection(plotsf, stem.sf)
 
 #############################
 # Plotting for verification
@@ -119,21 +127,21 @@ stem.xyz = na.omit(stem.xyz)
 ##########################################
 
 # Ingest point cloud at all plots with a given buffer
-lasplots <- mclapply(aoi.quads, function(x){
+lasplots <- mclapply(quad.names, function(x){
   p = plotsf[plotsf$QUADRANT==x,][1]
   bnd = st_buffer(p$geometry, endCapStyle='ROUND', 5)
   pc = clip_roi(lascat, bnd)
   return(pc)
   },
-  mc.cores = getOption("mc.cores", 90L))
+  mc.cores = getOption("mc.cores", length(workerNodes)-2))
 
 # Check
-assertthat::are_equal(length(lasplots), length(aoi.quads), 68)
+assertthat::are_equal(length(lasplots), length(quad.names), 68)
 
 # Define vectors of parameters on which to run Li algorithm for optimization
-dt1.seq = seq(0.1, 0.5, 0.2)
+dt1.seq = seq(0.01, 0.1, 0.04)
 dt2.seq = seq(1, 2, 0.2)
-R.seq = seq(0, 3, 1)
+R.seq = seq(0, 4, 1)
 Zu.seq = seq(14, 16, 1)
 length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq)
 
@@ -146,11 +154,15 @@ g <- expand.grid(dt1.seq, dt2.seq, R.seq, Zu.seq)
 # # or
 # mapply(f, g[, 1], g[, 2])
 
-# Initialize Li 2012
-li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3, threads=30L, workers=30L) {
+# Initialize Li 2012 for optimization
+li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3) {
   algo = li2012(dt1, dt2, R, Zu, hmin)
   segtrees = segment_trees(pc, algo) # segment point cloud
-  return(segtrees)
+  crowns = crown_metrics(segtrees, func = .stdtreemetrics, geom = "convex")
+  crowns = crowns[st_is_valid(crowns),]
+  ttops = st_centroid(crowns)
+  ttops = ttops[ttops$Z >= hmin,]
+  return(ttops)
 }
 
 testli <- mcmapply(li2012.opt,
@@ -159,15 +171,96 @@ testli <- mcmapply(li2012.opt,
                    g[,3],
                    g[,4],
                    MoreArgs=list(pc=lasplots[[1]], hmin=1.3),
-                   mc.cores = getOption("mc.cores", 90L))
+                   mc.cores = getOption("mc.cores", 30))
 
-P isapathfromvtou
-α,β are edges (u,v)
-A is a augmenting path being evaluated
-1: 2: 3: 4: 5: 6: 7: 8: 9:
-  10:
-  11: 12: 13:
-  procedure Graph G((u, v),E), Matching M
+testli <- apply(testli, 2, data.frame)
+testli <- lapply(testli, st_as_sf)
+testli <- lapply(testli, function (x) {
+  tl <- x[!st_is_empty(x),]
+  tl
+})
+testli <- Filter(function(x) nrow(x) > 0 , testli)
+
+predictloss.0 <- function(predictrees, invtrees, plot.sf, aoi, draw.plots=F) {
+
+  # Plot field-identified trees against modeled trees
+  if(draw.plots) {
+
+    plot(st_geometry(invtrees), pch='+', col='lightblue4')
+    plot(st_geometry(predictrees), pch='+', add=TRUE, col='firebrick2')
+    legend('topright',
+           legend=c('Field trees', 'Modeled trees'),
+           col=c('lightblue4', 'firebrick2'),
+           pch='+',
+           cex=0.6)
+  }
+
+  # For each modeled tree, find its k nearest neighbors in X-Y coordinate space
+  nn = suppressMessages(st_nn(predictrees, invtrees, k=5, returnDist=T, progress=F))
+
+  # For each of these pairs, calculate their Z distances and append to nn object
+  dz = list()
+  dz2 = list()
+  dxy2 = list()
+  for(i in seq(nrow(predictrees))) {
+    dh = predictrees[i,]$Z - invtrees[nn$nn[[i]],]$Z
+    dz = append(dz, list(dh))
+    dist2 = nn$dist[[i]]^2
+    dxy2 = append(dxy2, list(dist2))
+    dz2 = append(dz2, list(dh^2))
+  }
+
+  nn$dz = dz
+  nn$dxy2 = dxy2
+  nn$dz2 = dz2
+
+  # For each modeled tree, find the 3D Euclidean distance
+  # between it and its k nn, then find the minimum
+  dxyz = sqrt(mapply('+', nn$dxy2, nn$dz2))
+
+  #dists = unlist(nn$dist)
+  #nns = unlist(nn$nn)
+  dists = apply(dxyz, 2, min)
+  nns = apply(dxyz, 2, which.min)
+  delta.ht = c()
+  delta.dist = c()
+  misses = c()
+  matches = c()
+
+  for(i in seq(length(dists))) {
+    if (dists[i] <= 5) {
+      dists[i] = dists[i]
+      matches = c(matches, i)
+    } else {
+      dists[i] = NA
+      misses = c(misses, i)
+    }
+  }
+
+  # for(el in seq(length(dists))){
+  #   if(dists[el]<=2){
+  #     dh = df$Z[nns[el]] - predictrees$Z[el]
+  #     delta.ht <- c(delta.ht, dh)
+  #     delta.dist <- c(delta.dist, dists[el])
+  #   } else {
+  #     misses = c(misses, el)
+  #   }
+  # }
+
+  #loss = sqrt(sum(dists^2, na.rm=T))*(1-length(misses)/length(dists))
+  rmse = sqrt(sum(dists^2, na.rm=T)/length(matches))
+
+  return(c('rmse' = rmse,
+           'n match' = length(matches),
+           'n miss' = length(misses),
+           'n predicted' = length(dists)))
+}
+
+
+# Calculate loss on prediction
+y = stems.in.quads[stems.in.quads$QUADRANT=='SG-SWR1.1',]
+loss.tst2 <- lapply(testli[1:20], predictloss.0, y, plotsf, 'SG-SWR1', draw.plots=F)
+loss.tst2
 
 # A is a set of algorithms being evaluated
 # P is a matrix of parameters used to force algorithm, where each p is a combination of parameters
@@ -183,24 +276,37 @@ A is a augmenting path being evaluated
   # 3. run the algorithm with ps_2 on plots 1:k-1 >>> compute loss, store result
   # 4. run the algorithm with ps_3 on plots 1:k-1 >>> compute loss, store result
   # 5. repeat for ps_4:n
-# 3.
-# 4.
-# 5.
-
-
-# or
-do.call(mapply, c("f", unname(as.list(g))))
 
 # testli <- mapply(li2012.opt, dt1.seq, dt2.seq, R.seq, Zu.seq, MoreArgs=list(pc=pointcloud.test[[1]], hmin=1.3))
-
-vrep <- Vectorize(rep.int)
-vrep(1:4, 4:1)
-vrep(times=1:4, x=4:1)
 
 # Initialize Dalponte 2016
 # Rasterize canopy surface from point cloud in AOI
 chm <- rasterize_canopy(subset1, 0.5, pitfree(subcircle = 0.2))
 
+#####################
+# Write trees
+####################
+
+
+###################################
+# Find trees using search function
+###################################
+
+# Define search function
+f = function(x) {
+  y <- 2.2 * (-(exp(-0.08*(x-2)) - 1)) + 3
+  y[x < 2] <- 3
+  y[x > 20] <- 7
+  return(y)
+}
+
+# Find trees
+trees = lapply(nlas, locate_trees, lmf(f))
+
+# Write trees as csvs for safekeeping
+for(i in seq(length(trees))){
+  write.csv(trees[[i]], paste0('/global/scratch/users/worsham/trees_100K/', sprintf("trees_%04d",i), '.csv'))
+}
 
 ##########################################
 # ITC segmentation on one AOI
@@ -210,13 +316,9 @@ chm <- rasterize_canopy(subset1, 0.5, pitfree(subcircle = 0.2))
 aoi <-  'SG-NES2'
 
 # Ingest points at plot bound with specified buffer
-plotsf <- plotsf[plotsf$PLOT_ID==aoi,][1]
-testgeom <- st_buffer(plotsf$geometry, 10)
+plotsf <- plotsf[plotsf$PLOT_ID==aoi,][1,1]
+testgeom <- st_buffer(plotsf$geometry, 2)
 subset1 <- clip_roi(lascat, testgeom)
-
-p = plotsf[plotsf$PLOT_ID=='SG-SWR1',][1]
-bnd = st_buffer(p$geometry, 10)
-pc = clip_roi(lascat, bnd)
 
 # Plot point cloud at aoi
 plot(subset1, bg='white', size=2)
@@ -224,7 +326,8 @@ rglwidget()
 
 # Rasterize canopy surface from point cloud in AOI
 chm <- rasterize_canopy(subset1, 0.5, pitfree(subcircle = 0.2))
-#plot(chm, col = height.colors(50))
+plot(chm, col = height.colors(50))
+plot(plotsf, add=T)
 
 # Find tree tops from point cloud in AOI
 sgtrees <- locate_trees(subset1, lmf(ws = 2.1))
@@ -244,16 +347,18 @@ plot(crowns, col=pastel.colors(200))
 
 segtrees <- segment_trees(subset1, algo) # segment point cloud
 length(unique(segtrees@data$treeID))
-plot(segtrees, bg = "white", size = 4, color = "treeID") # visualize trees
+plot(segtrees, bg = "white", size = 1, color = "treeID") # visualize trees
 rglwidget()
 
 crowns <- crown_metrics(segtrees, func = .stdtreemetrics, geom = "convex")
 crowns <- crowns[st_is_valid(crowns),]
 plot(crowns["convhull_area"], main = "Crown area (convex hull)", col=pastel.colors(nrow(crowns)))
+plot(plotsf, add=T)
 
 # Segment trees using Li 2012
 algo <- li2012(dt=.01, dt2=.02, R=3, hmin=1.3)
-segtrees <- segment_trees(subset1, algo) # segment point cloud
+segtrees <- segment_trees(lasplots[[1]], algo) # segment point cloud
+st_crs(segtrees) <- 32613
 length(unique(segtrees@data$treeID))
 
 tree112 <- filter_poi(segtrees, treeID == 17)
@@ -261,8 +366,20 @@ plot(tree112)
 rglwidget()
 
 crowns <- crown_metrics(segtrees, func = .stdtreemetrics, geom = "convex")
-#crowns <- st_make_valid(crowns)
 crowns <- crowns[st_is_valid(crowns),]
+ttops <- st_centroid(crowns)
+ttops <- ttops[ttops$Z >= 1.3,]
+ttops
+st <- crowns %>%
+  group_by(treeID) %>%
+  summarise(geometry=st_centroid(geometry),
+         Z=max(Z, na.rm=T))
+st <- st[st$Z>=1.3,]
+
+plot(crowns$geometry)
+plot(st_centroid(crowns),col=crowns$Z)
+
+#crowns <- st_make_valid(crowns)
 nrow(crowns)
 
 plot(crowns["convhull_area"], main = "Crown area (convex hull)", col=pastel.colors(nrow(crowns)))
@@ -284,6 +401,13 @@ itcfun('CC-CVS1')
 mloss = lapply(aois[c(10)], itcfun)
 
 aois
+
+
+
+
+
+
+
 
 
 
