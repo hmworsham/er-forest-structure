@@ -10,34 +10,6 @@ library(moments)
 library(data.table)
 library(viridis)
 
-datadir <- '/global/scratch/users/worsham/gridded_returns'
-infiles <- list.files(datadir, full.names=T)
-
-# Create ground-normalized point cloud
-nlas1 <- pts2las(datadir, range=1:502)
-nlas2 <- pts2las(datadir, range=502:length(infiles))
-nlas <- c(nlas1, nlas2)
-
-###################################
-# Find trees using search function
-###################################
-
-# Define search function
-f = function(x) {
-  y <- 2.2 * (-(exp(-0.08*(x-2)) - 1)) + 3
-  y[x < 2] <- 3
-  y[x > 20] <- 7
-  return(y)
-}
-
-# Find trees
-trees = lapply(nlas, locate_trees, lmf(f))
-
-# Write trees as csvs for safekeeping
-for(i in seq(length(trees))){
-  write.csv(trees[[i]], paste0('/global/scratch/users/worsham/trees_100K/', sprintf("trees_%04d",i), '.csv'))
-}
-
 datadir <- '/global/scratch/users/worsham/trees_100K'
 trfiles <- list.files(datadir, full.names=T)
 
@@ -64,7 +36,7 @@ alltrees <- alltrees[alltrees$Z<=32,]
 alltrees$D <- -8.1946+16.2768*log(alltrees$Z)
 View(alltrees$D)
 
-# 
+#
 
 
 # Create a shapefile of all trees
@@ -97,20 +69,20 @@ pointcount = function(ras, pts){
   # make a raster of zeroes like the input
   r2 = ras
   r2[] = 0
-  
+
   # make another raster of zeroes like the input
   r3 = ras
   r3[] = 0
-  
+
   # get n returns
   returns = data.frame(x=pts$X, y=pts$Y)
-  
+
   # get peaks
-  
+
   # get the cell index for each point and make a table:
   returns = table(cellFromXY(ras, returns))
   #return(returns)
-  
+
   # fill in the raster with the counts from the cell index:
   #r2[as.numeric(names(peaks))] = peaks
   r3[as.numeric(names(returns))] = returns
@@ -139,7 +111,7 @@ runpng <- function(ras, bound, clrs, filename){
   outras = mask(ras, bound)
   png(
     file=file.path('~', 'Output', filename),
-    width=1200, 
+    width=1200,
     height=1200)
   par(mar= c(5,4,4,2)+0.1)
   plot(outras, col=clrs)
@@ -148,14 +120,14 @@ runpng <- function(ras, bound, clrs, filename){
 }
 
 rasters <- c(
-  dr, 
-  height.raster, 
-  heightq.raster[[1]], 
+  dr,
+  height.raster,
+  heightq.raster[[1]],
   heightq.raster[[2]],
   heightq.raster[[3]],
   heightq.raster[[4]],
   heightq.raster[[5]],
-  heightsk.raster, 
+  heightsk.raster,
   diam.raster,
   diamq.raster[[5]])
 
