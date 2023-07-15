@@ -166,10 +166,10 @@ li2012.opt <- function(pc, dt1, dt2, R, Zu, hmin=1.3) {
 }
 
 testli <- mcmapply(li2012.opt,
-                   g[,1],
-                   g[,2],
-                   g[,3],
-                   g[,4],
+                   g[40:59,1],
+                   g[40:59,2],
+                   g[40:59,3],
+                   g[40:59,4],
                    MoreArgs=list(pc=lasplots[[1]], hmin=1.3),
                    mc.cores = getOption("mc.cores", 30))
 
@@ -180,6 +180,223 @@ testli <- lapply(testli, function (x) {
   tl
 })
 testli <- Filter(function(x) nrow(x) > 0 , testli)
+lapply(testli, dim)
+testli <- testli.2[[1]]
+
+treat <- data.frame(treeID=testli[[3]]$treeID,
+                    Z=testli[[3]]$Z,
+                    st_coordinates(testli[[3]]))
+
+y = stems.in.quads[stems.in.quads$QUADRANT=='SG-SWR1.1',]
+ctrl <- data.frame(treeID=y$Tag_Number,
+                   Z=y$Z,
+                   st_coordinates(y))
+
+treat
+#ctrl <- ctrl[1:25,]
+
+df1 <- bind_rows(ctrl, treat, .id='src')
+rownames(df1) <- NULL
+df1['src'][df1['src']=='1'] <- 0
+df1['src'][df1['src']=='2'] <- 1
+df1$src <- as.integer(df1$src)
+
+df1$Zwt <- df1$Z*0.01
+
+library(MatchIt)
+m.out0 <- matchit(src~X+Y+Z,
+                  data=df1,
+                  method=NULL,
+                  distance='glm')
+
+m.out1 <- matchit(src~X+Y+Z,
+                  data=df1,
+                  method='nearest',
+                  #tol=1e-7,
+                  #m.order = 'largest',
+                  distance='euclidean')
+
+summary(m.out1)
+
+plot(m.out1, type='jitter', interactive=F)
+plot(m.out1, type='density', interactive=F,
+     which.x= ~X+Y+Z)
+
+m.mat1 <- m.out1$match.matrix
+m.mat1 <- data.frame(ctrl=m.mat1) %>%
+  rownames_to_column(var='treat')
+m.mat1$match <- seq(nrow(m.mat1))
+m.mat2 <- cbind(treat, m.mat1)
+m.mat3 <- left_join(rownames_to_column(ctrl, 'ctrl'), m.mat1, by='ctrl')
+m.mat3
+head(m.mat1)
+head(m.mat2)
+head(m.mat3)
+
+df2 <- rbind(m.mat2, m.mat3)
+
+ggplot(df2, aes(x=X, y=Y, size=Z, color=factor(match), label=factor(match))) +
+  geom_point(shape=2) +
+  geom_text() +
+  scale_color_manual(values=rainbow(53)[sample(1:53, 53)])
+
+m.mat3 <- left_join(rownames_to_column(ctrl, 'ctrl'), m.mat2, by=c('ctrl'))
+m.mat3$match <- seq(nrow(m.mat3))
+m.mat3
+m.mat3 <- m.mat3 %>%
+  mutate_if(is.character, as.numeric) %>%
+  select(-c(treeID.x, treeID.y, treat, ctrl)) %>%
+  pivot_longer(!c(match, Z.x, X.x, Y.x))
+
+m.mat3
+
+library(optmatch)
+
+table(df1$X, df1$src)
+densityplot(df1$X, groups = df1$src, auto.key=T)
+densityplot(df1$Y, groups = df1$src)
+densityplot(df1$Z, groups = df1$src)
+
+df1.1 <- df1 %>%
+  pivot_longer(cols=c(X,Y,Z),
+               names_to='dim') %>%
+  mutate(src = factor(case_when(src == 0 ~ 'Observed',
+                                src == 1 ~ 'Modeled')))
+
+df1.1
+
+ggplot(df1.1, aes(x=value, group=src, color=factor(src))) +
+  geom_density() +
+  facet_wrap(~dim, nrow=3, scales='free')
+
+scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+
+df1 <- df1 %>%
+  #mutate_at(c('Z', 'X', 'Y'), ~ scale2(., na.rm=T))
+  mutate(Z.std = scale2(Z, na.rm=T),
+         X.std = scale2(X, na.rm=T),
+         Y.std = scale2(Y, na.rm=T))
+
+df1
+
+distances <- list()
+
+distances$euc.std <- match_on(src~X.std+Y.std+Z.std, data=df1, method='euclidean')
+distances$euc
+
+distances$euc <- match_on(src~X+Y+Z, data=df1, method='euclidean')
+
+distances$mahal <- match_on(src~X+Y+Z, data=df1, caliper = 8, method='mahalanobis')
+distances$mahal
+
+propensity.model <- glm(src ~ X+Y+Z, data = df1, family =
+                          binomial())
+distances$propensity <- match_on(propensity.model, caliper=3)
+distances$propensity
+
+matches <- lapply(distances, function(x) { fullmatch(x, data = df1, max.controls=1) })
+matches
+
+euc.match <- pairmatch(distances$euc.std, data=df1)
+print(euc.match, grouped=T)
+length(euc.match[!is.na(euc.match)])
+
+mahal.match <- pairmatch(distances$mahal, data=df1)
+df3 <- cbind(df1, matches=euc.match)
+df3 <- cbind(df1, matches=mahal.match)
+
+df4.matchdist <- matched.distances(euc.match, distances$euc, preserve.unit.names=F)
+df4.matchdist[df4.matchdist > 5] <- NA
+df4.matchdist <- data.frame(df4.matchdist)
+df4.matchdist$matches <- row.names(df4.matchdist)
+df4.matchdist
+
+df3$matches <- as.character(df3$matches)
+left_join(df3, data.frame(df4.matchdist), by='matches')
+df3 <- data.frame(df3)
+
+ggplot(df3, aes(x=X, y=Y, size=Z, shape=factor(src), color=factor(matches), label=factor(matches))) +
+  geom_point() +
+  geom_text() +
+  scale_color_manual(values=rainbow(53, s=.75)[sample(1:53, 53)]) +
+  scale_shape_manual(values=c(2,3))
+
+View(df3)
+
+df3[df3$src==1 & is.na(df3$matches),]
+
+str(euc.match)
+
+dfp.tst <- bipart.match(run.id[5], testli, stems.in.quads)
+
+#OPTMATCH
+dist.euc.std <- match_on(src~X.std+Y.std+Z.std, data=dfp.tst, method='euclidean')
+dist.euc.raw <- match_on(src~X+Y+Z, data=dfp.tst, method='euclidean')
+match.euc <- pairmatch(dist.euc.std, data=dfp.tst)
+df.matched <- cbind(dfp.tst, matches=match.euc)
+
+# Calculate match distances
+df.matchdist <- matched.distances(match.euc, dist.euc.raw, preserve.unit.names=F)
+df.matchdist[df.matchdist > 5.19] <- NA
+df.matchdist <- data.frame(df.matchdist)
+df.matchdist$matches <- row.names(df.matchdist)
+
+# Append match distances to original dataframe
+df.matched$matches <- as.character(df.matched$matches)
+df.matched <- left_join(df.matched, df.matchdist, by='matches')
+df.matched
+
+# MATCHIT
+m1.tst <- MatchIt::matchit(src~X.std+Y.std+Z.std, data=dfp.tst, method='optimal', distance='mahalanobis')
+
+mmat <- m1.tst$match.matrix
+mmat <- data.frame(ctrl=mmat,
+                   treat=rownames(mmat))
+mmat$match <- seq(nrow(mmat))
+ctrl.matched.mi <- left_join(rownames_to_column(dfp.tst[dfp.tst$src==0,], 'ctrl'), mmat, by='ctrl')
+treat.matched.mi <- left_join(rownames_to_column(dfp.tst[dfp.tst$src==1,], 'treat'), mmat, by='treat')
+df.matched.mi <- rbind(ctrl.matched.mi, treat.matched.mi)
+
+df.matched.mi
+
+# Calculate match distances
+summary(m1.tst, un=F)
+plot(m1.tst, type='density', interactive=F)
+m.matches <- MatchIt::get_matches(m1.tst)
+m.matches
+
+eucdist <- function(x,y,z) {sqrt((x-lag(x))^2+(y-lag(y))^2+(z-lag(z))^2)}
+
+m.matches <- m.matches %>%
+  mutate(distance = eucdist(X, Y, Z))
+m.matches
+
+sqrt((327955.1-327953.2)^2+(4309990-4309988)^2+(16.1-18.613)^2)
+
+
+
+ggplot(yy[['CC-UC2.3_p41']],
+       aes(x=X,
+           y=Y,
+           size=Z,
+           shape=factor(src),
+           color=factor(matches),
+           label=factor(matches))) +
+  geom_point() +
+  geom_text() +
+  scale_color_manual(values=rainbow(71, s=.75)[sample(1:71, 71)]) +
+  scale_shape_manual(values=c(2,3))
+
+
+
+
+
+
+
+
+
+
+
 
 predictloss.0 <- function(predictrees, invtrees, plot.sf, aoi, draw.plots=F) {
 
@@ -197,11 +414,13 @@ predictloss.0 <- function(predictrees, invtrees, plot.sf, aoi, draw.plots=F) {
 
   # For each modeled tree, find its k nearest neighbors in X-Y coordinate space
   nn = suppressMessages(st_nn(predictrees, invtrees, k=5, returnDist=T, progress=F))
+  return(nn)
 
   # For each of these pairs, calculate their Z distances and append to nn object
   dz = list()
   dz2 = list()
   dxy2 = list()
+
   for(i in seq(nrow(predictrees))) {
     dh = predictrees[i,]$Z - invtrees[nn$nn[[i]],]$Z
     dz = append(dz, list(dh))
@@ -496,4 +715,3 @@ clean_dat <- st[st$treeID %in% names(which(table(st$treeID) > 4)), ]
 dim(clean_dat)
 crowns <- crown_metrics(clean_dat, func=NULL, geom='convex', attribute='treeID')
 plot(crowns)
-

@@ -24,6 +24,8 @@ default:
   - readxl
   - googledrive
   - rwaveform
+  - optmatch
+  - lattice
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'

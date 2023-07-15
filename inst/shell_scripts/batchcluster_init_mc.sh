@@ -12,6 +12,6 @@ module load r r-packages r-spatial
 while true
 do
 R CMD BATCH --no-save \
-../notebooks/LiDAR/05.01_itc_li.R \
-/global/scratch/users/worsham/logs/Rout_itc_li.Rout
+../notebooks/LiDAR/05.04_itc_mc.R \
+/global/scratch/users/worsham/logs/Rout_itc_mc.Rout
 done
