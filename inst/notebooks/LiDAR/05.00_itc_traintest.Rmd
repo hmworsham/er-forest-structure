@@ -34,7 +34,7 @@ Set up multinode cluster for parallel computing
 ```{r}
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
 workerNodes <- rep(workerNodes, 32)
-cl <- parallel::makeCluster(workerNodes)
+# cl <- parallel::makeCluster(workerNodes)
 set_lidr_threads(length(workerNodes)-2)
 get_lidr_threads()
 ```
@@ -77,21 +77,21 @@ plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 
 
 ```{r}
-# Split plots into quadrants
-div <- 2 # Number of divisions
-ls <- list() # Empty list to store result
-
-for (i in 1:nrow(plotsf)){
-  x <- st_make_grid(plotsf[i,], n = div) %>% st_as_sf() # divide pol
-  xx <- st_intersection(plotsf[i,], x) # intersection
-  xx$QUADRANT <- sapply(seq(1:4), function(x) paste(plotsf[i,]$PLOT_ID, x, sep='.'))
-  ls[[i]] <- xx
-}
-
-plotsf <- st_as_sf(data.table::rbindlist(ls)) # superfast
-
-# Store plot quadrant names
-quad.names <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
+# # Split plots into quadrants
+# div <- 2 # Number of divisions
+# ls <- list() # Empty list to store result
+# 
+# for (i in 1:nrow(plotsf)){
+#   x <- st_make_grid(plotsf[i,], n = div) %>% st_as_sf() # divide pol
+#   xx <- st_intersection(plotsf[i,], x) # intersection
+#   xx$QUADRANT <- sapply(seq(1:4), function(x) paste(plotsf[i,]$PLOT_ID, x, sep='.'))
+#   ls[[i]] <- xx
+# }
+# 
+# plotsf <- st_as_sf(data.table::rbindlist(ls)) # superfast
+# 
+# # Store plot quadrant names
+# quad.names <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 ```
 
 ### Clean and prepare tree data

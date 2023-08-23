@@ -22,7 +22,6 @@ workerNodes <- rep(workerNodes, 32)
 #cl <- parallel::makeCluster(workerNodes)
 set_lidr_threads(length(workerNodes)-2)
 
-
 ## ---------------------------------------------------------------------------------------------------
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),

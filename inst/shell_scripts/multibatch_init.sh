@@ -1,6 +1,6 @@
 #!/bin/bash
-#sbatch ./batchcluster_init_li.sh
-#sbatch ./batchcluster_init_pt.sh
+sbatch ./batchcluster_init_li.sh
+sbatch ./batchcluster_init_pt.sh
 sbatch ./batchcluster_init_ls.sh
 sbatch ./batchcluster_init_mc.sh
 sbatch ./batchcluster_init_lmf_fw.sh

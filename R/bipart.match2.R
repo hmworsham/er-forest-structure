@@ -34,10 +34,10 @@ bipart.match2 <- function(runid, lasset, obset) {
   treat <- treat[order(treat$Z, decreasing = T),]
 
   # Bind control and treatment dfs into paired and clean
-  df.paired <- bind_rows(ctrl, treat, .id='src')
+  df.paired <- bind_rows(treat, ctrl, .id='src')
   rownames(df.paired) <- NULL
-  df.paired['src'][df.paired['src']=='1'] <- 0
-  df.paired['src'][df.paired['src']=='2'] <- 1
+  df.paired['src'][df.paired['src']=='1'] <- 1
+  df.paired['src'][df.paired['src']=='2'] <- 0
   df.paired$src <- as.integer(df.paired$src)
 
   # Standardize distances
@@ -53,8 +53,8 @@ bipart.match2 <- function(runid, lasset, obset) {
   #                          data=df.paired,
   #                          method='euclidean')
   dist.euc.z <- match_on(src~Z,
-                           data=df.paired,
-                           method='euclidean')
+                         data=df.paired,
+                         method='euclidean')
   dist.euc.xy <- match_on(src~X+Y,
                           data=df.paired,
                           method='euclidean')
@@ -77,52 +77,136 @@ bipart.match2 <- function(runid, lasset, obset) {
 
   dxy.tmp <- treat.d.xy
   dz.tmp <- treat.d.z
+  dxyz.tmp <- treat.d.xyz
+  # dz.tmp2 <- treat.d.z
+  tdxy.tmp <- data.frame(t(dxy.tmp)[5:ncol(dxy.tmp),])
+  tdz.tmp <- data.frame(t(dz.tmp)[5:ncol(dz.tmp),])
+  tdxyz.tmp <- data.frame(t(dxyz.tmp)[5:ncol(dxyz.tmp),])
+
+  # return(list(treat.d.xy, treat.d.z, treat.d.xyz))
+
+  testmatch <- integer(0)
 
   # Find matches
-  nobs <- ncol(treat.d.xy)
+  nobs <- ncol(dxy.tmp)
   for(i in seq(nrow(treat.d.z))) {
-    z <- treat.d.z[i,'Z']
-    dzmin <- case_when(z<=10 ~ 3,
-                      10 < z & z <= 15 ~ 3,
-                      15 < z & z <=25 ~ 4,
-                      z > 25 ~ 4)
-    treat.d.z[i, 4+which(treat.d.z[i, 5:nobs] > dzmin)] <- NA
-    dz.tmp[i,] <- treat.d.z[i,] #NEW
-    dz.tmp[i, 4+which(!is.na(treat.d.z[i, 5:nobs]))] <- 1
-    #treat.d.z[i, 4+which(!is.na(treat.d.z[i, 5:nobs]))] <- 1
-    treat.d.xy[i,5:nobs] <- dz.tmp[i,5:nobs] * treat.d.xy[i,5:nobs]
-    dxymin <- case_when(z<=10 ~ 3,
-                       10 < z & z <= 15 ~ 4,
-                       15 < z & z <=25 ~ 5,
-                       z > 25 ~ 5)
-    treat.d.xy[i, 4+which(treat.d.xy[i, 5:nobs] > dxymin)] <- NA
 
-    # Match
-    match <- which.min(treat.d.xy[i, 5:nobs])
+    # Pull height for modeled tree i
+    z <- dz.tmp[i,'Z']
 
-    # Vote
+    # Given Z, define maximum ∆Z threshold
+    dz.min <- case_when(z<=10 ~ 3,
+                        10 < z & z <= 15 ~ 3,
+                        15 < z & z <=25 ~ 4,
+                        z > 25 ~ 4)
+
+    # Given Z, define maximum XY search radius threshold
+    dxy.min <- case_when(z<=10 ~ 3,
+                         10 < z & z <= 15 ~ 4,
+                         15 < z & z <=25 ~ 5,
+                         z > 25 ~ 5)
+
+    # Find candidates
+    xy.cands <- 4+which(dxy.tmp[i, 5:nobs] <= dxy.min)
+    z.cands <- 4+which(dz.tmp[i,5:nobs] <= dz.min)
+    cands <- intersect(xy.cands, z.cands)
+
+    # If there are candidates, proceed with voting
+    # Else, no match (assign NA to match)
+    if(length(cands)) {
+
+      # Set anything > XYSRT or > ∆ZT to NA
+      dxy.tmp[i, -c(1:4, cands)] <- NA
+      dz.tmp[i, -c(1:4, cands)] <- NA
+
+      # Vote 1: dxy and dz values for nearest tree in {x,y}
+      i1 <- which.min(dxy.tmp[i, 5:nobs]) # index of nearest candidate in {x,y}
+      u1 <- min(dxy.tmp[i, 5:nobs], na.rm=T) # dxy to nearest tree in {x,y}
+      v1 <- dz.tmp[i, 4+i1] # dz to nearest tree in {x,y}
+      z1 <- which.min(dz.tmp[i, 5:nobs])
+
+      # Get dz and dxy values for all other candidates in ascending dz order
+      dz.cands <- suppressWarnings(dz.tmp[i, cands][order(dz.tmp[i, cands])])
+      dxy.cands <- suppressWarnings(dxy.tmp[i, cands][order(dz.tmp[i, cands])])
+
+      # If dz for the nearest {x,y} is the minimum dz, then assign match
+      # Else proceed to vote 2
+      if (z1==i1) {
+        match <- i1
+      } else {
+        # Vote 2:
+        # If there is a smaller dz for a more distant tree AND the dxy for that pair
+        # is < 2.5 + dxy for the nearest tree in {x,y} then assign that match
+        # Else assign the match from vote 1
+        for(j in seq_along(dz.cands)) {
+
+          if(dz.cands[j] <= v1 & dxy.tmp[i, names(dz.cands[j])] <= u1+2.5) {
+            n2 <- names(dz.cands)[j]
+            i2 <- which(n2==names(dxy.tmp)[5:nobs])
+            v2 <- dz.cands[j]
+            u2 <- dxy.tmp[i, i2]
+            match <- i2
+            # break
+          } else {
+            v2 <- v1
+            i2 <- i1
+            u2 <- u1
+            match <- i2
+          }
+
+          # Test observed match against surrounding predicted trees
+          tdxyz.min <- which.min(tdxyz.tmp[match, ])
+          if(tdxyz.min==i) {
+            tdxyz.tmp[, i] <- NA
+            break
+          } else {
+            #testmatch <- tdxyz.min
+            match <- integer(0)
+          }
+        }
+      }
+
+      # Test observed match against surrounding predicted trees
+      # tdxyz.min <- which.min(tdxyz.tmp[match, ])
+      #
+      # testmatch <- integer(0)
+      # if(tdxyz.min==i) {
+      #   tdxyz.tmp[, i] <- NA
+      # } else {
+      #   #testmatch <- tdxyz.min
+      #   match <- integer(0)
+      # }
+
+    } else {
+      match <- integer(0)
+      dxy.tmp[i, -c(1:4)] <- NA
+      dz.tmp[i, -c(1:4)] <- NA
+    }
 
     # Generate match outputs
-    dxy <- treat.d.xy[i, 4+match]
-    dz <- treat.d.z[i, 4+match]
-    dxyz <- treat.d.xyz[i, 4+match]
-    treat.d.xy[i, 'pred'] <- i
-    treat.d.xy[i, 'obs'] <- ifelse(identical(match, integer(0)), NA, match)
-    treat.d.xy[i, 'pair_id'] <- ifelse(identical(match, integer(0)), NA, i)
-    treat.d.xy[i, 'dxy'] <- ifelse(identical(match, integer(0)), NA, dxy)
-    treat.d.xy[i, 'dz'] <- ifelse(identical(match, integer(0)), NA, dz)
-    treat.d.xy[i, 'dxyz'] <- ifelse(identical(match, integer(0)), NA, dxyz)
-    treat.d.xy[ , 4 + match] <- NA
+    dxy <- dxy.tmp[i, 4+match]
+    dz <- dz.tmp[i, 4+match]
+    dxyz <- dxyz.tmp[i, 4+match]
+    dxy.tmp[i, 'pred'] <- i
+    dxy.tmp[i, 'obs'] <- ifelse(identical(match, integer(0)), NA, match)
+    dxy.tmp[i, 'pair_id'] <- ifelse(identical(match, integer(0)), NA, i)
+    dxy.tmp[i, 'dxy'] <- ifelse(identical(match, integer(0)), NA, dxy)
+    dxy.tmp[i, 'dz'] <- ifelse(identical(match, integer(0)), NA, dz)
+    dxy.tmp[i, 'dxyz'] <- ifelse(identical(match, integer(0)), NA, dxyz)
+    dxy.tmp[i, 'testmatch'] <- ifelse(identical(testmatch, integer(0)), NA, testmatch)
+    dxy.tmp[ , 4 + match] <- NA
+    dz.tmp[ , 4 + match] <- NA
+    dxyz.tmp[, 4 + match] <- NA
   }
 
   # # Execute bipartite pair matching on Euclidean distances
   # match.euc <- pairmatch(dist.euc.std, data=df.paired)
 
   # Bind match ID to original dataframe
-  # df.matched <- cbind(df.paired, matches=match.euc)
-  df.paired <- rownames_to_column(df.paired, 'obs')
-  df.paired$obs <- as.integer(df.paired$obs)
-  df.matched <- left_join(df.paired, treat.d.xy, by='obs')
+  df.paired <- df.paired %>%
+    group_by(src) %>%
+    mutate(obs = 1:n())
+  df.matched <- left_join(df.paired[df.paired$src==0,], dxy.tmp, by='obs')
   df.matched <- df.matched %>%
     select(pair_id,
            src,
@@ -139,37 +223,51 @@ bipart.match2 <- function(runid, lasset, obset) {
            dxy,
            dz,
            dxyz
-           )
+    )
 
   # Calculate performance statistics
-  nobs <- length(df.matched$src[df.matched$src==0]) # number of observed tree crowns in quad
-  npred <- length(df.matched$src[df.matched$src==1]) # number of delineated tree crowns in quad
+  nobs <- length(df.paired$src[df.paired$src==0]) # number of observed tree crowns in quad
+  npred <- length(df.paired$src[df.paired$src==1]) # number of delineated tree crowns in quad
   tp <- length(unique(df.matched$pair_id[!is.na(df.matched$pair_id)])) # true positive = n matches
-  obs.unmatched <- df.matched[df.matched$src==0 & is.na(df.matched$pair_id),] # unmatched observed
-  mod.unmatched <- df.matched[df.matched$src==1 & is.na(df.matched$pair_id),] # unmatched modeled
-  fn <- nrow(obs.unmatched) # false negatives = n unmatched observed
-  fp <- nrow(mod.unmatched) # false positives = n unmatched modeled
+  ext.rt <- npred/nobs
+  match.rt <- tp/npred
+  #obs.unmatched <- length(df.matched$pair_id[is.na(df.matched$pair_id)]) # unmatched observed
+  #pred.unmatched <- nrow(df.matched[df.matched$src==1 & is.na(df.matched$pair_id),]) # unmatched predicted
+  fn <- nobs - tp
+  fp <- npred - tp
   ft <- fn + fp # false total = false negatives + false positives
-  obs.fn.rt <- fn / nrow(ctrl) # obs fail rate
-  mod.fn.rt <- fp / nrow(treat) # mod fail rate
-  dists <- df.matched$dxyz
-  rmse <- sqrt(sum(dists^2, na.rm=T)/tp)
+  acc.rt <- tp/nobs
+  omm.rt <- fn / nobs # obs fail rate
+  com.rt <- fp / npred # pred fail rate
+  xy.dists <- df.matched$dxy
+  z.dists <- df.matched$dz
+  xyz.dists <- df.matched$dxyz
+  xy.rmse <- sqrt(sum(xy.dists^2, na.rm=T) / tp)
+  z.rmse <- sqrt(sum(z.dists^2, na.rm=T) / tp)
+  xyz.rmse <- sqrt(sum(xyz.dists^2, na.rm=T) / tp)
   #loss = rmse/(tp/(fn+fp))
   precision = tp/(tp+fp)
   recall = tp/(tp+fn)
   f = 2 * (recall*precision) / (recall+precision)
-  loss = rmse/f
+  loss = xyz.rmse/f
 
   # Performance results
   performance <- data.frame('nobstrees'=nobs,
                             'npredtrees'=npred,
+                            'ext.rt'=ext.rt,
                             'tp'=tp,
+                            'match.rt'=match.rt,
+                            #'obs.unm'=obs.unmatched,
+                            #'pred.unm'=pred.unmatched,
                             'fn'=fn,
                             'fp'=fp,
                             'ft'=ft,
-                            'obs.fn.rt'=obs.fn.rt,
-                            'mod.fn.rt'=mod.fn.rt,
-                            'rmse'=rmse,
+                            'accuracy'=acc.rt,
+                            'omission'=omm.rt,
+                            'commission'=com.rt,
+                            'xy.rmse'=xy.rmse,
+                            'z.rmse'=z.rmse,
+                            'xyz.rmse'=xyz.rmse,
                             'precision'=precision,
                             'recall'=recall,
                             'f'=f,

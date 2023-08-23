@@ -30,7 +30,7 @@ length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq) == nrow(li.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testli <- lapply(lasplots[1:2], li2012.opt, li.params[30:34,])
+testli <- lapply(lasplots, li2012.opt, li.params)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ testli <- lapply(lasplots[1:2], li2012.opt, li.params[30:34,])
 testli <- unlist(testli, recursive=F)
 
 # Create vector of ITD run IDs
-li.runid <- expand.grid(names(lasplots)[1:2], '_p', row.names(li.params)[30:34])
+li.runid <- expand.grid(names(lasplots), '_p', row.names(li.params))
 li.runid <- li.runid[order(li.runid$Var1),]
 li.runid <- paste(li.runid[,1],li.runid[,2], li.runid[,3], sep='')
 
@@ -53,93 +53,11 @@ li.runid <- li.runid[li.runid %in% names(testli)]
 
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
-xx <- bipart.match2(li.runid[2], testli, stems.in.plots)
-
-ggplot(xx, aes(x=X.x, y=Y.x, color=factor(src), size=Z.x, shape=factor(src))) +
-  geom_point() +
-  scale_color_manual(values=c('red', 'darkblue')) +
-  scale_shape_manual(values=c(4,21))
-
-
-library(data.table)
-dmat <- xx@.Data
-y.dmat <- cbind(data.frame(testli[[2]]), dmat)
-# y.dmat<- y.dmat %>% mutate(dmin = case_when(Z<=10 ~ 3,
-#                          10 < Z & Z <= 15 ~ 4,
-#                          15 < Z & Z <=25 ~ 5,
-#                          Z > 25 ~ 5))
-y.dmat <- data.frame(y.dmat)
-y.dmat2 <- y.dmat[,6:ncol(y.dmat)]
-
-
-
-nobs <- ncol(dmat)
-for(i in seq(nrow(y.dmat))) {
-  z <- y.dmat[i,'Z']
-  dmin <- case_when(z<=10 ~ 3,
-                    10 < z & z <= 15 ~ 4,
-                    15 < z & z <=25 ~ 5,
-                    z > 25 ~ 5)
-  y.dmat[i, 5+which(y.dmat[i, 6:nobs] > dmin)] <- NA
-  match <- which.min(y.dmat[x,6:nobs])
-  d <- y.dmat[x, match]
-  y.dmat[,5+match] <- NA
-  y.dmat[i, 'pred'] <- i
-  y.dmat[i, 'obs'] <- match
-  y.dmat[i, 'pair_id'] <- i
-  }
-
-
-
-for(i in y.dmat$obs) {
-  print(paste('Obs', i))
-  match <- which.min(y.dmat2[,i])
-  print(paste('Pred', match))
-}
-
-
-candid <- function(x, distmat) {
-  # by row, anything outside minimum search area is NA
-  distmat[x, distmat[x, 6:(ncol(distmat)-1)] > distmat[x, 'dmin']] <- NA
-  match <- which.min(distmat[x,6:(ncol(distmat)-1)])
-  d <- distmat[x, match]
-  distmat[,5+argmin] <- NA
-  distmat$pred <- x
-  distmat$obs <- match
-  distmat$pair_id <- x
-  distmat
-}
-lapply(1:3, candid, y.dmat)
-
-y <- y.dmat[1,]
-y[y[6:236]>y$dmin] <- NA
-y['dmin']
-
-candid2 <-function(j) {
-  j[j[6:(length(j)-1)]>j$dmin] <- NA
-}
-View(apply(y.dmat, 1, candid2))
-
-
-matches
-x <- 1
-y.dmat[x, y.dmat[x, 6:(ncol(y.dmat)-1)] > y.dmat[x, 'dmin']]
-
-k <- which(y.dmat[,6:ncol(y.dmat)-1] > y.dmat[,'dmin'], arr.ind=TRUE)
-y.dmat[,y.dmat[,6:ncol(y.dmat)-1] > y.dmat[,'dmin']]
-m[k] <- rowMeans(m, na.rm=TRUE)[k[,1]]
-
-
-t(apply(x, 1, function(xv) { xv[is.na(xv)] <-
-  mean(xv, na.rm=TRUE)
-return(xv)}
-) ) # for a row-oriented sol'n
-
-
+yy <- bipart.match2(li.runid[2], testli, stems.in.plots)
 
 ### Run matching
-li.match <- mclapply(li.runid[1:3],
-                     FUN=bipart.match,
+li.match <- mclapply(li.runid,
+                     FUN=bipart.match2,
                      lasset=testli,
                      obset=stems.in.plots,
                      mc.cores = getOption("mc.cores", length(workerNodes)-4)
@@ -161,3 +79,44 @@ write.csv(li.match,
                     'itc_results',
                     'li_itc_results.csv'),
           row.names=T)
+
+## Scratch
+## --------------------------------------------------------------------------------------------------
+# View(yy[c(1:4, 241:246)])
+# dxy.tmp <- xx[[1]]
+# dz.tmp <- xx[[2]]
+# dxyz.tmp <- xx[[3]]
+#
+# i=1
+# tdxy.tmp <- data.frame(t(dxy.tmp)[5:ncol(dxy.tmp),])
+# tdz.tmp <- data.frame(t(dz.tmp)[5:ncol(dz.tmp),])
+# tdxyz.tmp <- data.frame(t(dxyz.tmp)[5:ncol(dxyz.tmp),])
+# txy.cands <- which(tdxy.tmp[i,] <= dxy.min)
+# tz.cands <- which(tdz.tmp[i,] <= dz.min)
+# tcands <- intersect(txy.cands, tz.cands)
+#
+# tdxy.tmp[i, -c(tcands)] <- NA
+# tdz.tmp[i, -c(tcands)] <- NA
+# tdxyz.tmp[i, -c(tcands)] <- NA
+# View(tdxyz.tmp)
+#
+# min(tdz.tmp[i,], na.rm=T)
+# which.min(tdz.tmp[i,]) # 5
+# min(tdxy.tmp[i,], na.rm=T)
+# which.min(tdxy.tmp[i,]) # 4
+#
+# tdz.tmp[i,4]
+# tdxy.tmp[i,5]
+#
+# min(tdxyz.tmp[i,], na.rm=T)
+# which.min(tdxyz.tmp[i,])
+#
+# tdxyz.tmp[,17] <- NA
+# tdxyz.tmp
+
+# t(apply(x, 1, function(xv) { xv[is.na(xv)] <-
+#   mean(xv, na.rm=TRUE)
+# return(xv)}
+# ) ) # for a row-oriented sol'n
+
+

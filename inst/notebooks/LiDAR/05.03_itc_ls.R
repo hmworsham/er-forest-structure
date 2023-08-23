@@ -59,7 +59,7 @@ ls.runid <- ls.runid[ls.runid %in% names(testls)]
 
 ### Run matching
 ls.match <- mclapply(ls.runid,
-                     FUN=bipart.match,
+                     FUN=bipart.match2,
                      lasset=testls,
                      obset=stems.in.plots,
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)

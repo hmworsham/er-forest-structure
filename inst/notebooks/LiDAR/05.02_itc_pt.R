@@ -62,7 +62,7 @@ pt.runid <- pt.runid[pt.runid %in% names(testpt)]
 
 ### Run matching
 pt.match <- mclapply(pt.runid,
-                     FUN=bipart.match,
+                     FUN=bipart.match2,
                      lasset=testpt,
                      obset=stems.in.plots,
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
@@ -73,7 +73,7 @@ names(pt.match) <- names(testpt)
 pt.match <- data.frame(do.call('rbind', pt.match))
 pt.match$quad <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[',1))
 pt.match$paramset <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[', 2))
-
+head(pt.match)
 
 ## Write results
 ## ---------------------------------------------------------------------------------------------------
@@ -85,3 +85,15 @@ write.csv(pt.match,
                     'itc_results',
                     'pt_itc_results.csv'),
           row.names=T)
+
+results <- read.csv(file.path('/global',
+                              'scratch',
+                              'users',
+                              'worsham',
+                              'itc_results',
+                              'pt_itc_results.csv'), row.names=1)
+
+library(dplyr)
+View(results %>%
+  group_by(paramset) %>%
+  summarise_all(mean))

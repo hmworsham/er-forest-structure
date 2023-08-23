@@ -54,7 +54,7 @@ mc.runid <- mc.runid[mc.runid %in% names(testmc)]
 
 ### Run matching
 mc.match <- mclapply(mc.runid,
-                     FUN=bipart.match,
+                     FUN=bipart.match2,
                      lasset=testmc,
                      obset=stems.in.plots,
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)

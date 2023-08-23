@@ -51,6 +51,7 @@ bipart.match <- function(runid, lasset, obset) {
   #                         data=df.paired,
   #                         method='euclidean',
   #                         caliper=2)
+
   dist.euc.std <- match_on(src~X.std+Y.std+Z.std,
                            data=df.paired,
                            method='euclidean')
@@ -61,28 +62,35 @@ bipart.match <- function(runid, lasset, obset) {
   # Bind distances to treatment dataframe
   dmat <- dist.euc.raw@.Data
   y.dmat <- data.frame(cbind(treat, dmat))
- # y.dmat2 <- y.dmat[,6:ncol(y.dmat)]
+  y.dmat2 <- dmat
 
-  # Find matches
-  nobs <- ncol(dmat)
+  # Pass 1: find each predicted tree's best match
+  nobs <- ncol(y.dmat)
   for(i in seq(nrow(y.dmat))) {
     z <- y.dmat[i,'Z']
     dmin <- case_when(z<=10 ~ 3,
                       10 < z & z <= 15 ~ 4,
                       15 < z & z <=25 ~ 5,
                       z > 25 ~ 5)
-    print(dmin)
-    #y.dmat[i, 5+which(y.dmat[i, 6:nobs] > dmin)] <- NA
-    match <- which.min(y.dmat[x,6:nobs])
-    d <- y.dmat[x, match]
-    y.dmat[,5+match] <- NA
+    y.dmat[i, 4+which(y.dmat[i, 5:nobs] > dmin)] <- NA
+    match <- ifelse(sum(y.dmat[i,5:nobs], na.rm=T)>0, which.min(y.dmat[i,5:nobs]), NA)
+    d <- ifelse(!is.na(match), y.dmat[i, 4+match], NA)
+    if(!is.na(match)) y.dmat[,4+match] <- NA
     y.dmat[i, 'pred'] <- i
     y.dmat[i, 'obs'] <- match
     y.dmat[i, 'pair_id'] <- i
     y.dmat[i, 'dist'] <- d
   }
 
-    return(y.dmat)
+  # Pass 2: assert that the match found in pass 1 is the optimal match for each observed tree
+  for(i in y.dmat$obs) {
+    print(paste('Obs', i))
+    match2 <- which.min(y.dmat2[,i])
+    print(paste('Pred', match2))
+  }
+
+  return(y.dmat)
+
   # # Execute bipartite pair matching on Euclidean distances
   # match.euc <- pairmatch(dist.euc.std, data=df.paired)
 

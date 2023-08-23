@@ -51,7 +51,7 @@ lmf.fw.runid <- lmf.fw.runid[lmf.fw.runid %in% names(testlmf.fw)]
 
 ### Run matching
 lmf.fw.match <- mclapply(lmf.fw.runid,
-                     FUN=bipart.match,
+                     FUN=bipart.match2,
                      lasset=testlmf.fw,
                      obset=stems.in.plots,
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
