@@ -57,6 +57,7 @@ mc.match <- mclapply(mc.runid,
                      FUN=bipart.match2,
                      lasset=testmc,
                      obset=stems.in.plots,
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'mc_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 

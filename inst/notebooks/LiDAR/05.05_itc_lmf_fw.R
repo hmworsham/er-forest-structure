@@ -54,6 +54,7 @@ lmf.fw.match <- mclapply(lmf.fw.runid,
                      FUN=bipart.match2,
                      lasset=testlmf.fw,
                      obset=stems.in.plots,
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmf-fw_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 
@@ -72,5 +73,5 @@ write.csv(lmf.fw.match,
                     'users',
                     'worsham',
                     'itc_results',
-                    'lmf_fw_itc_results.csv'),
+                    'lmf-fw_itc_results.csv'),
           row.names=T)

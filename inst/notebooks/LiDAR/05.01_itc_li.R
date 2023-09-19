@@ -30,7 +30,7 @@ length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq) == nrow(li.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testli <- lapply(lasplots, li2012.opt, li.params)
+testli <- lapply(lasplots[4:6], li2012.opt, li.params[18:22,])
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -60,6 +60,7 @@ li.match <- mclapply(li.runid,
                      FUN=bipart.match2,
                      lasset=testli,
                      obset=stems.in.plots,
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'li_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-4)
                      )
 
@@ -79,6 +80,62 @@ write.csv(li.match,
                     'itc_results',
                     'li_itc_results.csv'),
           row.names=T)
+
+
+## Bipartite match plotting
+## --------------------------------------------------------------------------------------------------
+li.match.plots <- mclapply(li.runid,
+                     FUN=bipart.match.plot,
+                     lasset=testli,
+                     obset=stems.in.plots,
+                     mc.cores = getOption("mc.cores", length(workerNodes)-4)
+                     )
+
+View(li.match.plots)
+
+tst <- li.match.plots[[1]]
+
+tst.dfp <- tst[[1]]
+tst.dxyt <- tst[[2]]
+tst.dxyt$obs <- as.integer(tst.dxyt$obs)
+
+tst.dfm <- left_join(tst.dfp[tst.dfp$src==0,], tst.dxyt, by=c('treeID'='obs')) %>%
+  select(pair_id, treeID, treeID.y, pred, Z.x, X.x, Y.x, Z.y, X.y, Y.y, dxy, dz, dxyz)
+
+tst.dfm <- pivot_longer(tst.dfm, cols=c(treeID, treeID.y), names_to= 'src', values_to = 'treeID') %>%
+  #filter(row_number() %% 2 != 0) %>%
+  arrange(pair_id) %>%
+  mutate(src = case_when(src=='treeID.y' ~ 'Modeled',
+                         T ~ 'Observed')) %>%
+  mutate(across(Z.x:Y.x, ~ ifelse(src=='Modeled', NA, .)),
+         across(Z.y:Y.y, ~ ifelse(src=='Observed', NA, .)),
+         Z = coalesce(Z.x, Z.y),
+         X = coalesce(X.x, X.y),
+         Y = coalesce(Y.x, Y.y)) %>%
+  select(pair_id, src, treeID, pred, Z, X, Y, dxy, dz, dxyz)
+
+nclr <- nrow(tst.dfm)/2
+ggplot(tst.dfm,
+              aes(x=X,
+                  y=Y,
+                  size=Z,
+                  shape=factor(src),
+                  color=factor(pair_id),
+                  label=factor(pair_id))) +
+       geom_point() +
+       geom_text() +
+       scale_color_manual(values=rainbow(nclr, s=.75)[sample(1:nclr, nclr)]) +
+       scale_shape_manual(values=c(2,3))
+
+tst.dfm.l <- tst.dfm %>%
+  pivot_longer(cols=c(X,Y,Z),
+               names_to='dim')
+
+ggplot(tst.dfm.l, aes(x=value, group=src, color=factor(src))) +
+    geom_density() +
+    facet_wrap(~dim, nrow=3, scales='free')
+
+
 
 ## Scratch
 ## --------------------------------------------------------------------------------------------------

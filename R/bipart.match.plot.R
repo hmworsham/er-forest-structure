@@ -1,17 +1,17 @@
-# Bipartite matching
+# Plot bipartite matches
 
-#' Bipartite matching
-#' @description Run optimal bipartite matching on field and modeled trees by minimizing Euclidean distances. Return performance statistics and data for plotting.
+#' Plot bipartite matches
+#' @description Run optimal bipartite matching on field and modeled trees by minimizing Euclidean distances. Return data for plotting.
 #' @param runid list. Names of sampling areas cross-referenced in lasset and obset
 #' @param lasset list. List of point cloud datasets in LAS format to apply bipartite matching to. Typically the output of an optimized ITC segementation or delineation algorithm, such as Li2012.opt.
 #' @param obset dataframe. Dataset containing at minimum X,Y,Z coordinates for field-identified trees with an additional column labeling trees by an ID matching one of those in runid.
 #' @return dataframe. Performance and accuracy statistics for each sample area, parameter permutation, and algorithm.
-#' @export bipart.match2
+#' @export bipart.match.plot
 #'
 
 # Apply over quadrants, and their corresponding obs set, then the lists of candidate lassets
 # Consider where argument 'quad' can come from, and if this can/should be integrated into one function ...
-bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
+bipart.match.plot <- function(runid, lasset, obset, plotdir=NULL) {
 
   # Pull quadrant ID from runid
   plt <- unlist(str_split(runid, '_'))[1]
@@ -81,6 +81,7 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
   dxy.tmp <- treat.d.xy
   dz.tmp <- treat.d.z
   dxyz.tmp <- treat.d.xyz
+
   # dz.tmp2 <- treat.d.z
   tdxy.tmp <- data.frame(t(dxy.tmp)[5:ncol(dxy.tmp),])
   tdz.tmp <- data.frame(t(dz.tmp)[5:ncol(dz.tmp),])
@@ -150,7 +151,7 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
             v2 <- dz.cands[j]
             u2 <- dxy.tmp[i, i2]
             match <- names(dxy.tmp)[4+i2]
-            break
+            # break
           } else {
             v2 <- v1
             i2 <- i1
@@ -204,148 +205,68 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
     dxyz.tmp[, which(names(dxy.tmp)==match)] <- NA
   }
 
-  # # Execute bipartite pair matching on Euclidean distances
-  # match.euc <- pairmatch(dist.euc.std, data=df.paired)
-
   # Bind match ID to original dataframe
-  df.matched <- left_join(df.paired[df.paired$src==0,], dxy.tmp, by=c('treeID'='obs')) %>%
+  df.matched.plt <- left_join(df.paired[df.paired$src==0,], dxy.tmp, by=c('treeID'='obs')) %>%
     select(pair_id,
-           src,
            treeID,
+           treeID.y,
            pred,
-           #treeIDobs=treeID.x,
-           Zobs=Z.x,
-           Xobs=X.x,
-           Yobs=Y.x,
-           #treeIDpred=treeID.y,
-           Zpred=Z.y,
-           Xpred=X.y,
-           Ypred=Y.y,
+           Z.x,
+           X.x,
+           Y.x,
+           Z.y,
+           X.y,
+           Y.y,
            dxy,
            dz,
-           dxyz
-    )
+           dxyz) %>%
+    pivot_longer(cols=c(treeID, treeID.y),
+                 names_to='src',
+                 values_to='treeID') %>%
+    arrange(pair_id) %>%
+    mutate(src = case_when(src=='treeID.y' ~ 'Modeled',
+                           T ~ 'Observed')) %>%
+    mutate(across(Z.x:Y.x, ~ ifelse(src=='Modeled', NA, .)),
+           across(Z.y:Y.y, ~ ifelse(src=='Observed', NA, .)),
+           Z = coalesce(Z.x, Z.y),
+           X = coalesce(X.x, X.y),
+           Y = coalesce(Y.x, Y.y)) %>%
+    select(pair_id, src, treeID, pred, Z, X, Y, dxy, dz, dxyz)
 
-  # Calculate performance statistics
-  nobs <- nrow(ctrl) # number of observed tree crowns in quad
-  npred <- nrow(treat) # number of delineated tree crowns in quad
-  tp <- length(unique(df.matched$pair_id[!is.na(df.matched$pair_id)]))-1 # true positive = n matches
-  ext.rt <- npred/nobs
-  match.rt <- tp/npred
-  #obs.unmatched <- length(df.matched$pair_id[is.na(df.matched$pair_id)]) # unmatched observed
-  #pred.unmatched <- nrow(df.matched[df.matched$src==1 & is.na(df.matched$pair_id),]) # unmatched predicted
-  fn <- nobs - tp
-  fp <- npred - tp
-  ft <- fn + fp # false total = false negatives + false positives
-  acc.rt <- tp/nobs
-  omm.rt <- fn / nobs # obs fail rate
-  com.rt <- fp / npred # pred fail rate
-  xy.dists <- df.matched$dxy
-  z.dists <- df.matched$dz
-  xyz.dists <- df.matched$dxyz
-  xy.rmse <- sqrt(sum(xy.dists^2, na.rm=T) / tp)
-  z.rmse <- sqrt(sum(z.dists^2, na.rm=T) / tp)
-  xyz.rmse <- sqrt(sum(xyz.dists^2, na.rm=T) / tp)
-  #loss = rmse/(tp/(fn+fp))
-  precision = tp/(tp+fp)
-  recall = tp/(tp+fn)
-  f = 2 * (recall*precision) / (recall+precision)
-  loss = xyz.rmse/f
+  # For every model, generate X,Y,Z density plots and export
+  nclr <- nrow(df.matched.plt)/2
 
-  # Performance results
-  performance <- data.frame('nobstrees'=nobs,
-                            'npredtrees'=npred,
-                            'ext.rt'=ext.rt,
-                            'tp'=tp,
-                            'match.rt'=match.rt,
-                            #'obs.unm'=obs.unmatched,
-                            #'pred.unm'=pred.unmatched,
-                            'fn'=fn,
-                            'fp'=fp,
-                            'ft'=ft,
-                            'accuracy'=acc.rt,
-                            'omission'=omm.rt,
-                            'commission'=com.rt,
-                            'xy.rmse'=xy.rmse,
-                            'z.rmse'=z.rmse,
-                            'xyz.rmse'=xyz.rmse,
-                            'precision'=precision,
-                            'recall'=recall,
-                            'f'=f,
-                            'loss'=loss
-  )
+  # Plot matches in xyz space
+  map.matches <- ggplot(df.matched.plt,
+         aes(x=X,
+             y=Y,
+             size=Z,
+             shape=factor(src),
+             color=factor(pair_id),
+             label=factor(pair_id))) +
+    geom_point() +
+    geom_text() +
+    scale_color_manual(values=rainbow(nclr, s=.75)[sample(1:nclr, nclr)]) +
+    scale_shape_manual(values=c(2,3))
 
-  if(!plotdir==F) {
+  ggsave(file.path(plotdir,
+                   paste(runid, 'skill_density.png', sep='_')),
+         map.matches,
+         dpi=72,
+         device='png')
 
-    # Bind match ID to original dataframe
-    df.matched.plt <- left_join(df.paired[df.paired$src==0,], dxy.tmp, by=c('treeID'='obs')) %>%
-      select(pair_id,
-             treeID,
-             treeID.y,
-             pred,
-             Z.x,
-             X.x,
-             Y.x,
-             Z.y,
-             X.y,
-             Y.y,
-             dxy,
-             dz,
-             dxyz) %>%
-      pivot_longer(cols=c(treeID, treeID.y),
-                   names_to='src',
-                   values_to='treeID') %>%
-      arrange(pair_id) %>%
-      mutate(src = case_when(src=='treeID.y' ~ 'Modeled',
-                             T ~ 'Observed')) %>%
-      mutate(across(Z.x:Y.x, ~ ifelse(src=='Modeled', NA, .)),
-             across(Z.y:Y.y, ~ ifelse(src=='Observed', NA, .)),
-             Z = coalesce(Z.x, Z.y),
-             X = coalesce(X.x, X.y),
-             Y = coalesce(Y.x, Y.y)) %>%
-      select(pair_id, src, treeID, pred, Z, X, Y, dxy, dz, dxyz)
+  # Plot density function of observed vs modeled
+  df.matched.plt.l <- df.matched.plt %>%
+    pivot_longer(cols=c(X,Y,Z),
+                 names_to='dim')
 
-    # For every model, generate X,Y,Z density plots and export
-    nclr <- nrow(df.matched.plt)/2
+  skill.density <- ggplot(df.matched.plt.l, aes(x=value, group=src, color=factor(src))) +
+    geom_density() +
+    facet_wrap(~dim, nrow=3, scales='free')
 
-    # Make directory if not exists
-    dir.create(plotdir)
-
-    # Plot matches in xyz space
-    match.map <- ggplot(df.matched.plt,
-                          aes(x=X,
-                              y=Y,
-                              size=Z,
-                              shape=factor(src),
-                              color=factor(pair_id),
-                              label=factor(pair_id))) +
-      geom_point() +
-      geom_text() +
-      scale_color_manual(values=rainbow(nclr, s=.75)[sample(1:nclr, nclr)]) +
-      scale_shape_manual(values=c(2,3)) +
-      guides(color='none', size='none')
-
-    ggsave(file.path(plotdir,
-                     paste(runid, 'matchmap.png', sep='_')),
-           match.map,
-           #dpi=72,
-           device='png')
-
-    # Plot density function of observed vs modeled
-    df.matched.plt.l <- df.matched.plt %>%
-      pivot_longer(cols=c(X,Y,Z),
-                   names_to='dim')
-
-    skill.density <- ggplot(df.matched.plt.l, aes(x=value, group=src, color=factor(src))) +
-      geom_density() +
-      facet_wrap(~dim, nrow=3, scales='free')
-
-    ggsave(file.path(plotdir,
-                     paste(runid, 'skill_density.png', sep='_')),
-           skill.density,
-           #dpi=72,
-           device='png')
-  }
-
-  return(performance)
+  ggsave(file.path(plotdir,
+                   paste(runid, 'skill_density.png', sep='_')),
+         skill.density,
+         dpi=72,
+         device='png')
 }

@@ -65,6 +65,7 @@ pt.match <- mclapply(pt.runid,
                      FUN=bipart.match2,
                      lasset=testpt,
                      obset=stems.in.plots,
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'pt_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 
@@ -85,15 +86,3 @@ write.csv(pt.match,
                     'itc_results',
                     'pt_itc_results.csv'),
           row.names=T)
-
-results <- read.csv(file.path('/global',
-                              'scratch',
-                              'users',
-                              'worsham',
-                              'itc_results',
-                              'pt_itc_results.csv'), row.names=1)
-
-library(dplyr)
-View(results %>%
-  group_by(paramset) %>%
-  summarise_all(mean))
