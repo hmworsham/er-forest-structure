@@ -59,11 +59,11 @@ returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$Z, d=alltrees$D)
 coordinates(returns) <- ~x+y
 
 height.raster = rasterize(returns[,1:2], rs, returns$z, fun=mean)
-heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9)))
+heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95)))
 heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)skewness(x))
 
 diam.raster = rasterize(returns[,1:2], rs, returns$d, fun=mean)
-diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9)))
+diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95)))
 
 ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=sum)
 
@@ -104,6 +104,10 @@ extent(density.raster)
 
 bnd <- st_read('/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary/RMBL_2020_EastRiver_SDP_Boundary/SDP_Boundary.shp')
 dr <- mask(density.raster, bnd)
+
+# Coerce 1 to NA
+values(dr)[values(dr)==1] <- NA
+
 par(mar = c(4, 4, 4, 2) + 0.1)
 cls <- c('white', viridis(20))
 plot(dr, col=cls)
@@ -129,21 +133,25 @@ rasters <- c(
   heightq.raster[[3]],
   heightq.raster[[4]],
   heightq.raster[[5]],
+  heightq.raster[[6]],
   heightsk.raster,
   diam.raster,
   diamq.raster[[5]],
+  diamq.raster[[6]],
   ba.raster)
 
 runpng(dr, bnd, c('white', viridis(20)), 'density_100m.png')
 runpng(height.raster, bnd, heat.colors(20), 'mean_height_100m.png')
-runpng(heightq.raster[[5]], bnd, magma(20), 'height_90pctl_100m.png')
 runpng(heightq.raster[[1]], bnd, inferno(20), 'height_10pctl_100m.png')
 runpng(heightq.raster[[2]], bnd, inferno(20, direction=-1), 'height_25pctl_100m.png')
 runpng(heightq.raster[[3]], bnd, cividis(20), 'height_50pctl_100m.png')
 runpng(heightq.raster[[4]], bnd, rocket(20), 'height_75pctl_100m.png')
+runpng(heightq.raster[[5]], bnd, magma(20), 'height_90pctl_100m.png')
+runpng(heightq.raster[[6]], bnd, magma(20), 'height_95pctl_100m.png')
 runpng(heightsk.raster, bnd, plasma(20), 'height_skew_100m.png')
 runpng(diam.raster, bnd, heat.colors(20), 'mean_diameter_100m.png')
 runpng(diamq.raster[[5]], bnd, magma(20), 'diam_90pctl_100m.png')
+runpng(diamq.raster[[6]], bnd, magma(20), 'diam_90pctl_100m.png')
 runpng(ba.raster, bnd, magma(20), 'ba_100m.png')
 
 
