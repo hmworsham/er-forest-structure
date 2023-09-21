@@ -65,6 +65,8 @@ heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)sk
 diam.raster = rasterize(returns[,1:2], rs, returns$d, fun=mean)
 diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9)))
 
+ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=sum)
+
 pointcount = function(ras, pts){
   # make a raster of zeroes like the input
   r2 = ras
@@ -129,7 +131,8 @@ rasters <- c(
   heightq.raster[[5]],
   heightsk.raster,
   diam.raster,
-  diamq.raster[[5]])
+  diamq.raster[[5]],
+  ba.raster)
 
 runpng(dr, bnd, c('white', viridis(20)), 'density_100m.png')
 runpng(height.raster, bnd, heat.colors(20), 'mean_height_100m.png')
@@ -141,6 +144,7 @@ runpng(heightq.raster[[4]], bnd, rocket(20), 'height_75pctl_100m.png')
 runpng(heightsk.raster, bnd, plasma(20), 'height_skew_100m.png')
 runpng(diam.raster, bnd, heat.colors(20), 'mean_diameter_100m.png')
 runpng(diamq.raster[[5]], bnd, magma(20), 'diam_90pctl_100m.png')
+runpng(ba.raster, bnd, magma(20), 'ba_100m.png')
 
 
 writeRaster(dr, '~/stand_density_100mx', format='GTiff', overwrite=T)
@@ -153,3 +157,4 @@ writeRaster(heightq.raster[[5]], '~/height_90pctl', format='GTiff', overwrite=T)
 writeRaster(heightsk.raster, '~/height_skew', format='GTiff', overwrite=T)
 writeRaster(diam.raster, '~/Output/mean_diam_100m', format='GTiff', overwrite=T)
 writeRaster(diamq.raster[[5]], '~/diam_90pctl', format='GTiff', overwrite=T)
+writeRaster()
