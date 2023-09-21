@@ -36,8 +36,8 @@ alltrees <- alltrees[alltrees$Z<=32,]
 alltrees$D <- -8.1946+16.2768*log(alltrees$Z)
 View(alltrees$D)
 
-#
-
+# Add basal area predictions to trees
+alltrees$BA <- pi*(alltrees$D/2)**2
 
 # Create a shapefile of all trees
 ptsf <- st_as_sf(alltrees, coords = c('X', 'Y'), crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
