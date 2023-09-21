@@ -39,3 +39,12 @@ load.plot.sf <- function(path, pattern) {
 
   return(shp)
 }
+
+# Function to ingest rasters
+get.rasters <- function(x, dir){
+  xpath = file.path(dir, x)
+  xtif = list.files(xpath, pattern = 'tif$', full.names = T)
+  xras = lapply(xtif, raster)
+  return(xras)
+}
+

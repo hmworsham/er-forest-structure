@@ -26,6 +26,15 @@ default:
   - rwaveform
   - optmatch
   - lattice
+  - mgcv
+  - corrplot
+  - visreg
+  - psych
+  - raster
+  - RColorBrewer
+  - viridis
+  - lme4
+  - gbm
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'

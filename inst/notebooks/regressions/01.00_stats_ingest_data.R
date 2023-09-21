@@ -27,14 +27,6 @@ bcmdir <- file.path(datadir, 'Geospatial', 'BCM_CO', 'UCRB_BCM')
 # Ingest data
 #############################
 
-# Function to ingest rasters
-get.rasters <- function(x, dir){
-  xpath = file.path(dir, x)
-  xtif = list.files(xpath, pattern = 'tif$', full.names = T)
-  xras = lapply(xtif, raster)
-  return(xras)
-}
-
 #### AOP ####
 # Ingest AOP survey area polygon
 aop <- st_read(file.path(sfdir, 'SDP_Boundary.shp'))
