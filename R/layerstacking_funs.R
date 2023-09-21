@@ -10,7 +10,7 @@ ls.init <- function(pc, start, res, ws1, ws2, buf_size, hmin=1.3, hardwood=F) {
   return(ls.trees)
 }
 
-#' PTrees optimization
+#' LayerStacking optimization
 #' @description Run LayerStacking optimization algorithm across sample areas
 #' @export ls.opt
 #'
