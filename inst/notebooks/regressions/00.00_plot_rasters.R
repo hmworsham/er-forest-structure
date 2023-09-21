@@ -21,6 +21,7 @@ strdir <- file.path(datadir, 'LiDAR', 'tifs')
 
 # Ingest forest structure rasters
 list.files(strdir)
+## TODO: be sure to get the correct files; there are some extraneous ones in here
 responses <- lapply(list.files(strdir, full.names=T, pattern='*.tif$')[1:10], raster)
 
 #############################
