@@ -40,6 +40,8 @@ aop <- st_read(file.path(sfdir, 'SDP_Boundary.shp'))
 dnsty <- raster(file.path(strdir, 'stand_density_100m_fromtrees.tif'))
 height <- raster(file.path(strdir, 'height_90pctl.tif'))
 diam <- raster(file.path(strdir, 'mean_diam_100m.tif'))
+values(diam)[values(diam)==1] <- NA ## TODO: REMOVE THIS ONCE COERCED IN makerasters.R
+ba <- pi*(diam/2)**2 ## TODO: REMOVE THIS ONCE BA COMPUTED IN makerasters.R
 # ba <- raster(file.path(strdir, 'basal_area_100m.tif'))
 response <- list(
   'density'=dnsty,
