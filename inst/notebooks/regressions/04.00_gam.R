@@ -1,4 +1,4 @@
-# Script for preparing datasets for modeling work
+# Script for generating generalized additive models on forest structure and explainers
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -9,11 +9,10 @@ load.pkgs(config$pkgs)
 
 source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks', 'regressions', '01.00_stats_ingest_data.R'))
 
-#############################
-# Generalized additive model
-#############################
+##################################
+# # GAM 1 - couple of explainers
+##################################
 
-# GAM 1 - couple of explainers
 mod_gam1 <- gam(density ~ s(swe, bs='cc') + s(folded_aspect_205, bs='cs'), data=vars)
 summary(mod_gam1)
 par(mfcol=c(2,1), mar=rep(4,4))
