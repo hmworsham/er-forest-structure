@@ -10,6 +10,7 @@ corvars <- vars[,(!names(vars) %in% c('density', 'height', 'diam', 'ba', 'geolog
 corvars <- na.omit(corvars)
 corrmat <- cor(corvars)
 par(mfcol=c(1,1))
+
 corrplot(corrmat,
          method='number',
          type = 'upper',
