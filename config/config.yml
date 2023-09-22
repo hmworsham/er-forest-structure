@@ -35,6 +35,8 @@ default:
   - viridis
   - lme4
   - gbm
+  - caret
+  - car
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'
