@@ -48,3 +48,22 @@ get.rasters <- function(x, dir){
   return(xras)
 }
 
+
+# Function to crop raster to aop boundary
+cropfun <- function(ras, shp){
+  ras <- crop(ras, extent(shp))
+  ras <- mask(ras, shp)
+  return(ras)
+}
+
+# Function to align rasters on same grid (resample and align)
+alignfun <- function(x, target, method='bilinear'){
+  xnew = resample(x, target, method)
+  ex = extent(target)
+  xnew = crop(xnew, ex)
+  return(xnew)
+}
+
+# Function to extract values from rasters
+getvals <- function(ras) return(values(ras))
+
