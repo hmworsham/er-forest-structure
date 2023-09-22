@@ -12,259 +12,60 @@ source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks',
 ##################################
 # # GAM 1 - couple of explainers
 ##################################
-mod_gam1 <- gam(density ~ s(swe, bs='cc', k=6) + s(folded_aspect_205, bs='cs'), data=vars)
-summary(mod_gam1)
-opar <- par()
-par(mfcol=c(2,1), mar=rep(4,4))
-plot(mod_gam1)
-visreg(mod_gam1)
-par(opar)
+library(gbm)
+gbm1 <- gbm(formula=ba ~
+            elevation
+            +slope
+            +folded_aspect_205
+            +tpi_1km
+            +twi_100m
+            +awc
+            +om
+            +ph
+            #+k
+            +geology
+            +aet
+            +cwd,
+            distribution='gaussian',
+            data=vars,
+            n.trees=5000,
+            cv.folds=10,
+            shrinkage=0.05)
 
-vis.gam(mod_gam1,
-        view=c('swe','folded_aspect_205'),
-        type='response',
-        plot.type='persp',
-        phi=10,
-        theta=24,
-        border=NA,
-        color='heat',
-        zlab='stem density')
+summary(gbm1)
 
-# GAM 2 - many explainers
-mod_gam2 <- gam(density ~
-                  s(aet, bs='cc', k=10) +
-                  s(elevation, bs='cc') +
-                  s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='cc') +
-                  s(tpi_1km, bs='cc') +
-                  #s(twi_100m, bs='cc') +
-                  s(heat_load, bs='cc') +
-                  s(elevation, by=folded_aspect_205) +
-                  s(elevation, by = tpi_1km) +
-                  s(elevation, by = swe) +
-                  s(folded_aspect_205, by = tpi_1km) +
-                  #s(elevation, by=geology) +
-                  #s(folded_aspect_205, by=geology) +
-                  #s(tpi_1km, by=geology) +
-                  geology +
-                  s(awc, bs='cc') +
-                  s(om, bs='cc') +
-                  #s(k, bs='cc') +
-                  #cec +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc') +
-                  # s(aet, bs='cc') +
-                  s(cwd, bs='cc'),
-                data=vars)
+best.iter <- gbm.perf(gbm1, method = "OOB")
+print(best.iter)
 
-summary(mod_gam2)
-plot(mod_gam2)
+sqrt(min(gbm1$cv.error))
 
-dens_gam <- gam(density ~
-                  s(elevation, bs='cc') +
-                  s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='cc') +
-                  s(tpi_1km, bs='cc') +
-                  #s(twi_100m, bs='cc') +
-                  #s(heat_load, bs='cc') +
-                  #s(elevation, by=folded_aspect_205) +
-                  #s(elevation, by = tpi_1km) +
-                  #s(elevation, by = swe) +
-                  #s(folded_aspect_205, by = tpi_1km) +
-                  #s(elevation, by=geology) +
-                  #s(folded_aspect_205, by=geology) +
-                  #s(tpi_1km, by=geology) +
-                  #geology +
-                  s(awc, bs='cc') +
-                  s(om, bs='cc') +
-                  s(ksat, bs='cc') +
-                  #cec +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc'),
-                data=vars)
-
-summary(dens_gam)
-visreg2d()
-
-ht_gam <- gam(height ~
-                  s(elevation, bs='cc') +
-                  s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='cc') +
-                  s(tpi_1km, bs='cc') +
-                  #s(twi_100m, bs='cc') +
-                  s(heat_load, bs='cc') +
-                  s(elevation, by=folded_aspect_205) +
-                  s(elevation, by = tpi_1km) +
-                  s(elevation, by = swe) +
-                  s(folded_aspect_205, by = tpi_1km) +
-                  #s(elevation, by=geology) +
-                  #s(folded_aspect_205, by=geology) +
-                  #s(tpi_1km, by=geology) +
-                  geology +
-                  s(awc, bs='cc') +
-                  s(om, bs='cc') +
-                  s(ksat, bs='cc') +
-                  #cec +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc'),
-                data=vars)
-
-diam_gam <- gam(diam ~
-                  s(elevation, bs='cc') +
-                  s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='cc') +
-                  s(tpi_1km, bs='cc') +
-                  s(twi_100m, bs='cc') +
-                  s(heat_load, bs='cc') +
-                  s(elevation, by=folded_aspect_205) +
-                  s(elevation, by = tpi_1km) +
-                  s(elevation, by = swe) +
-                  s(folded_aspect_205, by = tpi_1km) +
-                  #s(elevation, by=geology) +
-                  #s(folded_aspect_205, by=geology) +
-                  #s(tpi_1km, by=geology) +
-                  geology +
-                  s(awc, bs='cc') +
-                  s(om, bs='cc') +
-                  s(ksat, bs='cc') +
-                  #cec +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc'),
-                data=vars)
-
-ba_gam <- gam(ba ~
-                  s(elevation, bs='cc') +
-                  s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='cc') +
-                  s(tpi_1km, bs='cc') +
-                  #s(twi_100m, bs='cc') +
-                  s(heat_load, bs='cc') +
-                  s(elevation, by=folded_aspect_205) +
-                  s(elevation, by = tpi_1km) +
-                  s(elevation, by = swe) +
-                  s(folded_aspect_205, by = tpi_1km) +
-                  #s(elevation, by=geology) +
-                  #s(folded_aspect_205, by=geology) +
-                  #s(tpi_1km, by=geology) +
-                  geology +
-                  s(awc, bs='cc') +
-                  s(om, bs='cc') +
-                  s(ksat, bs='cc') +
-                  #cec +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc'),
-                data=vars)
-
-summary(mod_gam2)
-summary(dens_gam)
-summary(ht_gam)
-summary(diam_gam)
-summary(ba_gam)
-coef(dens_gam)
-plot.gam(dens_gam)
-plot.gam(ht_gam)
-plot.gam(diam_gam)
-plot.gam(ba_gam)
-
-
-names(mod_gam2$coefficients)
-par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
-plot.gam(mod_gam2, scheme=1, ylim=c(-5,5))
-
-varnms <- c('Elevation',
-  'Folded Aspect',
-  'Slope',
-  'TPI',
-  'Heat Load',
-  'Elevation:Folded Aspect',
-  'Elevation:TPI',
-  'Elevation:SWE',
-  'Folded Aspect:TPI',
-  'Elevation:KJde',
-  'Elevation:Km',
-  'Elevation:Kmv',
-  'Elevation:Pm',
-  'Elevation:PPm',
-  'Elevation:Qd',
-  'Elevation:Ql',
-  'Elevation:Tmi',
-  'Elevation:Two',
-  'Soil AWC',
-  'Soil Percent OM',
-  'Soil k',
-  'Soil Total Depth',
-  'SWE')
-?mar
-par(mfcol=c(12,4), mar=c(4,2,4,1), lwd=2)
-for(i in 19:22){
-  plot.gam(mod_gam2,
-           scheme=1,
-           ylim=c(-5,5),
-           select=i,
-           main=varnms[i],
-           ylab='Stand density (stems/ha)',
-           xlab=paste('Standardized', varnms[i]),
-           cex.lab=2,
-           cex.main=2.5)
-}
-
-ggplot(vars, aes(x=density, y=elevation, color=geology)) +
-  geom_point() +
-  geom_abline()
-
-visreg(mod_gam2)
-
-termplot(dens_gam)
-
-AIC(mod_lm)
-AIC(mod_gam2)
-
-summary(mod_lm)$sp.criterion
-summary(mod_gam2)$sp.criterion
-
-g <- list(
-visreg2d(dens_gam, xvar='elevation', yvar='swe', plot.type='gg') +
-  scale_fill_viridis(name='density') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
-visreg2d(ht_gam, xvar='elevation', yvar='ksat', plot.type='gg') +
-  scale_fill_viridis(name='height') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
-visreg2d(diam_gam, xvar='elevation', yvar='heat_load', plot.type='gg') +
-  scale_fill_viridis(name='dbh') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'bottom'),
-visreg2d(ba_gam, xvar='elevation', yvar='om', plot.type='gg') +
-  scale_fill_viridis(name='basal area') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'bottom')
+par(mar = c(5, 8, 1, 1))
+summary(
+  gbm1,
+  cBars = 10,
+  method = relative.influence, # also can use permutation.test.gbm
+  las = 2
 )
-g
-g + facet_grid()
-library(gridExtra)
-marrangeGrob(g, nrow=2, ncol=2)
-?marrangeGrob()
-mod_gam2$coefficients
-par(mfcol=c(1,3), mar=c(2,2,4,2))
-vis.gam(mod_gam2, view=c('elevation','swe'), type='response', plot.type='persp', phi=20, theta=48, border=NA, color='topo', zlab='90th pctl height', contour.col='black', main='Density v Elevation v TPI', xlab='Standardized elevation', ylab='standardized TPI', cex.lab=2, cex.main=2.5)
 
-summary(mod_gam2)
-summary(mod_lm)$r.sq
-summary(mod_gam1)$r.sq
+print(best.iter)
 
-#############################
-# Linear mixed effects model
-#############################
+ice <- gbm1 %>%
+  partial(
+    pred.var = 'elevation',
+    n.trees = 5000,
+    grid.resolution = 100,
+    ice = TRUE
+  ) %>%
+  autoplot(rug = TRUE, train = ames_train, alpha = .1, center = TRUE) +
+  ggtitle("Centered") +
+  scale_y_continuous(labels = scales::dollar)
 
-mod_lme <- lmer(density ~ elevation+slope+folded_aspect_205+tpi_1km+twi_100m+(1|geology), data=vars)
-summary(mod_lme)
-confint(mod_lme)
-ranef(mod_lme)$geol
-coef(mod_lme)$geol
-vars %>%
-  ggplot(aes(x=elevation, y=density)) +
-  geom_point(aes(color=geology), alpha=.50) +
-  scale_color_brewer(type='div')
+par(mfrow = c(1, 2))
+summary(gbm1, n.trees = 1)          # using first tree
+summary(gbm1, n.trees = best.iter)  # using estimated best number of trees
 
-?scale_fill_brewer
+# Construct univariate partial dependence plots
+plot(gbm1, i.var = 1, n.trees = best.iter)
+plot(gbm1, i.var = 2, n.trees = best.iter)
+plot(gbm1, i.var = 3, n.trees = best.iter)  # can use index or name
+

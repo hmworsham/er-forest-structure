@@ -12,7 +12,7 @@ source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks',
 #############################
 # Ordinary least squares
 #############################
-mod_lm <- lm(diam ~
+mod_lm <- lm(density ~
                elevation
              +slope
              +folded_aspect_205
@@ -21,10 +21,11 @@ mod_lm <- lm(diam ~
              +awc
              +om
              #+k
-             +geology
+             +factor(geology)
              +aet
              +cwd,
              data=vars)
 
-summary(mod_lm)
-plot(mod_lm)
+library(car)
+avPlots(mod_lm)
+
