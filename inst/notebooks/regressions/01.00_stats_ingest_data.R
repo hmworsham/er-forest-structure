@@ -158,11 +158,13 @@ response <- lapply(response, cropfun, aop)
 explainers <- lapply(explainers, cropfun, aop)
 explainers <- lapply(explainers, alignfun, response[[1]], 'ngb')
 
+opar <- par()
 par(mfcol=c(5,6), mar=rep(1,4))
 for(i in seq_along(explainers)) {
   opt <- rep(LETTERS[1:6],5)
   plot(explainers[[i]], col=viridis(10, option=opt[i]), main=names(explainers[[i]]), asp=1)
 }
+par(opar)
 
 #############################
 # Extract values for modeling
@@ -183,6 +185,7 @@ for(i in seq_along(re.vals)){
        xlab=names(re.vals)[i],
        ylab='count')
 }
+par(opar)
 
 # Define variables we want to use in model
 #target.vars <- c('folded_aspect_205', 'swe')
@@ -227,9 +230,10 @@ vars <- vars[!is.na(vars$density),]
 #############################
 
 # Exclude geology to rescale continuous variables
-vars.tmp <- vars[!names(vars) %in% 'geology']
+noscale <- c('geology', 'density', 'height', 'diam', 'ba')
+vars.tmp <- vars[!names(vars) %in% noscale]
 vars.tmp <- data.frame(scale(vars.tmp))
-vars <- cbind(vars.tmp, vars[names(vars) %in% 'geology'])
+vars <- cbind(vars[names(vars) %in% noscale], vars.tmp)
 
 ###############################
 # Deal with geology / factors
