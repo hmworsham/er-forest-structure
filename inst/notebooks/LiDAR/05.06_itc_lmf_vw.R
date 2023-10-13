@@ -18,16 +18,16 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 ## ---------------------------------------------------------------------------------------------------
 
 # LMF fixed window parameters
-ws.seq <- seq(0.2, 10, 0.2)
+p1.seq <- seq(0.5,2.5,0.5)
+p2.seq <- seq(0.02,0.16,0.02)
+p3.seq <- seq(1, 5, 1)
 shape.opts <- c('square', 'circular')
-lmf.vw.params <- expand_grid(ws.seq, shape.opts)
+lmf.vw.params <- expand_grid(p1.seq, p2.seq, p3.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-# TODO: FIGURE THIS OUT...
-lmf.vw.init(lasplots[1], ws=vws, 0.5, 2, 1, shape='square')
-
-testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params)
+testlmf.vw <- lapply(lasplots[1:2], lmf.vw.opt, lmf.vw.params[3:4,])
+st_as_sf(lmf.vw.init(lasplots[[1]], 1,0.02,3,shape='circular'))
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -54,11 +54,11 @@ lmf.vw.runid <- lmf.vw.runid[lmf.vw.runid %in% names(testlmf.vw)]
 
 ### Run matching
 lmf.vw.match <- mclapply(lmf.vw.runid,
-                     FUN=bipart.match2,
-                     lasset=testlmf.vw,
-                     obset=stems.in.plots,
-                     mc.cores = getOption("mc.cores", length(workerNodes)-2)
-                     )
+                         FUN=bipart.match2,
+                         lasset=testlmf.vw,
+                         obset=stems.in.plots,
+                         mc.cores = getOption("mc.cores", length(workerNodes)-2)
+)
 
 # Reformat results
 names(lmf.vw.match) <- names(testlmf.vw)

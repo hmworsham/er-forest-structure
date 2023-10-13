@@ -59,7 +59,7 @@ ls.runid <- ls.runid[ls.runid %in% names(testls)]
 
 ### Run matching
 ls.match <- mclapply(ls.runid,
-                     FUN=bipart.match2,
+                     FUN=bipart.match3,
                      lasset=testls,
                      obset=stems.in.plots,
                      plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'ls_itc_figs'),
@@ -71,6 +71,8 @@ names(ls.match) <- names(testls)
 ls.match <- data.frame(do.call('rbind', ls.match))
 ls.match$quad <- unlist(lapply(strsplit(rownames(ls.match), '_'), '[',1))
 ls.match$paramset <- unlist(lapply(strsplit(rownames(ls.match), '_'), '[', 2))
+
+View(ls.match)
 
 ## Write results
 ## ---------------------------------------------------------------------------------------------------

@@ -30,7 +30,7 @@ length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq) == nrow(li.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testli <- lapply(lasplots[4:6], li2012.opt, li.params[18:22,])
+testli <- lapply(lasplots[4:6], li2012.opt, li.params[36:39,])
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ testli <- lapply(lasplots[4:6], li2012.opt, li.params[18:22,])
 testli <- unlist(testli, recursive=F)
 
 # Create vector of ITD run IDs
-li.runid <- expand.grid(names(lasplots), '_p', row.names(li.params))
+li.runid <- expand.grid(names(lasplots[4:6]), '_p', row.names(li.params[36:39,]))
 li.runid <- li.runid[order(li.runid$Var1),]
 li.runid <- paste(li.runid[,1],li.runid[,2], li.runid[,3], sep='')
 
@@ -53,8 +53,16 @@ li.runid <- li.runid[li.runid %in% names(testli)]
 
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
-yy <- bipart.match2(li.runid[2], testli, stems.in.plots)
+yy <- bipart.match3(li.runid[12], testli, stems.in.plots)
+m1 <- yy[[1]]
+m2 <- yy[[2]]
 
+View(m1)
+View(m2)
+
+m3 <- m1
+m3[match(m2$treeID, m3$treeID), ] <- m2
+View(m3)
 ### Run matching
 li.match <- mclapply(li.runid,
                      FUN=bipart.match2,

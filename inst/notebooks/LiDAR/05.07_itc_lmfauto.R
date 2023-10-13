@@ -17,17 +17,12 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 ## Define vectors of parameters on which to run algorithm
 ## ---------------------------------------------------------------------------------------------------
 
-# LMF fixed window parameters
-ws.seq <- seq(0.2, 10, 0.2)
-shape.opts <- c('square', 'circular')
-lmf.vw.params <- expand_grid(ws.seq, shape.opts)
+# LMF auto parameters
+# No params
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-# TODO: FIGURE THIS OUT...
-lmf.vw.init(lasplots[1], ws=vws, 0.5, 2, 1, shape='square')
-
-testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params)
+testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
