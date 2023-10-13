@@ -71,6 +71,7 @@ plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
 inv <- inv[inv$Status == 'Live',] # Living stems
 inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
+inv <- inv[inv$DBH_Avg_CM >= 3,]
 
 # Keep stem x,y,z data
 stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
