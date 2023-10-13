@@ -5,7 +5,7 @@
 #SBATCH --partition=savio3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
-#SBATCH --time=06:00:00
+#SBATCH --time=08:00:00
 
 ## Command(s) to run
 module load r r-packages r-spatial
