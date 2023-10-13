@@ -54,15 +54,7 @@ li.runid <- li.runid[li.runid %in% names(testli)]
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
 yy <- bipart.match3(li.runid[12], testli, stems.in.plots)
-m1 <- yy[[1]]
-m2 <- yy[[2]]
 
-View(m1)
-View(m2)
-
-m3 <- m1
-m3[match(m2$treeID, m3$treeID), ] <- m2
-View(m3)
 ### Run matching
 li.match <- mclapply(li.runid,
                      FUN=bipart.match2,
