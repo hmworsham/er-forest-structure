@@ -24,7 +24,7 @@ lmf.fw.params <- expand_grid(ws.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.fw <- lapply(lasplots[1:2], lmf.fw.opt, lmf.fw.params[1:3,])
+testlmf.fw <- lapply(lasplots[1:2], lmf.fw.opt, lmf.fw.params[1:3,], hmin=2)
 testlmf.fw
 
 ## Reformat results

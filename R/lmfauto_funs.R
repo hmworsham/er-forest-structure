@@ -4,7 +4,7 @@
 #' @description Initialize LMF fixed window for optimization
 #' @export lmf.auto.init
 #'
-lmf.auto.init <- function(pc, hmin=1.3){
+lmf.auto.init <- function(pc, hmin){
   algo = lmfauto(hmin=hmin)
   lmf.auto.trees <- find_trees(pc, algo)
   return(lmf.auto.trees)
@@ -15,7 +15,7 @@ lmf.auto.init <- function(pc, hmin=1.3){
 #' @export lmf.auto.opt
 #'
 
-lmf.auto.opt <- function(x, hmin) {
+lmf.auto.opt <- function(x, hmin=1.3) {
 
   modtrees <- lmf.auto.init(x, hmin=hmin)
   modtrees <- st_as_sf(modtrees)

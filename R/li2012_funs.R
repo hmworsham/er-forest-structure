@@ -12,7 +12,7 @@
 #' @export li2012.init
 #'
 
-li2012.init <- function(pc, dt1, dt2, R, Zu, hmin=1.3) {
+li2012.init <- function(pc, dt1, dt2, R, Zu, hmin) {
   algo = li2012(dt1, dt2, R, Zu, hmin)
   li.trees = segment_trees(pc, algo) # segment point cloud
   crowns = crown_metrics(li.trees, func = .stdtreemetrics, geom = "convex")
@@ -31,7 +31,7 @@ li2012.init <- function(pc, dt1, dt2, R, Zu, hmin=1.3) {
 #' @export li2012.opt
 #'
 
-li2012.opt <- function(x, params){
+li2012.opt <- function(x, params, hmin=1.3){
 
   # Apply Li 2012 algorithm using all parameter sets
   modtrees <- mcmapply(li2012.init,
@@ -39,7 +39,7 @@ li2012.opt <- function(x, params){
                        params[,2],
                        params[,3],
                        params[,4],
-                       MoreArgs=list(pc=x, hmin=1.3),
+                       MoreArgs=list(pc=x, hmin=hmin),
                        mc.cores = getOption("mc.cores", 30))
 
   # Clean up results

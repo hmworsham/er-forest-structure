@@ -22,7 +22,7 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=1.3)
+testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=2)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------

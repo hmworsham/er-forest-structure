@@ -27,7 +27,7 @@ dim(mc.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testmc <- lapply(lasplots, mc.opt, mc.params)
+testmc <- lapply(lasplots, mc.opt, mc.params, hmin=2)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------

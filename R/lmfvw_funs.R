@@ -10,7 +10,7 @@
 #' @export lmf.vw.init
 #'
 # Define variable window size function
-lmf.vw.init <- function(pc, b0, b1, c0, shape, hmin=1.3) {
+lmf.vw.init <- function(pc, b0, b1, c0, shape, hmin) {
   vws = function(z, p1, p2, p3) {
     y <- p1 * (-(exp(-p2*(z-2)) - 1)) + p3
     y[z < 2] <- 3
@@ -28,13 +28,13 @@ lmf.vw.init <- function(pc, b0, b1, c0, shape, hmin=1.3) {
 #' @description Run LMF fixed window optimization algorithm across sample areas
 #' @export lmf.vw.opt
 #'
-lmf.vw.opt <- function(x, params) {
+lmf.vw.opt <- function(x, params, hmin=1.3) {
   modtrees <- mapply(lmf.vw.init,
                      b0=params[,1][[1]],
                      b1=params[,2][[1]],
                      c0=params[,3][[1]],
                      shape=params[,4][[1]],
-                     MoreArgs=list(pc=x, hmin=1.3)#,
+                     MoreArgs=list(pc=x, hmin=hmin)#,
                      # mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 

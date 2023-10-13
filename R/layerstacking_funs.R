@@ -4,7 +4,7 @@
 #' @description Initialize LayerStacking for optimization
 #' @export ls.init
 #'
-ls.init <- function(pc, start, res, ws1, ws2, buf_size, hmin=1.3, hardwood=F) {
+ls.init <- function(pc, start, res, ws1, ws2, buf_size, hmin, hardwood=F) {
   algo <- LayerStacking(start, res, ws1, ws2, buf_size, hmin, hardwood)
   ls.trees <- find_trees(pc, algo)
   return(ls.trees)
@@ -14,7 +14,7 @@ ls.init <- function(pc, start, res, ws1, ws2, buf_size, hmin=1.3, hardwood=F) {
 #' @description Run LayerStacking optimization algorithm across sample areas
 #' @export ls.opt
 #'
-ls.opt <- function(x, params) {
+ls.opt <- function(x, params, hmin=1.3) {
 
   # Apply LayerStacking algorithm using all parameter sets
   modtrees <- mcmapply(ls.init,
@@ -23,7 +23,7 @@ ls.opt <- function(x, params) {
                        params[,3],
                        params[,4],
                        params[,5],
-                       MoreArgs=list(pc=x, hmin=1.3, hardwood=F),
+                       MoreArgs=list(pc=x, hmin=hmin, hardwood=F),
                        mc.cores = getOption('mc.cores', 30)
   )
 

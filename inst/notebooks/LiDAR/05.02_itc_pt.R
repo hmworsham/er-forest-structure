@@ -36,7 +36,7 @@ pt.params <- c(k.seq3, k.seq4)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testpt <- lapply(lasplots, ptrees.opt, pt.params)
+testpt <- lapply(lasplots, ptrees.opt, pt.params, hmin=2)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------

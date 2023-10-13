@@ -30,7 +30,7 @@ length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq) == nrow(li.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testli <- lapply(lasplots[4:6], li2012.opt, li.params[36:39,])
+testli <- lapply(lasplots, li2012.opt, li.params, hmin=2)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ testli <- lapply(lasplots[4:6], li2012.opt, li.params[36:39,])
 testli <- unlist(testli, recursive=F)
 
 # Create vector of ITD run IDs
-li.runid <- expand.grid(names(lasplots[4:6]), '_p', row.names(li.params[36:39,]))
+li.runid <- expand.grid(names(lasplots), '_p', row.names(li.params))
 li.runid <- li.runid[order(li.runid$Var1),]
 li.runid <- paste(li.runid[,1],li.runid[,2], li.runid[,3], sep='')
 
@@ -53,16 +53,16 @@ li.runid <- li.runid[li.runid %in% names(testli)]
 
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
-yy <- bipart.match3(li.runid[12], testli, stems.in.plots)
 
 ### Run matching
 li.match <- mclapply(li.runid,
-                     FUN=bipart.match2,
+                     FUN=bipart.match3,
                      lasset=testli,
                      obset=stems.in.plots,
                      plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'li_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-4)
                      )
+li.match
 
 # Reformat results
 names(li.match) <- names(testli)

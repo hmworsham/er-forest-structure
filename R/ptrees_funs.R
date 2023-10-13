@@ -10,7 +10,7 @@
 #' @export ptrees.init
 #'
 
-ptrees.init <- function(k, pc, hmin=1.3, nmax=9L) {
+ptrees.init <- function(k, pc, hmin, nmax=9L) {
   pt.trees <- find_trees(pc, ptrees(k, hmin, nmax))
   return(pt.trees)
 }
@@ -22,10 +22,12 @@ ptrees.init <- function(k, pc, hmin=1.3, nmax=9L) {
 #' @return list. X,Y,Z locations of modeled trees in each sample area
 #' @export ptrees.opt
 #'
-ptrees.opt <- function(x, params) {
+ptrees.opt <- function(x, params, hmin=1.3) {
   modtrees <- mclapply(params,
                        FUN=ptrees.init,
                        pc=x,
+                       hmin=hmin,
+                       nmax=9L,
                        mc.cores=getOption('mc.cores', 30)
   )
   modtrees <- lapply(modtrees, st_as_sf)
