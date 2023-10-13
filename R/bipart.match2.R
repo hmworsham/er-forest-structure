@@ -78,45 +78,54 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
   treat.d.xyz <- treat.d.xyz[order(treat.d.xyz$Z, decreasing=T),]
   names(treat.d.xyz)[5:length(treat.d.xyz)] <- ctrl$treeID
 
+  # Duplicate treatment dataframes to tmp for processing
   dxy.tmp <- treat.d.xy
   dz.tmp <- treat.d.z
   dxyz.tmp <- treat.d.xyz
-  # dz.tmp2 <- treat.d.z
+
+  # Transpose dataframe for second-round vote
   tdxy.tmp <- data.frame(t(dxy.tmp)[5:ncol(dxy.tmp),])
   tdz.tmp <- data.frame(t(dz.tmp)[5:ncol(dz.tmp),])
   tdxyz.tmp <- data.frame(t(dxyz.tmp)[5:ncol(dxyz.tmp),])
 
   # return(list(treat.d.xy, treat.d.z, treat.d.xyz))
 
+  # Set counters
   testmatch <- integer(0)
   pairid <- 0
+  nobs <- ncol(dxy.tmp)
 
   # Find matches
-  nobs <- ncol(dxy.tmp)
   for(i in seq(nrow(treat.d.z))) {
-
+    print('----------')
+    print(paste('i:', i))
     # Pull height for modeled tree i
     z <- dz.tmp[i,'Z']
-
+    print(paste('z:', z))
     # Given Z, define maximum ∆Z threshold
     dz.min <- case_when(z<=10 ~ 3,
-                        10 < z & z <= 15 ~ 3,
+                        10 < z & z <= 15 ~ 4,
                         15 < z & z <=25 ~ 4,
                         z > 25 ~ 4)
-
+    print(paste('dz.min:', dz.min))
     # Given Z, define maximum XY search radius threshold
-    dxy.min <- case_when(z<=10 ~ 3,
+    dxy.min <- case_when(z<=10 ~ 4,
                          10 < z & z <= 15 ~ 4,
                          15 < z & z <=25 ~ 5,
                          z > 25 ~ 5)
+    print(paste('dxy.min:', dxy.min))
 
     # Find candidates
     xy.cands <- 4+which(dxy.tmp[i, 5:nobs] <= dxy.min)
     z.cands <- 4+which(dz.tmp[i,5:nobs] <= dz.min)
     cands <- intersect(xy.cands, z.cands)
-
+    # print(paste('xy.cands:', 'xy.cands'))
+    # print(paste('z.cands:', 'z.cands'))
+    print(paste('cands:', cands))
+    print(paste('n_cands:', length(cands)))
     # If there are candidates, proceed with voting
     # Else, no match (assign NA to match)
+
     if(length(cands)) {
 
       # Set anything > XYSRT or > ∆ZT to NA
@@ -127,16 +136,20 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
       i1 <- which.min(dxy.tmp[i, 5:nobs]) # index of nearest candidate in {x,y}
       u1 <- min(dxy.tmp[i, 5:nobs], na.rm=T) # dxy to nearest tree in {x,y}
       v1 <- dz.tmp[i, 4+i1] # dz to nearest tree in {x,y}
-      z1 <- which.min(dz.tmp[i, 5:nobs])
+      z1 <- which.min(dz.tmp[i, 5:nobs]) # index of nearest candidate in {z}
+      # print(c(i1, u1, v1, z1))
 
       # Get dz and dxy values for all other candidates in ascending dz order
-      dz.cands <- suppressWarnings(dz.tmp[i, cands][order(dz.tmp[i, cands])])
       dxy.cands <- suppressWarnings(dxy.tmp[i, cands][order(dz.tmp[i, cands])])
+      dz.cands <- suppressWarnings(dz.tmp[i, cands][order(dz.tmp[i, cands])])
+      print(dxy.cands)
+      print(dz.cands)
 
       # If dz for the nearest {x,y} is the minimum dz, then assign match
       # Else proceed to vote 2
       if (z1==i1) {
         match <- names(dz.tmp)[4+i1]
+        print(c('vote1match:', match))
       } else {
         # Vote 2:
         # If there is a smaller dz for a more distant tree AND the dxy for that pair
@@ -158,6 +171,8 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
             match <- names(dxy.tmp)[4+i2]
           }
 
+          print(paste('vote2match:', as.character(match)))
+
           # Test observed match against surrounding predicted trees
           # tdxyz.min <- which.min(tdxyz.tmp[match, ])
           # if(tdxyz.min==i) {
@@ -171,21 +186,23 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
       }
 
       # Test observed match against surrounding predicted trees
-      # tdxyz.min <- which.min(tdxyz.tmp[match, ])
-      #
-      # testmatch <- integer(0)
-      # if(tdxyz.min==i) {
-      #   tdxyz.tmp[, i] <- NA
-      # } else {
-      #   #testmatch <- tdxyz.min
-      #   match <- integer(0)
-      # }
+      tdxyz.min <- which.min(tdxyz.tmp[match, ])
+      print(paste('checkpredmatch:', as.character(tdxyz.min)))
+      testmatch <- integer(0)
+      if(tdxyz.min==i) {
+        tdxyz.tmp[, i] <- NA
+      } else {
+        #testmatch <- tdxyz.min
+        match <- integer(0)
+      }
 
     } else {
       match <- integer(0)
       dxy.tmp[i, -c(1:4)] <- NA
       dz.tmp[i, -c(1:4)] <- NA
     }
+
+    print(c('finalmatch:', match))
 
     # Generate match outputs
     dxy <- dxy.tmp[i, which(names(dxy.tmp)==match)]
@@ -209,7 +226,7 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
 
   # Bind match ID to original dataframe
   df.matched <- left_join(df.paired[df.paired$src==0,], dxy.tmp, by=c('treeID'='obs')) %>%
-    select(pair_id,
+    dplyr::select(pair_id,
            src,
            treeID,
            pred,
@@ -226,6 +243,7 @@ bipart.match2 <- function(runid, lasset, obset, plotdir=F) {
            dxyz
     )
 
+  return(list(dxy.tmp, treat.d.xy, treat.d.z))
   # Calculate performance statistics
   nobs <- nrow(ctrl) # number of observed tree crowns in quad
   npred <- nrow(treat) # number of delineated tree crowns in quad
