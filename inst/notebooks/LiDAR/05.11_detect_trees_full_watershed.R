@@ -18,7 +18,7 @@ drive_auth(path=config$drivesa)
 ## ---------------------------------------------------------------------------------------------------
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
 workerNodes <- rep(workerNodes, 32)
-#cl <- parallel::makeCluster(workerNodes)
+cl <- parallel::makeCluster(workerNodes)
 #set_lidr_threads(length(workerNodes)-2)
 
 ## ---------------------------------------------------------------------------------------------------
