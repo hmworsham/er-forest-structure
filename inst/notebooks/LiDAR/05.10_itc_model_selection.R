@@ -17,12 +17,14 @@ mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 7))
 mod.names <- data.frame(mi=as.character(1:4), model=mod.names)
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
-itc.res <- itc.res[!itc.res$quad=='SR-PVG1',]
+#itc.res <- itc.res[!itc.res$quad=='SR-PVG1',]
 
 #
 itc.means <- itc.res %>%
   group_by(model, paramset) %>%
   summarise(across(nobstrees:loss, \(x) mean(x, na.rm=T)))
+
+View(itc.means)
 
 ggplot(itc.res, aes(x=model, y=match.rt)) +
   geom_boxplot() +
