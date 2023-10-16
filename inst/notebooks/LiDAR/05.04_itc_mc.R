@@ -23,11 +23,10 @@ dist2d.seq <- c(0.1, 0.25, 0.5, 1, 2)
 dist3d.seq <- c(0.5,1,3,5)
 
 mc.params <- expand.grid(res.seq, layer_thickness.seq, dist2d.seq, dist3d.seq)
-dim(mc.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testmc <- lapply(lasplots, mc.opt, mc.params, hmin=2)
+testmc <- lapply(lasplots, mc.opt, mc.params)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -54,7 +53,7 @@ mc.runid <- mc.runid[mc.runid %in% names(testmc)]
 
 ### Run matching
 mc.match <- mclapply(mc.runid,
-                     FUN=bipart.match2,
+                     FUN=bipart.match3,
                      lasset=testmc,
                      obset=stems.in.plots,
                      plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'mc_itc_figs'),

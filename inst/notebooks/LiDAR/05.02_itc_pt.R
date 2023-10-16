@@ -36,7 +36,7 @@ pt.params <- c(k.seq3, k.seq4)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testpt <- lapply(lasplots, ptrees.opt, pt.params, hmin=2)
+testpt <- lapply(lasplots, ptrees.opt, pt.params, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ pt.runid <- pt.runid[pt.runid %in% names(testpt)]
 
 ### Run matching
 pt.match <- mclapply(pt.runid,
-                     FUN=bipart.match2,
+                     FUN=bipart.match3,
                      lasset=testpt,
                      obset=stems.in.plots,
                      plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'pt_itc_figs'),
@@ -74,7 +74,6 @@ names(pt.match) <- names(testpt)
 pt.match <- data.frame(do.call('rbind', pt.match))
 pt.match$quad <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[',1))
 pt.match$paramset <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[', 2))
-head(pt.match)
 
 ## Write results
 ## ---------------------------------------------------------------------------------------------------

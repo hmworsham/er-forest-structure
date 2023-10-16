@@ -32,7 +32,7 @@ length(start.seq)*length(res.seq)*length(ws1.seq)*length(ws2.seq)*length(buf.seq
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testls <- lapply(lasplots, ls.opt, ls.params, hmin=2)
+testls <- lapply(lasplots, ls.opt, ls.params, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ testls <- lapply(lasplots, ls.opt, ls.params, hmin=2)
 testls <- unlist(testls, recursive=F)
 
 # Create vector of ITD run IDs
-ls.runid <- expand.grid(names(lasplots[8:10]), '_p', row.names(ls.params[8:12,]))
+ls.runid <- expand.grid(names(lasplots), '_p', row.names(ls.params))
 ls.runid <- ls.runid[order(ls.runid$Var1),]
 ls.runid <- paste(ls.runid[,1],ls.runid[,2], ls.runid[,3], sep='')
 

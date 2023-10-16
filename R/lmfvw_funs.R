@@ -34,7 +34,7 @@ lmf.vw.opt <- function(x, params, hmin=1.3) {
                      b1=params[,2][[1]],
                      c0=params[,3][[1]],
                      shape=params[,4][[1]],
-                     MoreArgs=list(pc=x, hmin=hmin)#,
+                     MoreArgs=list(pc=x, hmin=hmin) #,
                      # mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 

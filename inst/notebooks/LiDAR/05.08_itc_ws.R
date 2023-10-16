@@ -16,37 +16,7 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 ## Define vectors of parameters on which to run algorithm
 ## ---------------------------------------------------------------------------------------------------
 
-# Initialize watershed algorithm
-ws.init <- function(pc, res, p2r.p, ker.size, hmin, pkg='raster') {
-  chm = rasterize_canopy(pc, res=res, algorithm=p2r(0.3), pkg='raster')
-  chm = raster::focal(chm, w=matrix(1,ker.size, ker.size), fun=mean, na.rm=T)
-  ws.trees = segment_trees(pc, watershed(chm))
-  crowns = crown_metrics(ws.trees, func = .stdtreemetrics, geom = "convex")
-  crowns = crowns[st_is_valid(crowns),]
-  ttops = st_centroid(crowns)
-  ttops = ttops[ttops$Z >= hmin,]
-  return(ttops)
-}
-
-ws.opt <- function(x, params, hmin=1.3) {
-  modtrees <- mcmapply(ws.init,
-                       res=params[,1],
-                       p2r.p=params[,2],
-                       ker.size=params[,3],
-                       MoreArgs=list(pc=x, hmin=hmin),
-                       mc.cores = getOption("mc.cores", 30))
-
-  # Clean up results
-  modtrees <- apply(modtrees, 2, data.frame)
-  modtrees <- lapply(modtrees, st_as_sf)
-  modtrees <- lapply(modtrees, function(x) {
-    tl <- x[!st_is_empty(x),]
-    tl
-  })
-
-  return(modtrees)
-}
-
+# Define parameters
 res.seq <- seq(0.5, 2, 0.5)
 p2r.p.seq <- seq(0.1,0.8, 0.1)
 ker.size.seq <- c(3,5,9,15)
@@ -59,7 +29,7 @@ length(res.seq)*length(p2r.p.seq)*length(ker.size.seq) == nrow(ws.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testws <- lapply(lasplots[1:2], ws.opt, ws.params[10:12,], hmin=2)
+testws <- lapply(lasplots, ws.opt, ws.params, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -67,7 +37,7 @@ testws <- lapply(lasplots[1:2], ws.opt, ws.params[10:12,], hmin=2)
 testws <- unlist(testws, recursive=F)
 
 # Create vector of ITD run IDs
-ws.runid <- expand.grid(names(lasplots[1:2]), '_p', row.names(ws.params[10:12,]))
+ws.runid <- expand.grid(names(lasplots[1:2]), '_p', row.names(ws.params[15:18,]))
 ws.runid <- ws.runid[order(ws.runid$Var1),]
 ws.runid <- paste(ws.runid[,1],ws.runid[,2], ws.runid[,3], sep='')
 
@@ -84,7 +54,7 @@ ws.runid <- ws.runid[ws.runid %in% names(testws)]
 ## ---------------------------------------------------------------------------------------------------
 
 ### Run matching
-ws.match <- lapply(ws.runid,
+ws.match <- mclapply(ws.runid,
                    FUN=bipart.match3,
                    lasset=testws,
                    obset=stems.in.plots,

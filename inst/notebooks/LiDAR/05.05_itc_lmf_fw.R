@@ -24,8 +24,7 @@ lmf.fw.params <- expand_grid(ws.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.fw <- lapply(lasplots[1:2], lmf.fw.opt, lmf.fw.params[1:3,], hmin=2)
-testlmf.fw
+testlmf.fw <- lapply(lasplots, lmf.fw.opt, lmf.fw.params, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -51,12 +50,12 @@ lmf.fw.runid <- lmf.fw.runid[lmf.fw.runid %in% names(testlmf.fw)]
 ## ---------------------------------------------------------------------------------------------------
 
 ### Run matching
-lmf.fw.match <- mclapply(lmf.fw.runid,
-                     FUN=bipart.match2,
+lmf.fw.match <- lapply(lmf.fw.runid,
+                     FUN=bipart.match3,
                      lasset=testlmf.fw,
                      obset=stems.in.plots,
-                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmf-fw_itc_figs'),
-                     mc.cores = getOption("mc.cores", length(workerNodes)-2)
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmffw_itc_figs')#,
+                     #mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 
 # Reformat results
@@ -64,7 +63,6 @@ names(lmf.fw.match) <- names(testlmf.fw)
 lmf.fw.match <- data.frame(do.call('rbind', lmf.fw.match))
 lmf.fw.match$quad <- unlist(lapply(strsplit(rownames(lmf.fw.match), '_'), '[',1))
 lmf.fw.match$paramset <- unlist(lapply(strsplit(rownames(lmf.fw.match), '_'), '[', 2))
-
 
 ## Write results
 ## ---------------------------------------------------------------------------------------------------
@@ -74,5 +72,5 @@ write.csv(lmf.fw.match,
                     'users',
                     'worsham',
                     'itc_results',
-                    'lmf-fw_itc_results.csv'),
+                    'lmffw_itc_results.csv'),
           row.names=T)

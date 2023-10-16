@@ -26,8 +26,7 @@ lmf.vw.params <- expand_grid(p1.seq, p2.seq, p3.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.vw <- lapply(lasplots[1:2], lmf.vw.opt, lmf.vw.params[3:4,], hmin=2)
-st_as_sf(lmf.vw.init(lasplots[[1]], 1,0.02,3,shape='circular'))
+testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -54,9 +53,10 @@ lmf.vw.runid <- lmf.vw.runid[lmf.vw.runid %in% names(testlmf.vw)]
 
 ### Run matching
 lmf.vw.match <- mclapply(lmf.vw.runid,
-                         FUN=bipart.match2,
+                         FUN=bipart.match3,
                          lasset=testlmf.vw,
                          obset=stems.in.plots,
+                         plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmfvw_itc_figs'),
                          mc.cores = getOption("mc.cores", length(workerNodes)-2)
 )
 
@@ -66,7 +66,6 @@ lmf.vw.match <- data.frame(do.call('rbind', lmf.vw.match))
 lmf.vw.match$quad <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[',1))
 lmf.vw.match$paramset <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[', 2))
 
-
 ## Write results
 ## ---------------------------------------------------------------------------------------------------
 write.csv(lmf.vw.match,
@@ -75,5 +74,5 @@ write.csv(lmf.vw.match,
                     'users',
                     'worsham',
                     'itc_results',
-                    'lmf_vw_itc_results.csv'),
+                    'lmfvw_itc_results.csv'),
           row.names=T)

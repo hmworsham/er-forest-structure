@@ -28,7 +28,7 @@ ptrees.opt <- function(x, params, hmin=1.3) {
                        pc=x,
                        hmin=hmin,
                        nmax=9L,
-                       mc.cores=getOption('mc.cores', 30)
+                       mc.cores = getOption("mc.cores", length(workerNodes)-2)
   )
   modtrees <- lapply(modtrees, st_as_sf)
   modtrees <- lapply(modtrees, function(t){

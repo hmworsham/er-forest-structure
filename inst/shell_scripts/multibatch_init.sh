@@ -5,7 +5,7 @@ sbatch ./batchcluster_init_ls.sh
 sbatch ./batchcluster_init_mc.sh
 sbatch ./batchcluster_init_lmffw.sh
 sbatch ./batchcluster_init_lmfvw.sh
-sbatch ./batchcluster_init_lmfauto.sh
+#sbatch ./batchcluster_init_lmfauto.sh
 sbatch ./batchcluster_init_ws.sh
 
 #sbatch ./batchcluster_init_06.sh

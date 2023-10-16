@@ -22,53 +22,51 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=2)
+testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=1.8)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
 
 # Unnest results of algorithm
-testlmf.vw <- unlist(testlmf.vw, recursive=F)
+# testlmf.auto <- unlist(testlmf.auto, recursive=F)
 
 # Create vector of ITD run IDs
-lmf.vw.runid <- expand.grid(names(lasplots), '_p', row.names(lmf.vw.params))
-lmf.vw.runid <- lmf.vw.runid[order(lmf.vw.runid$Var1),]
-lmf.vw.runid <- paste(lmf.vw.runid[,1],lmf.vw.runid[,2], lmf.vw.runid[,3], sep='')
+lmf.auto.runid <- paste(names(lasplots), '_p', 1, sep='')
 
 # Add run IDs to unnested list of ITD outputs
-names(testlmf.vw) <- lmf.vw.runid
+names(testlmf.auto) <- lmf.auto.runid
 
 # Filter out 0-length list members
-testlmf.vw <- Filter(function(x) nrow(x) > 0 , testlmf.vw)
+testlmf.auto <- Filter(function(x) nrow(x) > 0 , testlmf.auto)
 
 # Update run IDs after filtering
-lmf.vw.runid <- lmf.vw.runid[lmf.vw.runid %in% names(testlmf.vw)]
+lmf.auto.runid <- lmf.auto.runid[lmf.auto.runid %in% names(testlmf.auto)]
 
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
 
 ### Run matching
-lmf.vw.match <- mclapply(lmf.vw.runid,
-                     FUN=bipart.match2,
-                     lasset=testlmf.vw,
+lmf.auto.match <- mclapply(lmf.auto.runid,
+                     FUN=bipart.match3,
+                     lasset=testlmf.auto,
                      obset=stems.in.plots,
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmfauto_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 
 # Reformat results
-names(lmf.vw.match) <- names(testlmf.vw)
-lmf.vw.match <- data.frame(do.call('rbind', lmf.vw.match))
-lmf.vw.match$quad <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[',1))
-lmf.vw.match$paramset <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[', 2))
-
+names(lmf.auto.match) <- names(testlmf.auto)
+lmf.auto.match <- data.frame(do.call('rbind', lmf.auto.match))
+lmf.auto.match$quad <- unlist(lapply(strsplit(rownames(lmf.auto.match), '_'), '[',1))
+lmf.auto.match$paramset <- unlist(lapply(strsplit(rownames(lmf.auto.match), '_'), '[', 2))
 
 ## Write results
 ## ---------------------------------------------------------------------------------------------------
-write.csv(lmf.vw.match,
+write.csv(lmf.auto.match,
           file.path('/global',
                     'scratch',
                     'users',
                     'worsham',
                     'itc_results',
-                    'lmf_vw_itc_results.csv'),
+                    'lmfauto_itc_results.csv'),
           row.names=T)

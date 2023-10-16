@@ -23,7 +23,7 @@ mc.opt <- function(x, params) {
                        params[,3],
                        params[,4],
                        MoreArgs=list(pc=x, use_max=F),
-                       mc.cores = getOption('mc.cores', 30)
+                       mc.cores = getOption("mc.cores", length(workerNodes)-2)
   )
 
   # Clean results

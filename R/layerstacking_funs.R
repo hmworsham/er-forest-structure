@@ -24,7 +24,7 @@ ls.opt <- function(x, params, hmin=1.3) {
                        params[,4],
                        params[,5],
                        MoreArgs=list(pc=x, hmin=hmin, hardwood=F),
-                       mc.cores = getOption('mc.cores', 30)
+                       mc.cores = getOption("mc.cores", length(workerNodes)-2)
   )
 
   modtrees <- lapply(modtrees, st_as_sf)

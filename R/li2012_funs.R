@@ -40,7 +40,7 @@ li2012.opt <- function(x, params, hmin=1.3){
                        params[,3],
                        params[,4],
                        MoreArgs=list(pc=x, hmin=hmin),
-                       mc.cores = getOption("mc.cores", 30))
+                       mc.cores = getOption("mc.cores", length(workerNodes)-2))
 
   # Clean up results
   modtrees <- apply(modtrees, 2, data.frame)

@@ -8,12 +8,12 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 # Read itc optimization results
-itc.res.files <- list.files('~/Desktop/itc_results', pattern='csv', full.names=T)
+itc.res.files <- list.files('/global/scratch/users/worsham/itc_results', pattern='csv', full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
 itc.res <- bind_rows(itc.res, .id='mi')
 
 # Get model names
-mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 7))
+mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 8))
 mod.names <- data.frame(mi=as.character(1:4), model=mod.names)
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
@@ -22,7 +22,7 @@ itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
 #
 itc.means <- itc.res %>%
   group_by(model, paramset) %>%
-  summarise(across(nobstrees:loss, \(x) mean(x, na.rm=T)))
+  summarise(across(nobstrees:loss, \(x) sqrt(mean(x^2, na.rm=T))))
 
 View(itc.means)
 

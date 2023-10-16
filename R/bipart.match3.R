@@ -99,8 +99,8 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
 
   # Find matches
   for(i in seq(nrow(xy.df))) {
-    print('----------')
-    print(paste('i:', i))
+    # print('----------')
+    # print(paste('i:', i))
     # Pull height for modeled tree i
     z <- dz.tmp[i,'Z']
     #print(paste('z:', z))
@@ -144,14 +144,14 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
       # Get dz and dxy values for all other candidates in ascending dz order
       dxy.cands <- suppressWarnings(dxy.tmp[i, cands][order(dz.tmp[i, cands])])
       dz.cands <- suppressWarnings(dz.tmp[i, cands][order(dz.tmp[i, cands])])
-      print(dxy.cands)
-      print(dz.cands)
+      # print(dxy.cands)
+      # print(dz.cands)
 
       # If dz for the nearest {x,y} is the minimum dz, then assign match
       # Else proceed to vote 2
       if (z1==i1) {
         match <- names(dz.tmp)[4+i1]
-        print(c('vote1match:', match))
+        # print(c('vote1match:', match))
       } else {
         # Vote 2:
         # If there is a smaller dz for a more distant tree AND the dxy for that pair

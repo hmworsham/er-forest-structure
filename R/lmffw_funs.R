@@ -16,11 +16,11 @@ lmf.fw.init <- function(pc, ws, shape, hmin){
 #'
 lmf.fw.opt <- function(x, params, hmin=1.3) {
 
-  modtrees <- mcmapply(lmf.fw.init,
+  modtrees <- mapply(lmf.fw.init,
                        ws=params[,1][[1]],
                        shape=params[,2][[1]],
-                       MoreArgs=list(pc=x, hmin=hmin),
-                       mc.cores=getOption('mc.cores', 30)
+                       MoreArgs=list(pc=x, hmin=hmin)#,
+                       # mc.cores = getOption("mc.cores", length(workerNodes)-2)
   )
 
   # Clean up results
