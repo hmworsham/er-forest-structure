@@ -30,7 +30,7 @@ length(dt1.seq)*length(dt2.seq)*length(R.seq)*length(Zu.seq) == nrow(li.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testli <- lapply(lasplots, li2012.opt, li.params, hmin=1.8)
+testli <- lapply(lasplots, li2012.opt, li.params, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------

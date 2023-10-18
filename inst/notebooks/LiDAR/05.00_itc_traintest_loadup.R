@@ -36,7 +36,6 @@ tmpfile <- drive_download(
 
 inv <- read.csv(tmpfile)
 
-
 ## ---------------------------------------------------------------------------------------------------
 # Ingest full LAS catalog of decimated points
 infiles <- list.files(config$extdata$las_dec, full.names=T)
@@ -71,7 +70,7 @@ plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
 inv <- inv[inv$Status == 'Live',] # Living stems
 inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
-inv <- inv[inv$DBH_Avg_CM >= 5,]
+# inv <- inv[inv$DBH_Avg_CM >= 5,]
 
 # Keep stem x,y,z data
 stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
@@ -117,7 +116,7 @@ stems.in.plots <- st_intersection(plotsf, stem.sf)
 #  Clip LAS points to all plots using a determined buffer
 lasplots <- mclapply(aois, function(x){
   p = plotsf[plotsf$PLOT_ID==x,][1]
-  bnd = st_buffer(p$geometry, endCapStyle='ROUND', 1)
+  bnd = st_buffer(p$geometry, endCapStyle='ROUND', 3)
   pc = clip_roi(lascat, bnd)
   return(pc)
   },

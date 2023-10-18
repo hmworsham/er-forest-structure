@@ -26,7 +26,7 @@ lmf.vw.params <- expand_grid(p1.seq, p2.seq, p3.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params, hmin=1.8)
+testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------

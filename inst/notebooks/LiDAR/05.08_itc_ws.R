@@ -29,7 +29,7 @@ length(res.seq)*length(p2r.p.seq)*length(ker.size.seq) == nrow(ws.params)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testws <- lapply(lasplots, ws.opt, ws.params, hmin=1.8)
+testws <- lapply(lasplots, ws.opt, ws.params, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ testws <- lapply(lasplots, ws.opt, ws.params, hmin=1.8)
 testws <- unlist(testws, recursive=F)
 
 # Create vector of ITD run IDs
-ws.runid <- expand.grid(names(lasplots[1:2]), '_p', row.names(ws.params[15:18,]))
+ws.runid <- expand.grid(names(lasplots), '_p', row.names(ws.params))
 ws.runid <- ws.runid[order(ws.runid$Var1),]
 ws.runid <- paste(ws.runid[,1],ws.runid[,2], ws.runid[,3], sep='')
 

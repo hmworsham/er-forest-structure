@@ -14,23 +14,23 @@ itc.res <- bind_rows(itc.res, .id='mi')
 
 # Get model names
 mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 8))
-mod.names <- data.frame(mi=as.character(1:4), model=mod.names)
+mod.names <- data.frame(mi=as.character(1:7), model=mod.names)
+
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
-#itc.res <- itc.res[!itc.res$quad=='SR-PVG1',]
+itc.res <- itc.res[!itc.res$quad=='SR-PVG1',]
 
 #
 itc.means <- itc.res %>%
   group_by(model, paramset) %>%
+  summarise(across(nobstrees:loss, \(x) mean(x, na.rm=T)))
   summarise(across(nobstrees:loss, \(x) sqrt(mean(x^2, na.rm=T))))
 
-View(itc.means)
-
-ggplot(itc.res, aes(x=model, y=match.rt)) +
+ggplot(itc.res, aes(x=model, y=f)) +
   geom_boxplot() +
   facet_wrap(~quad)
 
-chkmod <- itc.res[itc.res$model=='ls' & itc.res$paramset==11,]
+chkmod <- itc.res[itc.res$model=='ls' & itc.res$paramset==12,]
 ggplot(chkmod, aes(x=quad, y=match.rt)) +
   geom_point()
 

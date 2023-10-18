@@ -13,7 +13,6 @@ config <- config::get(file=file.path('~',
 # Load local helper functions and packages
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-
 ## Define vectors of parameters on which to run algorithm
 ## ---------------------------------------------------------------------------------------------------
 
@@ -24,7 +23,7 @@ lmf.fw.params <- expand_grid(ws.seq, shape.opts)
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testlmf.fw <- lapply(lasplots, lmf.fw.opt, lmf.fw.params, hmin=1.8)
+testlmf.fw <- lapply(lasplots, lmf.fw.opt, lmf.fw.params, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -46,16 +45,17 @@ testlmf.fw <- Filter(function(x) nrow(x) > 0 , testlmf.fw)
 # Update run IDs after filtering
 lmf.fw.runid <- lmf.fw.runid[lmf.fw.runid %in% names(testlmf.fw)]
 
+
 ## Bipartite matching
 ## ---------------------------------------------------------------------------------------------------
 
 ### Run matching
-lmf.fw.match <- lapply(lmf.fw.runid,
+lmf.fw.match <- mclapply(lmf.fw.runid,
                      FUN=bipart.match3,
                      lasset=testlmf.fw,
                      obset=stems.in.plots,
-                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmffw_itc_figs')#,
-                     #mc.cores = getOption("mc.cores", length(workerNodes)-2)
+                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'lmffw_itc_figs'),
+                     mc.cores = getOption("mc.cores", length(workerNodes)-4)
                      )
 
 # Reformat results

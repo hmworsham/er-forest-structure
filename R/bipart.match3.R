@@ -173,20 +173,19 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
             match <- names(dxy.tmp)[4+i2]
           }
 
-          print(paste('vote2match:', as.character(match)))
+          # print(paste('vote2match:', as.character(match)))
         }
       }
 
       # Test observed match against surrounding predicted trees
-      # tdxyz.min <- which.min(tdxyz.tmp[match, ])
-      # print(paste('checkpredmatch:', as.character(tdxyz.min)))
-      # testmatch <- integer(0)
-      # if(tdxyz.min==i) {
-      #   tdxyz.tmp[, i] <- NA
-      # } else {
-      #   #testmatch <- tdxyz.min
-      #   match <- integer(0)
-      # }
+      tdxyz.min <- which.min(tdxyz.tmp[match, ])
+      testmatch <- integer(0)
+      if(tdxyz.min==i) {
+        tdxyz.tmp[, i] <- NA
+      } else {
+        #testmatch <- tdxyz.min
+        match <- integer(0)
+      }
 
     } else {
       match <- integer(0)
@@ -194,7 +193,7 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
       dz.tmp[i, -c(1:4)] <- NA
     }
 
-    print(c('finalmatch:', match))
+    # print(c('finalmatch:', match))
 
     # Generate match outputs
     dxy <- dxy.tmp[i, which(names(dxy.tmp)==match)]
@@ -236,7 +235,9 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
   match.2$pair_id <- match.2$pair_id + max(match.1$pair_id, na.rm=T)
 
   # Join matches from pass 1 and pass 2
-  match.1[match(match.2$treeID, match.1$treeID),] <- match.2
+  if(any(!is.na(match.2))) {
+    match.1[match(match.2$treeID, match.1$treeID),] <- match.2
+    }
 
   # Update inputs to filter out modeled trees matched in Pass 2
   treat.d.xy.3 <- treat.d.xy
@@ -253,10 +254,11 @@ bipart.match3 <- function(runid, lasset, obset, plotdir=F) {
   match.3 <- match.run(treat.d.xy.3, treat.d.z.3, treat.d.xyz.3)
   match.3$pair_id <- match.3$pair_id + max(match.1$pair_id, na.rm=T)
 
-  # Join matches from pass 1 and pass 2
-  match.1[match(match.3$treeID, match.1$treeID),] <- match.3
-
-  # return(match.1)
+  # Join matches from pass 1,2 and pass 3
+  # TODO: fix error here
+  if(any(!is.na(match.3))) {
+    match.1[match(match.3$treeID, match.1$treeID),] <- match.3
+  }
 
   # Bind match ID to original dataframe
   df.matched <- left_join(df.paired[df.paired$src==0,], match.1, by=c('treeID'='obs')) %>%
