@@ -22,7 +22,7 @@ load.plot.sf <- function(path, pattern) {
   )
 
   tmpfiles <- apply(plotobj, 1, function(x) {
-    if(!file_ext(x[['name']]) == 'kmz') {
+    if(!file_ext(x[['name']]) %in% c('xml', 'kmz')) {
       tmpfile <- drive_download(
         as_id(x[['id']]),
         path=file.path(
@@ -66,4 +66,17 @@ alignfun <- function(x, target, method='bilinear'){
 
 # Function to extract values from rasters
 getvals <- function(ras) return(values(ras))
+
+# Function to generate pngs and save to disk
+runpng <- function(ras, bound, clrs, filepath){
+  outras = mask(ras, bound)
+  png(
+    file=file.path,
+    width=1200,
+    height=1200)
+  par(mar= c(5,4,4,2)+0.1)
+  plot(outras, col=clrs)
+  plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
+  dev.off()
+}
 
