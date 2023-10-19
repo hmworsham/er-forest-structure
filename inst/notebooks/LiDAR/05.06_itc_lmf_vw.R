@@ -18,9 +18,9 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 ## ---------------------------------------------------------------------------------------------------
 
 # LMF fixed window parameters
-p1.seq <- seq(0.5,2.5,0.5)
-p2.seq <- seq(0.02,0.16,0.02)
-p3.seq <- seq(1, 5, 1)
+p1.seq <- seq(0.5,2.0,0.5)
+p2.seq <- seq(0.02,0.2,0.04)
+p3.seq <- c(1,3,5)
 shape.opts <- c('square', 'circular')
 lmf.vw.params <- expand_grid(p1.seq, p2.seq, p3.seq, shape.opts)
 
