@@ -1,168 +1,153 @@
-library(raster)
-library(sf)
-library(ggplot2)
-library(parallel)
-library(plyr)
-library(rlas)
-library(lidR)
-library(readxl)
-library(moments)
-library(data.table)
-library(viridis)
+## ---------------------------------------------------------------------------------------------------
+# Load config
+config <- config::get(file=file.path('~',
+                                     'Repos',
+                                     'er-forest-structure',
+                                     'config',
+                                     'config.yml'))
 
-datadir <- '/global/scratch/users/worsham/trees_100K'
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
+
+## ---------------------------------------------------------------------------------------------------
+# Configure drive auth
+drive_auth(path=config$drivesa)
+
+## ---------------------------------------------------------------------------------------------------
+# Ingest data
+
+# Ingest trees
+datadir <- config$extdata$trees
+datadir <- '/global/scratch/users/worsham/trees_lmffw_csv'
 trfiles <- list.files(datadir, full.names=T)
+trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', 16))
 
-gettrees <- function(fn){
-  df = read.csv(fn, col.names=c('index','tree_id', 'Z', 'X', 'Y', 'Zg'), header=F)[-1,]
-  df$X = as.numeric(gsub('c\\(', '', df$X))
-  df$Y = as.numeric(df$Y)
-  df$Z = as.numeric(df$Z)
-  df[c(2:5)]
-}
+# Ingest AOP boundary
+bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
+                    pattern=config$extdata$bndpattern)
 
-trees <- mclapply(trfiles, gettrees, mc.cores=getOption('mc.cores', 16))
+## ---------------------------------------------------------------------------------------------------
+# Clean trees
 
 # Bind all trees together into one dataframe
-alltrees <- rbindlist(trees)
-
-# Create a dataframe based on tree geometries
-head(alltrees)
+alltrees <- data.table::rbindlist(trees, idcol='file')
 
 # Remove unlikely trees
-alltrees <- alltrees[alltrees$Z<=32,]
-
-# Add diameter predictions to trees
-alltrees$D <- -8.1946+16.2768*log(alltrees$Z)
-View(alltrees$D)
-
-# Add basal area predictions to trees
-alltrees$BA <- pi*(alltrees$D/2)**2
+alltrees <- alltrees[alltrees$Z<=36,]
 
 # Create a shapefile of all trees
 ptsf <- st_as_sf(alltrees, coords = c('X', 'Y'), crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 
-#st_bbox(ptsf)
-#plot(st_bbox(ptsf))
-st_bbox(bnd)
-
-rs = raster(matrix(1:10000,100,100), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[1], ymn=st_bbox(ptsf)[2], ymx=st_bbox(ptsf)[4], crs='+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-res(rs)
-plot(rs, col=sample(rainbow(10000)))
-res(rs) <- 100
-res(rs)
-ncell(rs)
-values(rs) <- 1:ncell(rs)
-plot(rs, col=sample(rainbow(459)))
-
-returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$Z, d=alltrees$D)
+# Reformat trees to populate raster
+returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$Z, d=alltrees$DBH_est, ba=alltrees$BA_est)
 coordinates(returns) <- ~x+y
 
-height.raster = rasterize(returns[,1:2], rs, returns$z, fun=mean)
-heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95)))
-heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)skewness(x))
+## ---------------------------------------------------------------------------------------------------
+# Initialize the raster frame
+reso <- 100
+ncells <- 100^2
+rs = raster(matrix(1:ncells,reso,reso), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[1], ymn=st_bbox(ptsf)[2], ymx=st_bbox(ptsf)[4], crs='+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+res(rs) <- 100
+ncell(rs)
+values(rs) <- 1:ncell(rs)
+plot(rs, col=sample(rainbow(ncell(rs))))
 
-diam.raster = rasterize(returns[,1:2], rs, returns$d, fun=mean)
+## ---------------------------------------------------------------------------------------------------
+# Compute rasters
+
+# Height rasters
+height.raster = rasterize(returns[,1:2], rs, returns$z, fun=mean)
+heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .8, .9, .95)))
+heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)moments::skewness(x))
+
+# Diameter rasters
+qmd.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...) sqrt(mean(x^2, na.rm=T)))
 diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95)))
 
-ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=sum)
+# Basal area raster
+ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=function(x, ...) sum(x, na.rm=T)*10^(-4)) # scale from cm^2 to m^2
 
-pointcount = function(ras, pts){
-  # make a raster of zeroes like the input
-  r2 = ras
-  r2[] = 0
-
-  # make another raster of zeroes like the input
-  r3 = ras
-  r3[] = 0
-
-  # get n returns
-  returns = data.frame(x=pts$X, y=pts$Y)
-
-  # get peaks
-
-  # get the cell index for each point and make a table:
-  returns = table(cellFromXY(ras, returns))
-  #return(returns)
-
-  # fill in the raster with the counts from the cell index:
-  #r2[as.numeric(names(peaks))] = peaks
-  r3[as.numeric(names(returns))] = returns
-  return(r3)
-}
-
+# Density raster
 density.raster = pointcount(rs, alltrees)
-density.raster
+plot(density.raster)
 
-dr <- reclassify(density.raster, cbind(-Inf, 0, 1), right=T)
+## Clean density
+density.raster <- reclassify(density.raster, cbind(-Inf, 0, 1), right=T) # Reclassify
+#dr <- mask(density.raster, bnd) # Mask
+values(density.raster)[values(density.raster)==1] <- NA # Assign 1 to NA
 
-#dr <- peaks/returns/5
-#dr <- reclassify(dr, cbind(-Inf, 25, NA), right=T)
-
-res(density.raster)
-extent(density.raster)
-
-bnd <- st_read('/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary/RMBL_2020_EastRiver_SDP_Boundary/SDP_Boundary.shp')
-dr <- mask(density.raster, bnd)
-
-# Coerce 1 to NA
-values(dr)[values(dr)==1] <- NA
-
+## Plot density
 par(mar = c(4, 4, 4, 2) + 0.1)
 cls <- c('white', viridis(20))
-plot(dr, col=cls)
+plot(density.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
-runpng <- function(ras, bound, clrs, filename){
+## ---------------------------------------------------------------------------------------------------
+# Compute rasters
+
+rasters <- c(
+  'ba_100m'=ba.raster,
+  'density_100m'=density.raster,
+  'diam_10pctl_100m'=diamq.raster[[1]],
+  'diam_25pctl_100m'=diamq.raster[[2]],
+  'diam_50pctl_100m'=diamq.raster[[3]],
+  'diam_75pctl_100m'=diamq.raster[[4]],
+  'diam_90pctl_100m'=diamq.raster[[5]],
+  'diam_95pctl_100m'=diamq.raster[[6]],
+  'diam_qmd_100m'=qmd.raster,
+  'height_mean_100m'=height.raster,
+  'height_10pctl_100m'=heightq.raster[[1]],
+  'height_25pctl_100m'=heightq.raster[[2]],
+  'height_50pctl_100m'=heightq.raster[[3]],
+  'height_75pctl_100m'=heightq.raster[[4]],
+  'height_80pctl_100m'=heightq.raster[[5]],
+  'height_90pctl_100m'=heightq.raster[[6]],
+  'height_95pctl_100m'=heightq.raster[[7]],
+  'height_skew_100m'=heightsk.raster
+  )
+
+pngpal <- list(cividis(20),
+              viridis(20),
+              heat.colors(20),
+              inferno(20),
+              inferno(20, direction=-1),
+              cividis(20),
+              rocket(20),
+              magma(20),
+              magma(20),
+              magma(20),
+              plasma(20),
+              heat.colors(20),
+              magma(20),
+              magma(20),
+              magma(20),
+              magma(20),
+              magma(20),
+              magma(20))
+
+assertthat::are_equal(length(pngpal), length(rasters))
+
+runpng <- function(ras, bound, clrs, filepath){
   outras = mask(ras, bound)
   png(
-    file=file.path('~', 'Output', filename),
+    file=filepath,
     width=1200,
     height=1200)
-  par(mar= c(5,4,4,2)+0.1)
-  plot(outras, col=clrs)
+  par(mar=c(5,5,5,5)+0.25)
+  plot(outras,
+       col=clrs,
+       axis.args=list(cex.axis=1.8, line=2.5),
+       legend.args=list(text=NULL, font=2, line=2.5, cex=1.2))
   plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
   dev.off()
 }
 
-rasters <- c(
-  dr,
-  height.raster,
-  heightq.raster[[1]],
-  heightq.raster[[2]],
-  heightq.raster[[3]],
-  heightq.raster[[4]],
-  heightq.raster[[5]],
-  heightq.raster[[6]],
-  heightsk.raster,
-  diam.raster,
-  diamq.raster[[5]],
-  diamq.raster[[6]],
-  ba.raster)
+lapply(seq_along(rasters), \(x) {
+  runpng(rasters[[x]], bnd, pngpal[[x]], file.path(config$extdata$scratch, 'pngs', paste0(names(rasters)[x], '.png')))
+})
 
-runpng(dr, bnd, c('white', viridis(20)), 'density_100m.png')
-runpng(height.raster, bnd, heat.colors(20), 'mean_height_100m.png')
-runpng(heightq.raster[[1]], bnd, inferno(20), 'height_10pctl_100m.png')
-runpng(heightq.raster[[2]], bnd, inferno(20, direction=-1), 'height_25pctl_100m.png')
-runpng(heightq.raster[[3]], bnd, cividis(20), 'height_50pctl_100m.png')
-runpng(heightq.raster[[4]], bnd, rocket(20), 'height_75pctl_100m.png')
-runpng(heightq.raster[[5]], bnd, magma(20), 'height_90pctl_100m.png')
-runpng(heightq.raster[[6]], bnd, magma(20), 'height_95pctl_100m.png')
-runpng(heightsk.raster, bnd, plasma(20), 'height_skew_100m.png')
-runpng(diam.raster, bnd, heat.colors(20), 'mean_diameter_100m.png')
-runpng(diamq.raster[[5]], bnd, magma(20), 'diam_90pctl_100m.png')
-runpng(diamq.raster[[6]], bnd, magma(20), 'diam_90pctl_100m.png')
-runpng(ba.raster, bnd, magma(20), 'ba_100m.png')
+lapply(seq_along(rasters), \(x){
+  writeRaster(rasters[[x]], file.path(config$extdata$scratch, 'tifs', 'gapfilled', paste0(names(rasters)[x], '.tif')), overwrite=T)
+})
 
-
-writeRaster(dr, '~/stand_density_100mx', format='GTiff', overwrite=T)
-writeRaster(height.raster, '~/mean_height_100m', format='GTiff', overwrite=T)
-writeRaster(heightq.raster[[1]], '~/height_10pctl', format='GTiff', overwrite=T)
-writeRaster(heightq.raster[[2]], '~/height_25pctl', format='GTiff', overwrite=T)
-writeRaster(heightq.raster[[3]], '~/height_50pctl', format='GTiff', overwrite=T)
-writeRaster(heightq.raster[[4]], '~/height_75pctl', format='GTiff', overwrite=T)
-writeRaster(heightq.raster[[5]], '~/height_90pctl', format='GTiff', overwrite=T)
-writeRaster(heightsk.raster, '~/height_skew', format='GTiff', overwrite=T)
-writeRaster(diam.raster, '~/Output/mean_diam_100m', format='GTiff', overwrite=T)
-writeRaster(diamq.raster[[5]], '~/diam_90pctl', format='GTiff', overwrite=T)
-writeRaster()
