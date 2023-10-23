@@ -1,4 +1,8 @@
-# Script for preparing datasets for modeling work
+# Script for writing out images of forest structure and abiotic explanatory variables
+
+#############################
+# Set up working environment
+#############################
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -7,43 +11,27 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-#############################
-# Set up working environment
-#############################
+source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks', 'regressions', '01.00_stats_ingest_data.R'))
 
-# Define directories
-datadir <- file.path('/Volumes', 'GoogleDrive', 'My Drive', 'Research', 'RMBL', 'RMBL-East River Watershed Forest Data', 'Data')
-strdir <- file.path(datadir, 'LiDAR', 'tifs')
 
 #############################
-# Ingest data
+# Plot forest structure
 #############################
-
-# Ingest forest structure rasters
-list.files(strdir)
-## TODO: be sure to get the correct files; there are some extraneous ones in here
-responses <- lapply(list.files(strdir, full.names=T, pattern='*.tif$')[1:10], raster)
-
-#############################
-# Plot
-#############################
-list.files(strdir)
-values(responses[[9]])[values(responses[[9]]==1)] <- NA
-par(mfrow=c(2,3),
+par(mfrow=c(3,2),
     mar=c(1,1,1,1)+.5)
-names <- str_replace(list.files(strdir)[1:9], '.tif', '')
-names <- str_replace(names, '_fromtrees', '')
-names <- str_replace(names, '_', ' ')
-names <- str_replace(names, '_', ' ')
-names[10] <- 'basal_area'
+for(i in seq_along(response)) {
+  plot(response[[i]], col=viridis(n=20, option=LETTERS[i]),
+  title(names(response)[i], line=2, cex=3),
+  cex.main=3)
+  }
 
-toplot <- c(9,10,5,8,7,9)
-
-for(i in seq_along(toplot)) {
-  terra::plot(raster::projectRaster(responses[[toplot[i]]], crs='EPSG:4326'),
-              col=viridis(n=20, option=LETTERS[i]),
-              #main=names[toplot[i]],
-              title(names[toplot[i]], line=2, cex=3),
-              cex.main=3
-              )
+#############################
+# Plot explainers
+#############################
+opar <- par()
+par(mfcol=c(5,7), mar=rep(1,4))
+for(i in seq_along(explainers)) {
+  opt <- rep(LETTERS[1:6],5)
+  plot(explainers[[i]], col=viridis(10, option=opt[i], direction=-1), main=names(explainers[[i]]), asp=1)
 }
+par(opar)
