@@ -48,7 +48,6 @@ get.rasters <- function(x, dir){
   return(xras)
 }
 
-
 # Function to crop raster to aop boundary
 cropfun <- function(ras, shp){
   ras <- crop(ras, extent(shp))
@@ -80,3 +79,7 @@ runpng <- function(ras, bound, clrs, filepath){
   dev.off()
 }
 
+# Function to compute arbitrary nth root
+nthroot = function(x,n) {
+  (abs(x)^(1/n))*sign(x)
+}
