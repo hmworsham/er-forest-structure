@@ -37,6 +37,8 @@ default:
   - gbm
   - caret
   - car
+  - reporter
+  - officedown
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'
