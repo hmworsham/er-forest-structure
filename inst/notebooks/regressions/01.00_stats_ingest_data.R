@@ -23,6 +23,7 @@ scondir <- file.path(datadir, 'Geospatial', 'Uhlemann_2021_RESubsurfaceResistivi
 soildir <- file.path(datadir, 'Soil', 'SSURGO', 'Processed')
 snowdir <- file.path(datadir, 'Geospatial', 'ASO_Snow', 'Processed')
 bcmdir <- file.path(datadir, 'Climate', 'BCM_CO', 'UCRB_BCM')
+naipdir <- file.path(datadir, 'Geospatial', 'USDA_2019_NAIP_Ortho', 'NAIP_ortho_1-1_hn_s_co051_2019')
 
 #############################
 # Ingest data
@@ -35,12 +36,16 @@ aop <- st_read(file.path(sfdir, 'SDP_Boundary.shp'))
 
 #### Forest structure ####
 
+# Ingest NAIP true color
+# naip <- stack(file.path(naipdir, 'aop_naip_ortho_3m.tif'))
+
 # Ingest forest structure rasters
 dnsty <- raster(file.path(strdir, 'density_100m_conifmask.tif'))
 height <- raster(file.path(strdir, 'height_90pctl_100m_conifmask.tif'))
 height.skew <- raster(file.path(strdir, 'height_skew_100m_conifmask.tif'))
 diam <- raster(file.path(strdir, 'diam_qmd_100m_conifmask.tif'))
 ba <- raster(file.path(strdir, 'ba_100m_conifmask.tif'))
+
 
 response <- list(
   'density'=dnsty,
@@ -51,8 +56,8 @@ response <- list(
   )
 
 # Check forest structure rasters
-lapply(response, crs)
-lapply(response, plot, col=viridis(9))
+#lapply(response, crs)
+#lapply(response, plot, col=viridis(9))
 
 #### Topographic variables ####
 
@@ -104,7 +109,7 @@ bcm.cwd <- raster::projectRaster(bcm.cwd, crs=crs(aop))
 
 # Append all continuous explainers to one list
 explainers <- append(topos, c(soil, snow, snow.delta, bcm.aet, bcm.cwd))
-sapply(explainers, names)
+#sapply(explainers, names)
 length(explainers) == 32
 
 # Clean up names of explainers
@@ -162,9 +167,12 @@ names(geol) <- 'geology'
 explainers <- lapply(explainers, cropfun, aop)
 explainers <- lapply(explainers, alignfun, response[[1]], 'bilinear')
 
+# Crop NAIP to AOP and align to response
+# naip <- cropfun(naip, aop)
+# naip <- alignfun(naip, response[[1]], 'bilinear')
+
 # Add geol to explainers
 explainers <- c(explainers, geol)
-explainers
 
 #############################
 # Extract values for modeling
@@ -175,32 +183,35 @@ re.vals <- lapply(response, getvals)
 
 # Histogram of structure data
 opar <- par()
-par(mfcol=c(1, length(re.vals)), mar=rep(2,4))
+par(mfcol=c(1, length(re.vals)), mar=rep(2.5,4))
+res.labs <- c(density='Density', height='Height',
+              'height.skew'='Height skew', diam='QMD', ba='BA')
 for(i in seq_along(re.vals)){
   hist(re.vals[[i]],
        c='grey50',
        breaks=20,
        border='white',
-       main=str_to_upper(names(re.vals)[i]),
+       main=(res.labs[i]),
        sub='100m pixel',
        xlab=names(re.vals)[i],
-       ylab='count')
+       ylab='count',
+       cex.lab=1.5, cex.axis=1.5, cex.main=2, cex.sub=1.5)
 }
 par(opar)
 
 # Define variables we want to use in model
 #target.vars <- c('folded_aspect_205', 'swe')
-target.vars <- c('folded_aspect_205',
+target.vars <- c(#'folded_aspect_205',
                 'elevation_10m',
                 'slope',
                 'tpi_1km',
-                'twi_100m',
+                #'twi_100m',
                 'heat_load',
                 'awc',
                 'om',
-                'cec',
+                #'cec',
                 'k',
-                'ksat',
+                #'ksat',
                 'td',
                 'swe',
                 'delta_swe',
@@ -222,6 +233,9 @@ names(vars) <- c(names(re.vals), target.vars)
 vars[vars$density>100,]
 vars <- vars[vars$density>100,]
 vars <- vars[!is.na(vars$density),]
+
+# Hang on to the unscaled variable values
+vars.unscaled <- vars
 
 #############################
 # Rescale variables
