@@ -1,6 +1,6 @@
 ---
 title: |
-  **Edaphic and topographic factors explain subalpine forest structure variability more than climate alone**
+  **Snow, soil, and elevation predominate over other factors in explaining variability in subalpine conifer forest structure**
 author:
   - Hugh M. Worsham, Energy and Resources Group, U. C. Berkeley
   - Haruko M. Wainwright, Department of Nuclear Science and Engineering, Massachusetts Institute of Technology
@@ -39,9 +39,10 @@ header-includes:
 - \usepackage{siunitx}
 - \usepackage{amsmath}
 keywords: forest structure, subalpine forest, conifer, ecology, LiDAR, remote sensing, state factor
-bibliography: ./ER_Forest_Structure_Paper.bib # File created rom reference manager
+bibliography: ./ER_Forest_Structure_Paper_Bib2.bib # File created rom reference manager
 csl: ./remote-sensing-of-environment.csl # This can be changed to your citation style of choice
-abstract: |
+abstract: A consensus suggests that abiotic constraints explain much of the variability in forest structure from scales ranging from hillslope to continent. At broad scales, climatic factors such as actual evapotranspiration (AET) and climatic water deficit (CWD) often emerge as the strongest constraints. However, at finer scales, such as that of a watershed or basin, synoptic climate may have less influence than other locally varying topographic and edaphic factors, or such factors may mediate synoptic climate in ways that trees must respond to physiologically. Here we present a novel analysis of abiotic constraints on a complement of conifer stand structural characteristics on a spatially continuous basis at the scale of a watershed. We use full-waveform LiDAR to quantify various aspects of stand structure across their full range of expression in an upper montane--subapline domain in the Rocky Mountains of Colorado. We evaluate covariability of these structural metrics with a suite of climate, topography, soil, geologic variables, incorporating end-members of the abiotic gradients along which forest stands grow. We report the relative importance of abiotic factors and describe the functional behavior of individual covariates, as well as interactions between explanatory factors. Our findings suggest that density is explained primarily by factors connected to snow input and soil water storage. Maximum canopy height, QMD, and BA are also primarily explained by snow and soil moisture factors, with elevation as a mediator and with inverse functional relationships to several explainers compared to density. Height skew, which describes the balance of larger and smaller age classes in a stand, is less well correlated with all factors. Quantifying the drivers of fine-scale heterogeneity in the structure of montane and subalpine forests is an essential preliminary for understanding how these systems will respond to synoptic environmental change, establishing a reference against which these responses can be measured, and for devising conservation and management strategies that promote forest resilience.
+
 ---
 ```{r setup, include=F}
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -49,26 +50,23 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 ```
 
-```{r, echo=F}
+```{r, echo=F, include=F}
 #source('./inst/notebooks/LiDAR/05.10_model_selection.R')
 source('./inst/ms/tables.R')
-source('./inst/notebooks/regressions/00.00_plot_rasters.R')
+#source('./inst/notebooks/regressions/00.00_plot_rasters.R')
 ```
 
 # 1. Introduction
 
-Abiotic constraints are important for explaining variability in forest structure from scales ranging from hillslope to continent. At continental to global scales, climate factors (namely, the orthogonal vectors of actual evapotranspiration AET and climatic water deficit (CWD; the difference between potential and actual ET)) consistently emerge as the strongest constraints. However, at finer scales, such as that of a watershed or basin, synoptic climate appears to have less of an influence than other locally varying factors. At landscape (~ 10^3 to 10^6 m2) and watershed scales (~ 10^2 to 10^3 m2), microtopographic variation exerts local influences that decouple site microclimates from regional climate. Indeed, local environments can influence precipitation input (via orography, wind sheltering, rain shadow effects); surface and subsurface storage, which can lag precipitation input on timescales from months to decades; and radiation, which drives atmospheric demand. Further, variability in soil properties directly drives plant-available water (parent material, depth, e.g.). Together, these modify site energy and water balance in ways that trees must respond to physiologically. 
+Abiotic constraints are important for explaining variability in forest structure from scales ranging from hillslope to continent. At continental to global scales, climate factors, particularly those governing available moisture and atmospheric demand consistently emerge as the strongest constraints. However, at finer scales, such as that of a watershed or basin, synoptic climate appears to have less of an influence than other locally varying factors. At landscape (~ 10^3 to 10^6 m^2^) and watershed scales (~ 10^2 to 10^3 m^2^), topographic variation exerts local influences that decouple site microclimates from regional patterns (Dobrowski 2011; Adams et al. 2014; Barnard et al. 2017). Indeed, local environments can influence precipitation input (via orography, wind sheltering, rain shadow effects); surface and subsurface storage, which can lag precipitation input on timescales from months to decades; and radiation, which drives atmospheric demand. Further, variability in soil properties directly drives plant-available water (parent material, depth, e.g.). Together, these modify site energy and water balance in ways that trees must respond to physiologically.
 
-A consensus exists on general trends in forest structure and composition and covariance with state factors. Stem diameter, basal, area, and growth rates tend to decline with elevation, with temperature as the key limiting control. The same properties also decline from valley to ridge positions, and from polar to equatorial exposures, perhaps as a result of these factors’ influence on water supply and deficit. However, Lydersen and North (2012) reported contrary findings in a Sierra Nevada mixed conifer forest, where upper slopes had both the highest quadratic mean diameter (QMD) and the tallest trees. Kane et al. (2015), furthermore, found that topography explained little variance in forest structure in a domain with a frequent fire return interval. Fricker et al. (2019) found responses in maximum tree height to topographic, edaphic, lithologic, and climate factors at landscape/watershed scale, including nonlinear elevational control on maximum tree height. They also found that CWD and mean annual precipitation (CWD and MAP) explained the most variance in maximum tree height distribution.
+From macro- and mega-scale studies, some general trends are apparent in the covariability of forest structure with abiotic factors. Stem diameter, basal, area, and growth rates tend to decline with elevation, with temperature as the key limiting control. The same properties also decline from valley to ridge positions, and from polar to equatorial exposures, perhaps as a result of these factors’ influence on water supply and deficit. However, smaller-scale studies have complicated this picture. @lydersen_topographic_2012 reported contrary findings in a Sierra Nevada mixed conifer forest, where upper slopes had both the highest quadratic mean diameter (QMD) and the tallest trees. @kane_water_2015, furthermore, found that topography explained little variance in forest structure in a domain with a frequent fire return interval. @fricker_more_2019 found found that climatic water deficit (CWD) and mean annual precipitation (MAP) explained the majority of variance in the distribution of maximum tree heights in a Sierra Nevada domain, though other factors, including a nonlinear elevational control, were also important. 
 
-While previous studies have identified general state-factor responses in forest structure and composition, to our knowledge, no study accounts for topographic, edaphic, lithologic, and climate influences on multiple stand structural and compositional properties together. Few studies directly address microclimatic heterogeneity in high-elevation complex terrain, and none account for state-variable interactions. None does the above on a spatially continuous basis, incorporating end-members on the radiative and moisture gradients along which forest stands grow.
+While previous studies have identified general trends in abiotic constraints on forest structure, to our knowledge, no study accounts for climate, topographic, edaphic, and influences on multiple stand structural properties together on a spatially continuous basis. The majority of gradient analyses use elevation, convergence, or landscape position as proxies for temperature and soil moisture (@stephenson_actual_1998; Ng et al. 2020). A smaller subset of studies have deployed more complex metrics that combine factors such as elevation, hillslope position, aspect, and slope into quasi-independent climate-proxy variables. @urban_forest_2000 used elevation, slope aspect, topographic convergence, and soil depth to model a “physical template” describing the light, temperature, and soil moisture regime of a Sierra Nevada domain, and then examined the sensitivity of model-estimated forest stand basal area, fuel loading, and canopy depth to the topographic inputs. @underwood_using_2010 used elevation, slope, aspect, solar radiation, and topographic wetness to divide a Sierra Nevada domain into “landscape management units” representing nine clusters of topographic variability, and examined variation in stem and species density across those units. Their effort relied on data collected *in situ* from 164 transects. Few studies directly address microclimatic heterogeneity in high-elevation complex terrain. Fewer still account for state-variable interactions, and none does the above on a spatially continuous basis, incorporating end-members on the radiative and moisture gradients along which forest stands grow.
 
-The majority of gradient analyses use elevation, convergence, or landscape position as proxies for temperature and soil moisture (Stephenson 1998; Ng et al. 2020). A smaller subset of studies have deployed more complex metrics that combine factors such as elevation, hillslope position, aspect, and slope into quasi-independent climate-proxy variables. Urban and colleagues (2000) used elevation, slope aspect, topographic convergence, and soil depth to model a “physical template” describing the light, temperature, and soil moisture regime of a Sierra Nevada domain, and then examined the sensitivity of model-estimated forest stand basal area, fuel loading, and canopy depth to the topographic inputs. Underwood and colleagues (2010) used elevation, slope, aspect, solar radiation, and topographic wetness to divide a Sierra Nevada domain into “landscape management units” representing nine clusters of topographic variability, and examined variation in stem and species density across those units. Their effort relied on data collected *in situ* from 164 transects. 
+While plot- and transect-based data can provide reliable estimates of aboveground forest structure and composition when scaled up to a stand, these data are by nature limited in spatial extent and do not represent the full range of state-factor variability that may constrain the distribution of vegetation across a landscape (@hurtt_beyond_2004; @antonarakis_using_2011, @lydersen_topographic_2012, @antonarakis_imaging_2014). Even within mature, close-canopied forests, characteristics such as stand density, age-class distribution, allometry, species composition, and species dominance can have wide variance. Efforts to scale these properties up to a watershed from plot observations (or plot-benchmarked models) alone can yield substantial error terms. Therefore, prior work may have failed to capture important dimensions of co-variability. @kane_water_2015 and @bolstad_forests_2018 are the only studies we have identified that evaluate spatially continuous measures of topography and forest structure, although more results have been reported from tropical forests (e.g. Chadwick and Asner 2015, Jucker et al. 2018). 
 
-While plot- and transect-based data can provide reliable estimates of aboveground forest structure and composition when scaled up to a stand, these data are by nature limited in spatial extent and do not represent the full range of state-factor variability that may constrain the distribution of vegetation across a landscape (Hurtt et al. 2004, Antonarakis et al. 2011,
-@lydersen_topographic_2012, Antonarakis et al. 2014). Even within mature, close-canopied forests, characteristics such as stand density, age-class distribution, allometry, species composition, and species dominance can have wide variance. Efforts to scale these properties up to a watershed from plot observations (or plot-benchmarked models) alone can yield substantial error terms. Therefore, prior work may have failed to capture important dimensions of co-variability. Kane et al. (2015) and Bolstad et al. (2018) are the only studies we have identified that evaluate spatially continuous measures of topography and forest structure, although more results have been reported from tropical forests (e.g. Chadwick and Asner 2015, Jucker et al. 2018). 
-
-LiDAR integrated with field sampling [and hyperspectral remote sensing] holds promise for overcoming some of these limitations. Advances in active remote sensing, including in Light Detection and Ranging (LiDAR), have opened up new opportunities for characterizing forest structure on a continuous basis for a wide array of scientific and management applications (Mallet and Bretar 2009). In particular, over the past five years a profusion of full waveform LiDAR datasets from aerial and satellite platforms, and emerging open-source libraries for cleaning and processing the data, has enabled more accurate estimates of forest structure than those from discrete-return acquisitions (Zhou and Popescu 2017). Like discrete-return points, waveform data can be used to delineate individual canopy trees and to estimate individual-scale characteristics such as stem diameter, stem height, stem volume, and crown volume (Dalponte et al. 2011, Jucker et al. 2017). Waveforms can also be processed to generate continuous estimates of forest structure parameters at the pixel-grid scale; these parameters include aboveground biomass, leaf-area index, total number density, and diameter-class distribution. While some researchers have eschewed individual tree object--based approaches because of the difficulty of characterizing subcanopy structure with dicrete-return data, a profusion of new algorithms aimed at waveform and hyper-dense point clouds has made it increasingly possible to achieve individual-based structure estimates. Using the full waveforms appears to improve the accuracy of both object-oriented and continuous-estimate methods over discrete-return estimates, particularly for characterizing mid-canopy and sub-canopy structure. Integrating waveforms with imaging spectrometry and calibrating remote sensing against *in situ* stem diameter and height measurements yields further accuracy improvements (Antonarakis et al. 2011, Jucker et al. 2017).
+LiDAR integrated with field sampling holds promise for overcoming some of these limitations. Advances in active remote sensing, including in Light Detection and Ranging (LiDAR), have opened up new opportunities for characterizing forest structure on a continuous basis for a wide array of scientific and management applications (@mallet_full-waveform_2009). In particular, over the past five years a profusion of full-waveform LiDAR datasets from aerial and satellite platforms, and emerging open-source libraries for cleaning and processing the data, has enabled more accurate estimates of forest structure than those from discrete-return acquisitions (@zhou_waveformlidar_2019; @zhou_gold_2017). Like discrete-return points, waveform data can be used to delineate individual canopy trees and to estimate individual-scale characteristics such as stem diameter, stem height, stem volume, and crown volume (@dalponte_system_2011, @jucker_allometric_2017). Waveforms can also be processed to generate continuous estimates of forest structure parameters at the pixel-grid scale; these parameters include aboveground biomass, leaf-area index, total number density, and diameter-class distribution. While some researchers have eschewed individual tree object--based approaches because of the difficulty of characterizing subcanopy structure with dicrete-return data, a profusion of new algorithms aimed at waveform and hyper-dense point clouds has made it increasingly possible to achieve individual-based structure estimates. Using the full waveforms appears to improve the accuracy of both object-oriented and continuous-estimate methods over discrete-return estimates, particularly for characterizing mid-canopy and sub-canopy structure. Calibrating remote sensing models against *in situ* stem diameter and height measurements yields further accuracy improvements (@antonarakis_using_2011; @jucker_allometric_2017).
 
 Our primary objective in this study was to quantify relationships between forest structure and abiotic environmental drivers of stand structural development in subalpine forests broadly representative of low-diversity forests across the Southern Rocky Mountains. 
 
@@ -77,7 +75,7 @@ We addressed the following questions:
 1. Which topographic, climate, and substrate variables exert the strongest influence on conifer forest stand structure?
 2. To what extent do feature interactions mediate these relationships?
 
-To address these questions, we integrated a full-waveform LiDAR dataset acquired over Colorado’s East River watershed with [a species classification map derived from imaging spectrometry and] field inventory measurements of 7000+ trees to quantify the spatial variability of forest canopy structure through the vertical profile, as well as stand structure and composition. We then used inferential modeling techniques to quantify the relative importance of state-factor controls on forest stand structure and composition, as estimated at a single point and time.
+To address these questions, we integrated a full-waveform LiDAR dataset acquired over Colorado’s East River watershed with field inventory measurements of 5000+ trees to quantify the spatial variability of forest canopy structure through the vertical profile, as well as stand structure and composition. We then used inferential modeling techniques to quantify the relative importance of state-factor controls on forest stand structure and composition, as estimated at a single point and time.
 
 <!-- Hypotheses: -->
 <!-- 	1. the interaction between elevation and topographic wetness is a stronger explainer of total stem density and basal area than any single topographic variable, and that both density and basal area will vary inversely with the two-way interactions.  -->
@@ -92,11 +90,11 @@ The domain for this project comprised upper montane-subalpine conifer forest sta
 <!-- Primary data included field census data from 17 permanent mixed-conifer inventory plots, each 0.16 ha in area; a June 2018 National Ecological Observatory Network Airborne Observation Platform (NEON AOP) full-waveform LiDAR acquisition; a raster digital elevation model (DEM) interpolated from NEON LiDAR ground return points; a raster dataset of peak snow water equivalent (SWE) generated by the Airborne Snow Observatory (ASO) averaged over three years [TODO: cite]; rasters of soil properties computed from the Soil Survey Geographic Database (SSURGO) [TODO: cite]; a raster estimating mean annual precipitation generated using the Basin Characterization Model for the Upper Colorado Basin [TODO: cite]; and a raster describing the distribution of major lithologic formations from the Colorado Geological Survey (Morgan 2020). -->
 
 ## 2.2 Full-waveform LiDAR
-Between June 12 and 26, 2018, the NEON AOP surveyed approximately 330 km^2^ of the watershed (Chadwick et al. 2020; Fig. 1). The AOP collected LiDAR using an Optech Gemini discrete LiDAR sensor and waveform digitizer. The LiDAR sensor’s pulse repetition frequency varied between 33 and 100 kHz. Validation was conducted using *in situ* data at 437 sites representing a range of vegetative and built land cover types. 
+Between June 12 and 26, 2018, the NEON AOP surveyed approximately 330 km^2^ of the watershed (@chadwick_integrating_2020; Fig. 1). The AOP collected LiDAR using an Optech Gemini discrete LiDAR sensor and waveform digitizer. The LiDAR sensor’s pulse repetition frequency varied between 33 and 100 kHz. Validation was conducted using *in situ* data at 437 sites representing a range of vegetative and built land cover types. 
 
 Discrete-return point density in the post-processed dataset ranged between 1 and 9 returns $m^{-2}$, which was insufficient for characterizing subcanopy structure. We therefore elected to reprocess the full waveforms, which had a nominal density between 1 and 4 pulses $m^{-2}$. We were able to exploit the higher information density of full-waveform pulses to develop more complete characterizations of stand and canopy structure than would have been possible with discrete returns alone. 
 
-First, we used a spectral deconvolution procedure to isolate the target-response signal from its interactions with the LiDAR system's outgoing pulse, atmospheric scattering, and sensor-system noise. We used the Gold deconvolution algorithm implemented in the `waveformlidar` package in the R statistical computing environment (Zhou et al. 2017), but refactored their implementation for parallel computing. The result of the algorithm approximates the true distribution of scattering objects along the outbound light pulse's path.
+First, we used a spectral deconvolution procedure to isolate the target-response signal from its interactions with the LiDAR system's outgoing pulse, atmospheric scattering, and sensor-system noise. We used the Gold deconvolution algorithm implemented in the `waveformlidar` package in the R statistical computing environment (@zhou_waveformlidar_2019), but refactored their implementation for parallel computing. The result of the algorithm approximates the true distribution of scattering objects along the outbound light pulse's path.
 
 The signal intensity of an outbound LiDAR pulse as a function of time is roughly Gaussian in shape. As the pulse interacts with physical objects along its path and is reflected back to the sensor, the returning backscatter cross-section can also be expressed approximately as a sum of Gaussian functions. Gaussian decomposition, therefore, allows one to characterize the components of the returning impulse (Harding 2005). We applied an adaptive Gaussian decomposition algorithm to fit one or more Gaussian models to the return pulse components based on Equation 1: 
 
@@ -106,7 +104,7 @@ where $A_i$ is the amplitude of waveform component $i$, $\mu$ is the bin locatio
 
 The deconvolution and decomposition procedures were applied to the full set of waveforms in parallel on 256 cores on the University of California, Berkeley's high-performance computing cluster. In total, we processed approximately 1.4*10^9^ waveform returns. Of these, a negligible fraction (approximately 0.5 percent) either had no detectable peaks or represented backscatter records that could not be fit to a Gaussian function. Where peaks could not be identified, the waveforms were dropped from the set. Where they could not be estimated by a Gaussian, the characteristic components (e.g, amplitude, time to median energy) were estimated from the deconvolved returns directly, without curve fitting.
 
-After processing, we used the geolocation matrices provided in the NEON dataset to geolocate the waveforms and extracted characteristic metrics from the fitted waveforms. These included the peaks’ location in three-dimensional space, their amplitude and width, front slope, and time to median intensity. We then used the R package `lidR` to discretize this information along with the geolocated waveform data. We normalized the discretized points to the earth surface by differencing their z-values against a DEM derived from the discrete-return point cloud included in the NEON dataset. We then decimated the high-density returns, preserving all of the identified peaks to obtain a discretized point cloud of 5.72*10^9^ points with an evenly distributed mean density of 15.3 points m^-2^ across the domain.
+After processing, we used the geolocation matrices provided in the NEON dataset to geolocate the waveforms and extracted characteristic metrics from the fitted waveforms. These included the peaks’ location in three-dimensional space, their amplitude and width, front slope, and time to median intensity. We then used the R package `lidR` to discretize this information along with the geolocated waveform data (Jean-Romain 2022). We normalized the discretized points to the earth surface by differencing their z-values against a DEM derived from the discrete-return point cloud included in the NEON dataset. We then decimated the high-density returns, preserving all of the identified peaks to obtain a discretized point cloud of 5.72*10^9^ points with an evenly distributed mean density of 15.3 points m^-2^ across the domain.
 
 ## 2.3 Field census
 
@@ -120,13 +118,13 @@ Stems were then geolocated using either the GNSS receiver or by measuring the di
 
 Seventeen of the 25 plots lay within the overflight footprint of a 2018 NEON AOP acquisition (Kampe et al. 2009). We used the observations from this subset for training and validation of models developed in the next phase of analysis. The 17 focal plots contained 5828 observed trees, of which 5416 were living at the time of inventory. 
 
-Past management and disturbance influence forest structure as it manifests on the landscape at any point in time. The legacies of logging, fire, avalanche, and pest-pathogen infestation, which, among other events, are common to Colorado's montane and subalpine forests, could obscure the relationship between forest vital rates, emergent structure, and underlying abiotic constraints. Logging related to the mining industry occurred in some parts of the watershed during the 19th and early 20th centuries, with a limited footprint enduring today. This said, the watershed includes large stands where little to no tree removal occurred, and stands with old trees and uneven age and size structure are well distributed. Further, prior studies have found strong associations between forest structure and abiotic factors under consideration here, even in the presence of major harvest and disturbance events (Urban et al. 2000, Lyderson and North 2012, Collins et al. 2015, Stephens et al. 2015, Kane et al. 2015). We aimed to partially mitigate unobserved management and disturbance effects by siting inventory plots in stands where no recent harvest or major disturbance occurred in at least the last 40 years, based on (a) visual inspection for cut stumps and remnants and (b) stability of the Normalized Difference Vegetation Index over the Landsat record (1980-present). 
+Past management and disturbance influence forest structure as it manifests on the landscape at any point in time. The legacies of logging, fire, avalanche, and pest-pathogen infestation, which, among other events, are common to Colorado's montane and subalpine forests, could obscure the relationship between forest vital rates, emergent structure, and underlying abiotic constraints. Logging related to the mining industry occurred in some parts of the watershed during the 19th and early 20th centuries, with a limited footprint enduring today. This said, the watershed includes large stands where little to no tree removal occurred, and stands with old trees and uneven age and size structure are well distributed. Further, prior studies have found strong associations between forest structure and abiotic factors under consideration here, even in the presence of major harvest and disturbance events (@urban_forest_2000, @lydersen_topographic_2012, Collins et al. 2015, Stephens et al. 2015, @kane_water_2015). We aimed to partially mitigate unobserved management and disturbance effects by siting inventory plots in stands where no recent harvest or major disturbance occurred in at least the last 40 years, based on (a) visual inspection for cut stumps and remnants and (b) stability of the Normalized Difference Vegetation Index over the Landsat record (1980-present). 
 
 ## 2.4. Tree crowns and stand structure
 
 Here we detail the procedure we followed to generate an individual tree crown (ITC) map and gridded estimates of conifer forest structure (as in @dalponte_tree-centric_2016). The former comprised an object-centric map of tree crowns in conifer forest stands, with each object describing the position, height, area, and stem diameter of a tree. The latter comprised a continuous map of forest structure metrics at 10m, 40m, 100m, and 1km grid scales. To generate these products, we integrated the discretized LiDAR and inventory data to optimize and validate an individual tree delineation (ITD) model, which we then applied to delineate trees in the watershed's remaining forested area. As we detail below, this approach iterated through many permutations of possible parameters for seven ITD algorithms; computed performance metrics at each iteration; and then selected the best performing algorithm and parameter set to apply to out-of-sample data. 
 
-First, we extracted the discretized LiDAR data intersecting the boundaries of each field plot with a 3 m buffer on all sides. We then attempted tree segmentation on the discretized data using algorithm $A_i$ and parameter set $\lambda_{j,k:l}$, where $i$ is the $i$th algorithm, $\lambda_j$ is one of several parameters taking user-specified values required for the algorithm to proceed, and $k:l$ is a vector of values on that parameter (Table S1). After each delineation attempt, the automated matching procedure described in Eysn et al. (2015) and Pang et al. (2021) was applied to link detection results to reference observations from field inventory. We opted for an automated approach because (1) the computational scale of our method (up to 2800 delineation attempts per algorithm per site) made manual interpretation infeasible, and (2) doing so enabled us to enforce clear, objective rules for reproducibility. In early testing, we also evaluated bipartite matching strategies seeking to minimize the Euclidean and Mahalanobis distances between detected and reference trees [TODO: CITE]. We ultimately selected the Eysn (2015) method based on superior inter-tree and inter-site matching performance. 
+First, we extracted the discretized LiDAR data intersecting the boundaries of each field plot with a 3 m buffer on all sides. We then attempted tree segmentation on the discretized data using algorithm $A_i$ and parameter set $\lambda_{j,k:l}$, where $i$ is the $i$th algorithm, $\lambda_j$ is one of several parameters taking user-specified values required for the algorithm to proceed, and $k:l$ is a vector of values on that parameter (Table S1). After each delineation attempt, the automated matching procedure described in @eysn_benchmark_2015 and @pang_nystrom-based_2021 was applied to link detection results to reference observations from field inventory. We opted for an automated approach because (1) the computational scale of our method (up to 2800 delineation attempts per algorithm per site) made manual interpretation infeasible, and (2) doing so enabled us to enforce clear, objective rules for reproducibility. In early testing, we also evaluated bipartite matching strategies seeking to minimize the Euclidean and Mahalanobis distances between detected and reference trees (@hansen_optimal_2006). We ultimately selected the @eysn_benchmark_2015 method based on superior inter-tree and inter-site matching performance. 
 
 The matching process began by selecting the tallest detected tree ("target") and searching for candidates among reference trees satisfying Euclidean height (∆Z) and horizontal distance (∆XY) criteria specified in Table 3. The reference candidate with the least ∆XY was chosen as a tentative match to the target. The candidates were then queried a second time. If a candidate with greater ∆XY proved closer in height to the target, and its ∆XY was at most 2.5 m more than ∆XY of the tentative match, it was selected as the match. However, since an optimal match depends not only on the neighborhood of reference trees, but also on other nearby *detected* trees, the target was then compared against other detected neighbors. If another detected tree was closer in horizontal and vertical distance to the matched reference, the pairing was discarded. This process was repeated on all remaining detected trees in descending order of height, until all reference trees had been evaluated. Matches were then removed from the set, and the process was repeated until no further matches could be found under the search criteria. 
 
@@ -134,7 +132,7 @@ For each run of $\lambda_{i,j:k}$ on $A_i$ we tallied the extracted trees, true 
 
 We then selected the algorithm and parameter permutation that had yielded the maximum root mean square *F* score across all $\lambda_{i,j:k}$. *F* is a proportion representing the harmonic mean of precision (the proportion of all tree detections that were correctly matched) and recall (the proportion of all possible matches that were correctly matched). Perfect detection and match rates would yield an *F* score of 1.0, while failure would yield 0.0. It was selected as the optimization statistic over overall accuracy for its balanced sensitivity to both over- and under-detection. 
 
-Of the eight algorithms tested, LayerStacking (Ayrey et al. 2017) yielded the highest *F* score across training and testing sets (Table 4, Table S2). The algorithm proceeds by first dividing the point cloud into stacked horizontal layers at 1-m intervals, starting at $\lambda_1$ m above ground (Table 5). A series of clustering procedures is then applied to each layer. In the lowest three layers ($\lambda_{1}+1 : \lambda_{1}+3$ m a.g.), points are clustered through Density-Based Scanning (Ester et al. 1996); points within clusters are removed as non-tree low vegetation, while those lying outside clusters are retained as sparse returns from small tree boles. Next, a canopy height model (CHM) of resolution $\lambda_2$ is computed from the point cloud. Tree tops are identified from the CHM using a local maximum filter (LMF) with a window of radius $\lambda_3$. Then, points in each layer undergo *k*-means clustering, using the local maxima as seeds, and a polygonal buffer of radius $\lambda_4$ is placed around each resulting cluster. The polygons from each layer are then flattened and rasterized to create an intermediate "overlap map." This abstraction quantifies the density of clusters, such that areas of high-density polygonal overlap represent individual trees. In conifer forests, this delineation can be improved with an additional parameter, $\lambda_5$, which enforces higher weighting for clusters near the canopy top, because these tend to be closer to a conifer's center. A second LMF is applied to the overlap map, using a window of radius $\lambda_6$, and local maxima are taken to be tree centers. Additional smoothing of the local maxima, and filtering and merging of clusters, yields a set of points representing tree tops with embedded height and position information.
+Of the eight algorithms tested, LayerStacking @ayrey_layer_2017 yielded the highest *F* score across training and testing sets (Table 4, Table S2). The algorithm proceeds by first dividing the point cloud into stacked horizontal layers at 1-m intervals, starting at $\lambda_1$ m above ground (Table 5). A series of clustering procedures is then applied to each layer. In the lowest three layers ($\lambda_{1}+1 : \lambda_{1}+3$ m a.g.), points are clustered through Density-Based Scanning (Ester et al. 1996); points within clusters are removed as non-tree low vegetation, while those lying outside clusters are retained as sparse returns from small tree boles. Next, a canopy height model (CHM) of resolution $\lambda_2$ is computed from the point cloud. Tree tops are identified from the CHM using a local maximum filter (LMF) with a window of radius $\lambda_3$. Then, points in each layer undergo *k*-means clustering, using the local maxima as seeds, and a polygonal buffer of radius $\lambda_4$ is placed around each resulting cluster. The polygons from each layer are then flattened and rasterized to create an intermediate "overlap map." This abstraction quantifies the density of clusters, such that areas of high-density polygonal overlap represent individual trees. In conifer forests, this delineation can be improved with an additional parameter, $\lambda_5$, which enforces higher weighting for clusters near the canopy top, because these tend to be closer to a conifer's center. A second LMF is applied to the overlap map, using a window of radius $\lambda_6$, and local maxima are taken to be tree centers. Additional smoothing of the local maxima, and filtering and merging of clusters, yields a set of points representing tree tops with embedded height and position information.
 
 For the remainder of the LiDAR-surveyed domain, we subset the discretized waveforms over conifer forest by finding their intersection with conifer regions from a land-cover classification map derived from the NEON hyperspectral acquisition (Breckheimer 2021). We forced the LayerStacking algorithm with this subset of LiDAR data and the optimal parameter permutation to delineate all tree crowns in the watershed's conifer stands. The result was a spatially continuous dataset of conifer tree objects describing their locations and heights. To estimate the stem diameters of each delineated object, we used an allometric function of stem height with coefficients derived from plot observations.
 
@@ -151,10 +149,10 @@ where $n$ was the number of trees in the cell. Skewness of height was the third 
 ## 2.5. Abiotic explanatory variables
 
 ### 2.5.1. Topography 
-We generated six topographic variables from the 1-m DEM produced in LiDAR processing (see Table 1 and Fig. S3). We prioritized factors with topoclimatic leverage, i.e., those whose variability has been shown to modify the radiation or moisture budget in trees' local growing environments (Frey et al., 2016). Elevation (m) was computed at the 100 m pixel scale by aggregating the raw DEM. Slope angle (degrees) and aspect (degrees) were computed from the elevation product with the `terrain` method in the R package `terra` with 8 neighbors, using the method in Horn (1981). We further transformed the aspect product by folding values about the 25ºNE-205ºSW line. Translating them into into a scale whose maximum occurs on SW slopes and minimum on NE slopes yields a more ecologically relevant measure of aspect-constrained exposure. The fold line we selected represented the estimated angles of highest and lowest mean annual incident radiation in the domain, given the watershed's latitude and slope orientation. Total heat load (unitless index) was calculated from folded aspect and slope angle using the method in McCune and Keon (2002). Topographic position index (TPI) is a morphometric measure that classifies a landscape into slope position classes, from ridgetop to toeslope. We computed TPI at each pixel as the difference between the elevation at the target point and the mean elevation within a neighborhood of 9 pixels (1000 m), normalized to the standard deviation of elevation in that window (Gallant and Wilson 2000; De Reu et al. 2014). TPI values are more positive the higher a target point is than its neighborhood, and more negative the lower it is. Topographic Wetness Index (TWI) is a measure of the relative capacity of an area to accumulate water through surface or subsurface flow. We selected this metric as a proxy for relative soil moisture conditions. We used the implementation in the R package `dynatopmodel`, which calculates TWI ($log(m^2/m$)) at each pixel as the log ratio between its upslope contributing area and slope angle (Quinn et al. 1995, Metcalfe et al. 2018). 
+We generated six topographic variables from the 1-m DEM produced in LiDAR processing (see Table 1 and Fig. S3). We prioritized factors with topoclimatic leverage, i.e., those whose variability has been shown to modify the radiation or moisture budget in trees' local growing environments (Frey et al., 2016). Elevation (m) was computed at the 100 m pixel scale by aggregating the raw DEM. Slope angle (degrees) and aspect (degrees) were computed from the elevation product with the `terrain` method in the R package `terra` with 8 neighbors, using the method in Horn (1981). We further transformed the aspect product by folding values about the 25ºNE-205ºSW line. Translating them into into a scale whose maximum occurs on SW slopes and minimum on NE slopes yields a more ecologically relevant measure of aspect-constrained exposure. The fold line we selected represented the estimated angles of highest and lowest mean annual incident radiation in the domain, given the watershed's latitude and slope orientation. Total heat load (unitless index) was calculated from folded aspect and slope angle using the method in @mccune_equations_2002. Topographic position index (TPI) is a morphometric measure that classifies a landscape into slope position classes, from ridgetop to toeslope. We computed TPI at each pixel as the difference between the elevation at the target point and the mean elevation within a neighborhood of 9 pixels (1000 m), normalized to the standard deviation of elevation in that window (Gallant and Wilson 2000; @de_reu_application_2013). TPI values are more positive the higher a target point is than its neighborhood, and more negative the lower it is. Topographic Wetness Index (TWI) is a measure of the relative capacity of an area to accumulate water through surface or subsurface flow. We selected this metric as a proxy for relative soil moisture conditions. We used the implementation in the R package `dynatopmodel`, which calculates TWI ($log(m^2/m$)) at each pixel as the log ratio between its upslope contributing area and slope angle (Quinn et al. 1995, Metcalfe et al. 2018). 
 
 ### 2.5.2. Climate
-To estimate relative spatial patterns of snow accumulation (m), we retrieved snow water equivalent (SWE) data produced by the Airborne Snow Observatory from flights on March 31; 2018, April 4, 2019; and April 21, 2022. The flights occurred before the onset of snowmelt in each season. The ASO SWE product was generated from observations of snow depth, spectral albedo, and radiative forcing from a coupled imaging spectrometer and terrestrial laser scanning system, combined with snow density modeled using iSnobal ([TODO: cite]. We also produced an estimate of the relative velocity of snow disappearance (m day^-1^). In each flight year, we differenced the snow-on values and snow-free values from subsequent flights (May 24, 2018; June 10, 2019; and May 18, 2022, respectively), and divided by the day interval between paired flights. While the ASO data may not have captured peak snow depth or maximum snow-free extent in each season, averaging across three years of flights enabled us to approximate the spatial pattern of relative accumulation and disappearance across the basin. Because we were less interested in absolute accumulation values and more interested in variability across space, this seemed a justifiable decision.
+To estimate relative spatial patterns of snow accumulation (m), we retrieved snow water equivalent (SWE) data produced by the Airborne Snow Observatory from flights on March 31; 2018, April 4, 2019; and April 21, 2022. The flights occurred before the onset of snowmelt in each season. The ASO SWE product was generated from observations of snow depth, spectral albedo, and radiative forcing from a coupled imaging spectrometer and terrestrial laser scanning system, combined with snow density modeled using iSnobal (@painter_aso_2018). We also produced an estimate of the relative velocity of snow disappearance (m day^-1^). In each flight year, we differenced the snow-on values and snow-free values from subsequent flights (May 24, 2018; June 10, 2019; and May 18, 2022, respectively), and divided by the day interval between paired flights. While the ASO data may not have captured peak snow depth or maximum snow-free extent in each season, averaging across three years of flights enabled us to approximate the spatial pattern of relative accumulation and disappearance across the basin. Because we were less interested in absolute accumulation values and more interested in variability across space, this seemed a justifiable decision.
 
 We also used estimates of mean total annual actual evapotranspiration (AET) and climatic water deficit (CWD) generated through a run of the Basin Characterization Model (BCM) on the Upper Colorado Basin (Buto et al. 2017). The BCM output package is a set of gridded products that characterizes the water balance for a subject region at 270 m resolution. The model is forced with monthly data and has been widely used in ecological and management applications (Flint et al. 2013). From this dataset, AET is the depth of water (mm) evaporated from the surface or transpired by plants within each pixel. CWD is calculated as the difference between potential evapotranspiration (PET) and AET (mm), where PET is the total depth of water that can be evaporated or transpired given prevailing atmospheric conditions. Under non-limited moisture conditions, AET equals PET and CWD is 0; positive CWD values correspond to moisture deficit, or an excess of atmospheric demand relative to available water in the soil. AET and CWD in our study represent the arithmetic mean of the annual sums of their values from 1985 to 2012 (Buto et al. 2017).
 
@@ -181,186 +179,87 @@ Comparing detected trees to field inventory, the optimal LayerStacking algorithm
 
 <!---Median height across all species was [5.6] m (s.d. 7.2 m; Table 4 and Table 5). The large standard deviation resulted from a long tail of large-statured trees, consistent with the characteristically negative exponential shape of height frequency distribution curves. Quadratic mean diameter across all species was 18.1 cm, and mean basal area was [TODO: GET VALUE] (s.d. [TODO: GET VALUE]). Median density was [TODO: GET VALUE] trees per hectare (s.d. [TODO: GET VALUE]) (Table 3. [TODO: CONSIDER REMOVING REF TO TABLE 3 HERE]).--->
 
-As for the demographics of detected trees in training, median height was 7.9 m (s.d. 8.9 m), versus 6.7 m (s.d. TK m) in the field inventory. Maximum canopy height, estimated at the 90th percentile, was more similar at 20.6 m versus 20.4 m in field inventory. We computed DBH for each detected tree using the fitted equation $D=\sqrt[0.9102]{\frac{H}{0.8849}}$ (s.e._a_=0.0209, s.e._b_=0.0070). QMD of modeled trees in the plots was 18.4 cm, versus 18.1 cm in the field inventory. We disaggregated 90th percentile height and QMD by site to evaluate performance in more detail (Fig. 3).
+As for the demographics of detected trees in training, median height was 7.9 m (s.d. 8.9 m), versus 6.7 m (s.d. 6.9 m) in the field inventory. Maximum canopy height, estimated at the 90th percentile, was more similar at 20.6 m versus 20.4 m in field inventory. We computed DBH for each detected tree using the fitted equation $D=\sqrt[0.9102]{\frac{H}{0.8849}}$ (s.e._a_=0.0209, s.e._b_=0.0070). QMD of modeled trees in the plots was 18.4 cm, versus 18.1 cm in the field inventory. We disaggregated 90th percentile height and QMD by site to evaluate performance in more detail (Fig. 3).
 
-Applying the optimal LayerStacking algorithm and parameters to conifer forests across the full domain produced on the order of $5.1*10^7$ trees. The median height of modeled trees was [7.1] m (s.d. [6.9] m) and 90th percentile height was 18.3 m. QMD estimated with allometric coefficients was 14.6 cm. Frequency distributions of domain-wide height and diameter estimates appear in Fig. 4. 
+Applying the optimal LayerStacking algorithm and parameters to conifer forests across the full domain produced on the order of $5.1*10^7$ trees. The median height of modeled trees was 6.3 m (s.d. 6.8 m) and 90th percentile height was 18.3 m. QMD estimated with allometric coefficients was 18.8 cm. Frequency distributions of domain-wide height and diameter estimates appear in Fig. 4. 
+
 ## 3.2 Factors associated with forest structure
-Models revealed three distinct patterns of relationship. 
+Inferential modeling revealed three distinct patterns of relationship. 
 (1) Density was explained primarily by factors connected to snow input and soil water storage.
-(2) 90th percentile height, QMD, and basal area were also primarily explained by snow and soil moisture factors, but showed inverse functional relationships with several explainers, compared to density.
+(2) Maximum canopy height, QMD, and BA were also primarily explained by snow and soil moisture factors, with elevation as a mediator and with inverse functional relationships to several explainers compared to density.
 (3) Height skew, which describes the balance of larger and smaller age classes in a stand, was less well correlated with all factors.
 
-We show the percentage of total variance explained (%TVE) in each response by GAM along with out-of-bag and validation RMSE for GBM in Table 7. Below, we describe significant and influential explanatory relationships in GAM and the top five predictors in GBM for each model. <!---(See Table S4 for results for the full set of independent variables: intercept and linear effects coefficients, estimated degrees of freedom, and significance of the splines for GAM; relative importance for GBM).--->
+Below, we describe significant and influential explanatory relationships in GAM and the top five predictors in GBM for each model. We show the percentage of total deviance explained in each response by GAM and test RMSE, along with cross-validation and test RMSE for GBM in Table 6. Model results for explanatory variables were generally coherent between the two modeling strategies. The five most influential variables on each response in GBM were also significant (p < 0.01) and those that exerted the most leverage on the responses based on interpretation of partial-effects plots.  <!---(See Table S4 for results for the full set of independent variables: intercept and linear effects coefficients, estimated degrees of freedom, and significance of the splines for GAM; relative importance for GBM).--->
 
-All response variables but height skew were strongly associated with SWE and ∆SWE, which broadly described the snow input component of the watershed's climate (Fig. 5). Elevation and soil available water content were also high-importance predictors of stand structure. Density was more strongly associated with geologic substrate than were the other forest structural factors, which were in turn influenced more strongly by soil total depth. Geology was the least important predictor of height, QMD, and BA. Other climatic, topographic, or soil factors explained less than 5 percent of variance in any response individually, and at most TK% of cumulative variance in any response.
+All response variables were strongly associated with SWE and ∆SWE, which broadly described the snow input component of the watershed's climate (Fig. 5). Soil available water content and elevation were also high-influence predictors of stand structure. Density was more strongly associated with geologic substrate than were the other forest structural factors, which were in turn influenced more strongly by soil total depth and soil K, in the case of basal area. Geology was the least important predictor of height, QMD, and BA. Other individual climatic, topographic, or soil factors contributed less than 5 percent to variance reduction in any response, and at most 21.7%--41.4% of cumulative variance reduction in any response.
 
 ### 3.2.1 Climatic explainers of forest structure variability
-The strongest
+SWE and ∆SWE were the most important predictors of density and were among the top five for all responses. The relationships for all responses were strongly nonlinear. Where ∆SWE was highest (suggesting more rapid snow disappearance), height, QMD, and basal area were lowest. Maxima in these measures of forest structure coincided with mean SWE and ∆SWE values (.50 m and 0.0050 m day ^-1^, respectively). The reverse was true for both density and height skew, suggesting that denser stands and stands skewing toward smaller-statured trees occur in sites where snow accumulation is greatest but also disappearance is most rapid. The remaining two climate variables, CWD and AET, were among the least important predictors of any structural measure in GBM, and the covariance with structure in GAM was much less coherent than in SWE and ∆SWE. 
 
 ### 3.2.2 Topography 
-Elevation exerted a negative control on stand density across the gradient, but a non-monotonic effect on height, QMD, and basal area (Fig. 6). Maximum density was found at the lowest elevation (TK m), while maxima in height, QMD, and basal area co-occurred between TK m and TK m. Minima across these four variables occurred at the highest elevations (TK - TK m). Neither modeling strategy found a strong elevational influence on height skew. Although TPI and TWI ranked low in relative influence in GBM, they had clearly differential effects on stand density and other structural factors (Fig. 6). Density increased with topographic wetness, while unimodal peaks in height, QMD, and BA appeared at TWI values near TK. Density declined with increasing TPI, indicating that sparser stands occurred on ridgetops, while denser stands occurred in foot- and toeslope positions. For other structural measures, maxima occurred on mid-slopes. Folded aspect and heat load had minimal effect on any forest structural characteristic. 
+Elevation exerted an approximately negative-exponential control on stand density across the gradient, but a non-monotonic effect on height, QMD, and basal area (Fig. 6). Maximum density was found at the lowest elevations (~ 2700 m), while maxima in height, QMD, and basal area co-occurred between 3000 m and 3300 m. Minima on these four variables occurred at the highest elevations (3600 m -- 3800 m). Neither modeling strategy found a strong elevational influence on height skew. TPI was the only other topographic factor to emerge as a major predictor, and for height skew only. TPI exerted modest leverage on height skew, and the shape of the relationship suggested that more positively skewed stands occurred at lower elevations and more negatively skewed stands at TPI values around 1.0, coinciding with mid- to upper-slopes. Heat load and slope had minimal effects on any forest structural characteristic. 
 
 ### 3.2.3 Soil
-The available water content based on soil composition and structure had the greatest leverage on height, QMD, and BA. The response in all three factors was bimodal, with maximum values at [TK] and [TK], just above and below mean AWC. Density, in contrast, decreased overall with AWC but the relationship was nonlinear. The total depth of soil showed opposite relationships with density (negative) and with height, QMD, and BA (positive). K, K_sat_, and percent organic matter had less interpretable effects in the GAM, with high EDF and large amplitude at low values but no discernible trend over the spline. Together they accounte for less than TK percent of variance in any response.
+Available water content based on soil composition and structure had the greatest leverage on height and BA. The response in these factors was bimodal, with maxima around 0.10 and 0.18, which were approximately the mean and two standard deviations above the mean. Density, in contrast, increased overall with AWC but the relationship was also nonlinear. The total depth of soil showed opposite relationships with height skew (negative) and with height, QMD, and BA (positive), but the splines were tightly kinked along the support. Soil K and percent organic matter had less interpretable effects in the GAM, with high EDF and large amplitudes at low values but little meaningful trend over the splines. Together they accounted for less than 10% of variance in any response.
 
-### 3.3.3 Climate
+### 3.2.4 Geology
+Geology emerged as one of the five most important predictors for density but was the least important for height, QMD, and basal area. Density was higher than average on the sand/shale Gothic formation and lower than average on claystone-shale, granodioritic laccoliths, the sand/silt Mesa Verde Formation, and mudstone/conglomerate Maroon Formation (Table 7).  Coefficients on geologic substrates were mostly non-significant in GAM for other structural factors, though basal area was significantly higher on intrusive laccolith parent material and on the claystone-shale Wasatch formation. 
 
-	CLIMATE
-	- SWE
-		- Generally declines
-	- Delta SWE
-		- Relative velocity of snowmelt
-		- Where delta SWE is highest (suggesting faster snow disappearance), height, QMD, BA lowest
-	- CWD
-		- height, ba, diam asymptotic , plateau near mean CWD
-		- density behaves differently with a unimodal minimum near mean CWD
-	- AET
-		- relationships with all response to AET was less coherent than CWD
-
-	- Height skew showed little relationship with any abiotic factor
-	- Strongest were related to moisture:
-		- Increased with TWI
-		- Increased with SWE (more SWE, more positive skew = larger proportion of smaller trees)
-		- Lower delta SWE associated with more negative skew values (longer snow residence time = higher proportion of larger-statured trees)
-
-	GEOLOGY
-	- Density: significant positive effect in Mancos shale and glacial material 
-	- Not a strong explainer in GBM
-
-	FEATURE INTERACTIONS
-	- Elevation and SWE for density --> Elevation effect is strongly nonlinear, with unimodal maximum around 2800-3000 m
-  - Highest density correlates with mid-elevation SW slopes
-  - Greatest QMD and height appear at mid-elevation ridgetops
-  - Soil factors are more important in GBM than either climate or topographic factors
-		- AWC, OM, geologic substrate
-		- Then climatic water deficit
-
-# 3. Discussion
-
-## 3.4 Relationships between stand structural metrics and state factors
-Elevation dictated much of the spatial pattern of variability in forest structure, though its influence was mediated by other state factors. Elevation exerted a strong nonlinear control on stand density, 90th percentile height, quadratic mean diameter, and basal area. Fig. 9 shows interactions between the two dominant topographic explainers for each of the response variables. 
-- [TODO: Table of model coefficients]
-- Stand density was at a maximum at 2800 m, on ridgetops and at southwest-facing aspects.
-- Stand density decreased with SWE
-- SWE mediated the elevational control on density, such that areas of low elevation and high SWE hosted the least dense stands, while areas of high elevation and low SWE hosted less dense stands than high elevation areas with high SWE
-- The elevation-slope interaction had the strongest influence on the upper range of stand height (measured by the 90th percentile of height per pixel), with highest densities occuring on moderate slopes at low-to mid-elevations. Extreme steep and shallow slopes produced stands of lower overall height, though this effect was less pronounced at the extremes of elevation
-- For QMD the influence of elevation was mediated strongly by soil AWC, which had an approximately bimodal nonlinear fit, with maxima around [TODO: rescale and report maxima] 
--  For basal area, the interaction between elevation and percent organic matter exerted the most influence
-- Other topographic factors had smaller effects [TODO: report coefficients and curve d.f.]
-- Fig. 9 [TODO: plot partial-effects for all 4 response variables]
-- [TODO: report geology effects]
+### 3.2.5	Feature interactions
+In the GAM strategy, we further evaluated two-way interactions between elevation and each of SWE, ∆SWE, AWC, and TPI. Interaction terms were significant across all five GAMs. In Fig. 7, we show interaction plots for elevation and the top predictor for each structural variable. The interactive effects were most pronounced for density and QMD. Highest stand density occurred at the interface of low elevation and rapid snow disappearance, while the lowest densities occurred at high elevations, regardless of melt rate, and where low elevation and slow melt coincided. As for QMD, the girthiest trees in the domain tended to occur where low elevation coincided with high soil AWC. 
 
 # 4. Discussion
 
 We have described an analysis of abiotic correlates with several measures of forest stand structure based on discretization and tree-crown detection of full-waveform LiDAR. The study quantified the relative contribution of climatic, topographic, edaphic, and geologic factors to explaining stand structure, and further described the functional behavior of individual covariates, as well as interactions between explanatory factors. In section 4.1, we discuss the efficacy of the method for estimating stand structural characteristics. Then, in section 4.2, we evaluate the inferential results in the light of prior findings and biophysical processes.
 
 ### 4.1 Optimization of tree segmentation on discretized waveform LiDAR is appropriate for continuous estimation of forest structure
-Our detection and match rates between field-observed and model-detected trees compared favorably with results from prior studies using the same automated matching procedure. In their benchmarking analysis of eight delineation algorithms, Eysn (2015) reported a maximum RMS match rate of 36% and an extraction rate of 55% with 1.6 m ∆Z accuracy and 0.9 m ∆XY accuracy in a mixed-age conifer site, a substantial underdetection bias compared to our results. Pang et al. (2020) reported a match rate of 70% on an extraction rate of 103% across 10 sites of varying composition. However, their analysis used a minimum diameter threshold of 5 cm and minimum height of 4.2 m, where ours were 1.0 cm and 1.3 m, respectively. Ayrey et al. (2017) reported true-positive rates of 66%--69% and commission rates of 22--29% in their original application of the LayerStacking algorithm in dense uneven-aged conifer forest. In their case, they manually matched trees through visual observation and enforced a minimum DBH threshold of 10 cm. The strength of agreement in our study suggests that it is possible to map height, location, and DBH at the ITC level with sufficient accuracy using the ITD optimization strategy described here. Our results further support Dalponte and Coombes' (2016) conjecture that tree-centric approaches to quantifying forest characteristics are appropriate, and in some cases even advantageous compared to area-based approaches, because they allow for feature estimation at any (reasonable) spatial scale on fundamentally the same epistemological basis as a field inventory.
+Our detection and match rates between field-observed and model-detected trees compared favorably with results from prior studies using the same automated matching procedure. In their benchmarking analysis of eight delineation algorithms, @eysn_benchmark_2015 reported a maximum RMS match rate of 36% and an extraction rate of 55% with 1.6 m ∆Z accuracy and 0.9 m ∆XY accuracy in a mixed-age conifer site, a substantial underdetection bias compared to our results. @pang_nystrom-based_2021 reported a match rate of 70% on an extraction rate of 103% across 10 sites of varying composition. However, their analysis used a minimum diameter threshold of 5 cm and minimum height of 4.2 m, where ours were 1.0 cm and 1.3 m, respectively. @ayrey_layer_2017 reported true-positive rates of 66%--69% and commission rates of 22--29% in their original application of the LayerStacking algorithm in dense uneven-aged conifer forest. In their case, they manually matched trees through visual observation and enforced a minimum DBH threshold of 10 cm. The strength of agreement in our study suggests that it is possible to map height, location, and DBH at the ITC level with sufficient accuracy using the ITD optimization strategy described here. Our results further support @dalponte_tree-centric_2016 's conjecture that tree-centric approaches to quantifying forest characteristics are appropriate, and in some cases even advantageous compared to area-based approaches, because they allow for feature estimation at any (reasonable) spatial scale on fundamentally the same epistemological basis as a field inventory.
 
-On average, the ITD model overestimated the number of trees in plots by 28 percent, largely because of overdetection in the middle height classes of lower density plots and underdetection in the lower height classes across sites. The higher extraction rate in our deployment of the LayerStacking algorithm suggests that we slightly overdetected trees, resulting in a high density bias and, potentially, a low QMD and BA bias, pointing to a need for further refinement of the delineation approach and/or a generalizable correction factor. The model overestimated median height by 1.2 m across plots, but overestimated maximum height by only 0.2 m. Using site-derived allometric coefficients produced a negligible overestimate of QMD (+ 0.3 cm) relative to field data. That we were able to extract and match a large proportion of true subcanopy trees with relatively low commission error underscores the advantage of full waveform over discrete point data (Anderson et al 2016). 
+On average, the ITD model overestimated the number of trees in plots by 28 percent, largely because of overdetection in the middle height classes of lower density plots and underdetection in the lower height classes across sites. The higher extraction rate in our deployment of the LayerStacking algorithm suggests that we slightly overdetected trees, resulting in a high density bias and, potentially, a low QMD and BA bias, pointing to a need for further refinement of the delineation approach and/or a generalizable correction factor. The model overestimated median height by 1.2 m across plots, but overestimated maximum height by only 0.2 m. Using site-derived allometric coefficients produced a negligible overestimate of QMD (+ 0.3 cm) relative to field data. That we were able to extract and match a large proportion of true subcanopy trees with relatively low commission error underscores the advantage of full waveform over discrete point data @anderson_is_2016. 
 
 One novel contribution of this analysis was our workflow for optimizing tree-crown detection. One of the critical challenges in large-scale tree mapping is justifying the selection of algorithm and optimal parameters for a particular site and vegetation type. We addressed this challenge by bringing to bear an approach with roots in the machine-learning domain. Our method allowed us to robustly train, test, and validate ITD procedures while preserving interpretability of model parameters. By programatically iterating through multiple algorithms and large permuted sets of parameters, we were able to objectively and empirically justify the ITD method applied in domain-wide prediction. We note that other algorithms are available, and others among those we tested may have performed better in other domains, but we suggest that our approach offers a model for reproducible tree detection for the discipline. A further contribution of our method is that it demonstrates the possibility of predicting individual-scale tree attributes over a large domain while training on only a small proportion its trees, provided the training samples are well distributed across environmental and structural gradients.
 
 ### 4.2 Abiotic constraints on stand structure
 
-****************
-1. Results highlight strong, scale-dependent associations between maximum canopy height and water availability
-  - VARIABLES: as measured by the climatic water deficit, mean annual precipitation, and topographic factors
-  - SCALE: across a ~2800 m regional elevation gradient
-  - MODEL PERF: Despite extensive disturbance history, models explained 70% of variance
-  
-2. Bearing on hypotheses:
-  - Coarse-scale patterns associated with climatic variables related to water balance
-  - Finer-scale patterns associated with climate, but topographic variables relating to moisture availability became relatively more influential
-  - Height also associated with parent material
-  
-3. Climate variables
-- Temperate forest structure along the elevation gradient is limited by water and energy avail
-  - Dry low-elevation end of moisture: tree growth limited by moisture
-  - At moist end, light competition may drive forest height
-  - At higher elevations, expect height to be limited by low temps
-  - OVerwhelming importance of climate variables describing water limitation in this study is consistent with prior studies
-  - Also consistent with characterization of forests below ~2400 m as water-limited
-  - Climate variables reflecting energy limitation also correlated with canopy height in energy-limited forests
-  - CWD only accounts for moisture in top [100? 30?] cm of soil
-
-4. Geology
-  - While we did attempt to quantify both geological substrate and water avail, variables don't capture deep subsurface porosity, water holding capacity, or bedrock fracturing
-  - large trees are deeply rooted in highly porous saprolite (weathered subsurface rock at the base of the soil profile) with roots reaching 10–20 m below the surface. This porous rock layer contains large volumes of subsurface water and is vital to supporting the ecosystem through the summer dry season and extended droughts (Klos et al., 2018). Having spatially-explicit maps of subsurface porous rock containing water that can be tapped by large trees would improve our ability to model maximum tree height and predict future forest distribution.
-
-****************
 Forest stand structure can be thought of as an ensemble of emergent properties of ecosystem development manifest on a landscape. Studying such an ensemble at an arbitrary point in time brings inherent limitations. Notably, it seeks to fix a dynamic system and in doing so collapses the legacies of past change, including disturbance history and individual life histories. Nevertheless, we start from the position that undertaking this sort of analysis is valuable (a) on its own as a contribution to the broader field of ecological gradient analysis, and (b) for improving understanding forest dynamics under novel climate forcings and anthropogenic land-use modification, in so far as it establishes a baseline against which to evaluate future change or provides a benchmark for mechanistic modeling of future scenarios.
 
-Patterns of forest structure are necessarily scale-specific and depend on different covariates at different spatial scales (Wiens 1989). At broad scales (10^12^--10^14^ m^2^), gradient analyses have consistently found temperature and moisture to be strong explainers of such emergent properties as canopy structure and carbon density (Veblen 1986, Urban et al. 2000, Hessberg et al. 2007, Holden and Jolly 2011). However, Stephenson (1990, 1998) and Urban (2000) note that temperature-moisture axes may be less relevant to vegetation productivity than other components of the water and energy balance. While simple to measure or index, temperature and moisture on their own offer unreliable approximations of how much water and energy are available for plants to use. Their interdependence may also obscure more meaningful vegetation-environment interactions: temperature and moisture tend to covary closely along elevational and latitudinal gradients, but temperature also partially drives atmospheric demand and influences stomatal regulation, contributing both positive and negative feedbacks to plant-available moisture (Peters et al. 2018). This may particularly so at smaller scales, where local topoclimatic variability modifies synoptic temperature and moisture regimes (Dobrowski 2011; Adams et al. 2014; Barnard et al. 2017). More appropriate measures, in this view, are AET and CWD, more-or-less orthogonal vectors that capture both the amount of energy and water available to facilitate transpiration and C assimilation and the amount of unmet atmospheric demand. Because AET has been well correlated with net primary production (negatively, for CWD) (Rosenzweig 1968; Lieth 1975; Fritts 1976; Webb et. al 1983) and CWD with canopy height (Fricker et al. 2019), we expected AET and CWD to have the strongest associations with the five measures of forest structure. We further expected these strong climatic signals to be amplified or modulated by other local topographic and substrate properties, given these factors' importance for ecosystem development at the micro-scale (1:10^6^ m^2^) (Delcourt 1982). 
-
-Our results did not accord precisely with these expectations. Instead, in this watershed-scale analysis, we found factors relating to soil water release (AWC) and precipitation input (SWE, ∆SWE) to exert the strongest influence. These factors, along with elevation, exerted the strongest leverage across all measures of forest structure  (51.1% -- 79.3% relative influence in GBM). AET was one of the top five explainers for only one structural measure (stand density), and it accounted for less than 10 percent of relative influence. CWD was one of the least influential factors for all responses. 
-
-This somewhat unexpected result raised important questions for us about water and energy limitation in this high-elevation forested system. We initially assumed that because our domain spanned a 1300 m elevational gradient above 2600 m, most of the forest system would be energy-limited. At best we expected to see contrasting density and biosignals at lower range of our domain, indicating  water-energy limitation threshold lay 
-
-outcome raises a vexing question: how does this make sense, when most of the surveyed forested area is radiation-limited rather than water limited? Why should factors relating to input and storage in the water balance predominate over factors relating to radiation budget? It is generally thought that above the water-energy limitation threshold, plant growth should be more sensitive to variability in radiation, since PET rarely exceeds AET, and the growing season is short (Hartl-Meier et al., 2014; Roebroek et al., 2020; Sánchez-Salguero et al., 2017; Stephenson, 1998; van der Maaten-Theunissen et al., 2013). 
-
-Although several studies have identified discontinuities in tree responses to drought and to temperature across elevation gradients, the estimated elevational threshold is uncertain, reported from 800 m to 3200 m (Hartl-Meier et al., 2014; Salzer et al., 2014; van der Maaten-Theunissen et al., 2013). Pinning the threshold to temperature is also variable, with one study reporting a W-E threshold at a maximum fall/spring temperature of 8.4 º C () and others from 10 º C to 30 º C (Gantois 2022). 
-
-One upshot: despite its high elevation, this is not an essentially energy-limited system, and variability in snow accumulation, melt rate, and available water dictate the spatial pattern of forest structure more so than variability in radiative factors. 
-
-Another interpretation is that the water-energy limitation threshold does not map tightly to an elevational or temperature threshold but is more of a function of moisture and evaporative demand...
-
-Soil AWC is a measure of the water available to plants per unit depth and is parameterized in the SSURGO data as the difference in volumetric water content at field capacity ($\theta$ = 0.10 bar) and at the permanent wilting point ($\theta$ = 15 bar). The associative trends diverged between AWC and density, on the one hand, and height, QMD, and BA, on the other. Density generally increased with AWC, with kinks in the middle range of AWC values. However, the distribution of other factors along AWC was non-linear, with a maximum plateau in the middle range of AWC values and declines at either extreme. This suggests a potential decoupling of stand-scale and individual-scale dynamics. While the number of trees is able to continue increasing at ever higher levels of soil available water, there may be a preferential zone of soil moisture facilitating carbon assimilation for the individual.
+Patterns of forest structure are necessarily scale-specific and depend on different covariates at different spatial scales (Wiens 1989). In this watershed-scale analysis, we found factors relating to soil water release (AWC), precipitation input (SWE, ∆SWE), and elevation to predominate as explainers across different measures of stand structure (59.7%--81.1% relative influence in GBM). 
 
 The importance of snow variables, SWE and ∆SWE, is consistent with findings that conifers in this region rely on stored winter precipitation and snowmelt pulses as their primary water source (Berkelhammer et al. 2020; Allen et al. 2019). Again, the relationships for density and for other structural factors were decoupled. Density was low and stable across low-to-median values on the SWE distribution, and increased toward the upper extreme. The other factors showed the opposite trend: high and stable at low-to-median SWE values and decreasing toward the upper extreme. 
 
-The inflection of the elevation:forest structure curves corresponds approximately to the dividing line between montane and subalpine zones, at around 27000--2900 m elevation. To a crude approximation, this suggests that there exists a zone of preferable conditions supporting stand density, basal area, and height growth occurring around this elevational range. 
+Soil AWC is a measure of the water available to plants per unit depth and is parameterized in the SSURGO data as the difference in volumetric water content at field capacity ($\theta$ = 0.10 bar) and at the permanent wilting point ($\theta$ = 15 bar). The associative trends diverged between AWC and density, on the one hand, and height, QMD, and BA, on the other. Density generally increased with AWC, with kinks in the middle range of AWC values. However, the distribution of other factors along AWC was non-linear, with a maximum plateau in the middle range of AWC values and declines at either extreme. This suggests a potential decoupling of stand-scale and individual-scale dynamics. While the number of trees seems to be able to continue increasing at ever higher levels of soil available water, there may be a preferential zone of soil moisture facilitating carbon assimilation for the individual.
 
-REVISE BELOW: 
-it may be that the energy-water limitation threshold is not clearly dictated by a temperature threshold (or an elevation threshold?) but
+As for topography, the inflection of height, QMD, and BA curves along the elevation gradient corresponded approximately to the dividing line between montane and subalpine zones, at around 3000--3200 m elevation. To a crude approximation, this suggests that there exists a zone of preference supporting maximum height and diameter growth occurring around this elevational range. This may have to do with cold-air pooling, where minimum temperatures are depressed at low elevations, in addition to the familiar adiabatic lapse with elevations, because of downwelling of cool air into regionally low areas. The interactive effect of elevation and ∆SWE's on density suggest that this is a plausible interpretation: density was limited where low elevation and long snow residence time co-occurred. That is to say, it may be the case that where pooling cold air preserved snowpack, it also diminished stand development.
 
-- 8.4°C (fall/spring maximum temperature)
+While we attempted to capture the influence of geological substrate on structural pattern, the categorical predictors did not account for many of the major lithologic constraints on tree growth, namely water access. There is evidence that large trees root into decomposing saprolite at the soil-bedrock interface, and can root even deeper into fractured bedrock as deep as 20 m. Where this subsurface reservoir exists, it can provide a substantial subsidy during seasonal and secular dry periods, offering trees an advantage over those without access to such a subsidy ([TODO:CITE]). Moreover, water storage below the soil layer depends heavily on lithologic properties not represented in our simple categorical feature. And other geological properties govern downgradient subsurface flow, which we also did not parameterize in our model. Getting a better grasp on these properties could improve our analysis.
 
-This said, our results may still agree in principle with Stephenson and Urban's concept of the landscape's physical template. A rough guideline is that ~2400 m in elevation marks a division between water limitation and energy limitation for mountain vegetative communities (Tague et al. 2009; Das et al. 2013; Fricker et al. 2019). Since our domain spanned a 1300 m elevational gradient above 2600 m, a reasonable assumption is that the trees under investigation here are primarily energy limited. Thus, this threshold may indeed have a thresholding effect: above it, all trees are similarly limited relative to one another, regardless of variability in the radiation budget. If factors contributing to the energy balance have less leverage on structural variability, this could allow factors that drive the water balance to predominate. 
+### 4.2.1 Water and energy limitation 
 
-Complicating this explanation somewhat is the apparent importance of elevation. Elevation is often used to proxy mean temperature via lapse rate. However, within an energy-limited system, minimum growing-season temperatures are the stronger constraint on vegetation growth, and elevation on its own is not necessarily a strong proxy for minimum temperature. The nonlinearity of the elevational constraint on stand density, height, QMD, and BA offers insight into this apparent contradiction. At the high and low
+At broad scales (10^12^--10^14^ m^2^), gradient analyses have consistently found temperature and moisture to be strong explainers of such emergent properties as canopy structure and carbon density (Veblen 1986, Urban et al. 2000, Hessberg et al. 2007, Holden and Jolly 2011). However, Stephenson (1990, 1998) and Urban (2000) note that temperature-moisture axes may be less relevant to vegetation productivity than other components of the water and energy balance. While simple to measure or index, temperature and moisture on their own offer unreliable approximations of how much water and energy are available for plants to use. Their interdependence may also obscure more meaningful vegetation-environment interactions: temperature and moisture tend to covary closely along elevational and latitudinal gradients, but temperature also partially drives atmospheric demand and influences stomatal regulation, contributing both positive and negative feedbacks to plant-available moisture (Peters et al. 2018). This may particularly so at smaller scales, where local topoclimatic variability modifies synoptic temperature and moisture regimes (Dobrowski 2011; Adams et al. 2014; Barnard et al. 2017). More appropriate measures, in this view, are AET and CWD, more-or-less orthogonal vectors that capture both the amount of energy and water available to facilitate transpiration and C assimilation and the amount of unmet atmospheric demand. Because AET has been well correlated with net primary production (negatively, for CWD) (Rosenzweig 1968; Lieth 1975; Fritts 1976; Webb et. al 1983) and CWD with canopy height (Fricker et al. 2019), we expected AET and CWD to have the strongest associations with the five measures of forest structure. We further expected these strong climatic signals to be amplified or modulated by other local topographic and substrate properties, given these factors' importance for ecosystem development at the micro-scale (1:10^6^ m^2^) (Delcourt 1982). 
 
+Our results did not accord precisely with these expectations, raising questions for us about water and energy limitation in this high-elevation forested system. We initially assumed that because our domain spanned a 1300 m elevational gradient above 2700 m, we would see evidence of a water-energy (W-E) thresholding effect. It is generally thought that above the W-E threshold, plant growth should be more sensitive to variability in radiation, since PET rarely exceeds AET, and the growing season is short (Hartl-Meier et al., 2014; Roebroek et al., 2020; Sánchez-Salguero et al., 2017; Stephenson, 1998; van der Maaten-Theunissen et al., 2013). We thought stands on the lower end of this range might be sensitive to factors governing water deficit, but that factors governing the radiation budget (AET, heat load, e.g.) would predominate across the majority of the watershed. 
 
+Although several studies have identified discontinuities in tree responses to drought and to temperature across elevation gradients, the estimated elevational threshold is extremely uncertain, reported from 800 m to 3200 m (Hartl-Meier et al., 2014; Salzer et al., 2014; van der Maaten-Theunissen et al., 2013). Pinning the threshold to temperature is also uncertain, ranging at least from 8.4 º C (Dudney et al. 2023) to 30 º C (Gantois 2022). This might lead us to the conclusion that despite its high elevation, ours is not an essentially energy-limited system, and variability in snow accumulation, melt rate, and available water dictate the spatial pattern of forest structure more so than variability in radiative factors. 
 
+Another interpretation is that the W-E limitation threshold may not map tightly to an elevational or temperature line but stands as more of a function of moisture and evaporative demand. In this sense, our results may still agree in principle with Stephenson and Urban's concept of the landscape's physical template. If factors contributing to the energy balance have less leverage on structural variability than factors that drive the water balance, it may mean that W-E threshold has more of a mosaic expression on the landscape than previously thought, an inference that could easily be missed using spatially discontinuous plot- or transect-based observations.
 
-- Both low elevation sites and high elevation sites may experience temperature limitation 
-  - Minimum temperature is the growth limiter
-  - Low-elevation sites in the watershed experience low minima because of inversions that cause cold-air pooling
-  - Low elevation sites are further constrained by water limitation during the growing season, with warmer temperatures driving higher evaporative demand and earlier snowmelt
-
-
-Topographic position
-
-
-Climate variables associated with energy limitation (AET, elevation)
-
-
-The inference that taller and larger-diameter trees occur at topographic positions nearer to ridges than to toeslopes is consistent with Lydersen and North's (2012) findings. 
-
-One interpretation of these results is straightforward: that evaluating forest structure and its state-factor covariates using spatially continuous data reveals novel and, to a certain degree, unanticipated inferences about their relationships. It may indeed be the case that plot and transect data miss important dimensions of variability in vegetation and environmental gradients, though it will be important to evaluate this claim in other subalpine mixed-conifer domains, to verify that these relationships are not specific to one drainage. 
-
-A second interpretation inquires into the biophysical factors that may be driving these relationships. The inflection of the elevation:forest structure curves corresponds approximately to the dividing line between montane and subalpine zones, at around 27000--2900 m elevation. To a crude approximation, this suggests that there exists a zone of preferable conditions supporting stand density, basal area, and height growth occurring around this elevational range. 
-
-- We might think of this preferable zone as sitting at the intersection of two axes of control on stand development: water limitation and temperature limitation
-- Stephenson (1990, 1998) suggests thinking of moisture supply and demand as orthogonal vectors driving vegetation dynamics
-- Urban et al. interpret this in the context of range limitations for conifer species in the Sierra Nevada
-- The orthogonal vectors framework may also be instructive for considering controls on structure
-- The zone of preference can be thought to sit between a low-elevation constraint of water limitation (droughtiness) and a high-elevation constraint of temperature limitation (coolness). 
-- Of course, tree species respond differentially to these constraints due to differences in assemblages of functional traits... [TODO: how to interpret that, without compositional data?]
+Complicating this explanation somewhat is the apparent importance of elevation. Elevation is often used to proxy mean temperature via lapse rate. However, it is the case that both low elevation sites and high elevation sites may experience temperature limitation.
 
 # Conclusions
 
-- [TODO: most of this section]
-- Gaps we addressed
-- How we addressed them
-- Summary of major findings and their relation to literature
-- Significance:
- - Quantifying the drivers of fine-scale heterogeneity in the structure, composition, and function of montane and subalpine forests is important for several reasons. First, understanding the factors that shape landscape vegetation patterns remains a foundational question in ecology and conservation (Waring and Running 1998, Turner and Gardner 2015). Second, as in most systems that face the imminent prospect of novel drought and disturbance regimes, there is a need for reference data against which scientists and managers can observe change (Millar et al. 2007). Third, understanding the drivers of heterogeneity is essential for forecasting how mountain forests will respond to regional environmental change, and for devising conservation and management strategies that promote forest resilience. Finally, there is a need for both data and inferential analyses that can be used to initialize and benchmark terrestrial ecosystem models used to predict vegetation and flux responses to perturbations (Antonarakis et al. 2011, Antonarakis et al. 2014)
+This paper, to our knowledge, is the first to evaluate a complement of conifer stand structural characteristics on a spatially continuous basis at the scale of a full watershed, incorporating end-members on abiotic gradients along which forest stands grow.
+
+Quantifying the drivers of fine-scale heterogeneity in the structure, composition, and function of montane and subalpine forests is important for several reasons. First, understanding the factors that shape landscape vegetation patterns remains a foundational question in ecology and conservation (Waring and Running 1998, Turner and Gardner 2015). Second, as in most systems that face the imminent prospect of novel drought and disturbance regimes, there is a need for reference data against which scientists and managers can observe change (Millar et al. 2007). Third, understanding the drivers of heterogeneity is essential for forecasting how mountain forests will respond to regional environmental change, and for devising conservation and management strategies that promote forest resilience. Finally, there is a need for both data and inferential analyses that can be used to initialize and benchmark terrestrial ecosystem models used to predict vegetation and flux responses to perturbations (Antonarakis et al. 2011, Antonarakis et al. 2014)
+
+One upshot of our results is straightforward: that evaluating forest structure and its state-factor covariates using spatially continuous data reveals novel and, to a certain degree, unanticipated inferences about their relationships. It may indeed be the case that plot and transect data miss important dimensions of variability in vegetation and environmental gradients, though it will be important to evaluate this claim in other subalpine mixed-conifer domains to verify that these relationships generalize beyond a single watershed. 
 
 # Acknowledgements
+This work was funded by the U.S. Department of Energy Watershed Function Scientific Focus Area at Lawrence Berkeley National Lab, by the U.S. Department of Energy Environmental System Science (Project [TODO: #######] "Integrating tree hydraulic trait, forest stand structure, and topographic controls on ecohydrologic function in a Rocky Mountain subalpine watershed"), the Energy and Resources Group, UC Berkeley (Berkeley, CA, USA), and the Rocky Mountain Biological Lab (RMBL, Gothic, CO, USA). The authors would additionally like to thank RMBL for assistance with field site access, research permitting, and GNSS data acquisition. We also thank Hilary Henry, Sophia Bagshaw, Sarah Hettema, Jessica Katz, and Asa Elliott for field assistance, and Maggi Kelly, Dennis Baldocchi, Marcos Longo, and Ian Breckheimer for productive discussions. We are grateful to the anonymous reviewers for their constructive suggestions.
+
 \clearpage
 
 \newpage
+
 # Figures and Tables
 ## Figure 1
 ![](./Figures/Fig1.png)
@@ -369,7 +268,7 @@ A second interpretation inquires into the biophysical factors that may be drivin
 \clearpage
 
 \newpage
-## Table 1
+
 **Table 1.** Response (RE) and explanatory (EX) variables used in this study's statistical analyses. Variables listed in the "Topography" category were also used in the sampling procedure to stratify inventory plots.
 
 ```{r, echo=F}
@@ -379,7 +278,7 @@ tbl1
 \clearpage
 
 \newpage
-## Table 2
+
 **Table 2.** Measurements taken in field inventory with their units and a summary of methods.
 
 ```{r, echo=F}
@@ -389,109 +288,122 @@ tbl2
 \clearpage
 
 \newpage
-## Table 3
+
 **Table 3.** Tree height (∆Z) and horizontal (∆XY) distance criteria for candidate searching in the matching procedure (Eysn et al. 2015).
 
-```{r}
+```{r, echo=F}
 tbl3
 ```
 
 \clearpage
 
 \newpage
-## Table 4
-**Table 4.** Summary statistics for the best-performing runs of six individual tree delineation (ITD) algorithms. Parameters and values for each run appear in Table S1. Root mean squares were computed for results across the 17 training plots. 
+
+**Table 4.** Summary statistics for the best-performing runs of six individual tree delineation (ITD) algorithms. Parameters and values for each run appear in Table S1. Root mean squares were computed for results across the 17 training plots. **NOTE: THIS NEEDS TO BE UPDATED WITH A BETTER VERSION FROM DATA IN SAVIO. SAVIO'S BEEN DOWN SINCE 10/22**
 
 ![](./Figures/tbl4.png)
 
 \clearpage
 
 \newpage
-## Table 5
-Table 5. User-specified parameters ($\lambda_{1:7}$) applied in the LayerStacking algorithm with the optimal values found in training. 
 
-```{r}
+**Table 5.** User-specified parameters ($\lambda_{1:7}$) applied in the LayerStacking algorithm with the optimal values found in training. 
+
+```{r, echo=F}
 tbl5
 ```
 
 \clearpage
 
 \newpage
-## Figure 2
+
 ![](./Figures/Fig2.png)
-**Figure 3.** Kernel density estimate of the distributions of field-observed (dark blue) and model-detected (light blue) trees across the 17 training sites. The closer the lines are for a given dimensional value, the stronger the agreement at that value.
+**Figure 2.** Kernel density estimate of the distributions of field-observed (dark blue) and model-detected (light blue) trees across the 17 training sites. The closer the lines are for a given dimensional value, the stronger the agreement at that value.
 **NOTE: THIS NEEDS TO BE UPDATED WITH A BETTER VERSION STORED ON SAVIO. THE OTHER VERSION INCLUDES LINES FOR UNMATCHED OBSERVED TREES. SAVIO'S BEEN DOWN SINCE 10/22**
 
 \clearpage
+
 \newpage
 
-## Figure 3
 ![](./Figures/Fig3.png)
 **Figure 3.** Bar-graph comparison of height between matched trees across the 17 training sites. Light shading corresponds to detected trees, while dark shading corresponds to field-observed trees.
 **NOTE: THIS NEEDS TO BE UPDATED WITH A BETTER VERSION STORED ON SAVIO. THE OTHER VERSION INCLUDES STACKED BARS FOR UNMATCHED OBSERVED TREES. SAVIO'S BEEN DOWN SINCE 10/21**
 
 \clearpage
+
 \newpage
 
-## Figure 4
 ![](./Figures/Fig4.png)
 
 **Figure 4.** Frequency distribution of structural values for predicted trees across the full forested domain. 
 
 \clearpage
+
 \newpage
 
-## Table 7. 
 **Table 7.** Percent of total variance explained (TVE) and validation RMSE for GAM. Out-of-bag RMSE and validation RMSE for GBM.
 
+```{r, echo=F}
+tbl6
+```
+
 \clearpage
+
 \newpage
 
-## Figure 5
 ![](./Figures/Fig5.png)
-**Figure 5.** Relative variable influence in GBM for all predictor variables. Variable categories are clustered by color ramp (climate=blues, soil=oranges, topography=greens, geology=grey) Shading within groups is arbitrary. Readers are referred to the digital version of the paper for color interpretation.
+**Figure 5.** Relative variable influence in GBM for all predictor variables (A) and for the five most influential variables for each response (B). In (A), variable categories are clustered by color ramp (climate=blue, soil=red-orange, topography=green, geology=grey) Shading within groups is arbitrary. Readers are referred to the digital version of the paper for color interpretation. In (B), predictors are ranked in order of their relative contribution to variance explained, averaged over all splits.
 
 \clearpage
+
 \newpage
 
-## Figure 6
 ![](./Figures/Fig6.png)
 
-**Figure 6.** Partial effects plots
+**Figure 6.** Partial effects plots from GAM on the five forest structure responses for the five most important variables identified for each response through GBM. All relationships presented here were significant in GAM. Note that the figure for Density shows only four variables. The fifth most important explainer for density was geology, which is not well displayed in this format. Geology is discussed in 3.3
 
-## Figure 7
 ![](./Figures/Fig7.png)
 **Figure 7.** Variable interaction plots demonstrate the strong, nonlinear elevational control on density (A), maximum height (B), QMD (C), and BA (D). Interaction plots show the two strongest explainers of each response variable. The influence of elevation is mediated by SWE, slope angle, soil AWC, and soil organic matter, respectively.
 
 \clearpage
+
 \newpage
 
 # Supplementary Information
 
-## Figure S1
 **Figure S1.** Distributions of inventory plots along six topographic gradients.
 \clearpage
+
 \newpage
 
 **Table S1.** Algorithms, parameters, and vectors of values applied on those parameters in ITD training and validation. 
 
 \clearpage
+
 \newpage
+
+![](./Figures/FigS2.png)
 
 **Figure S2.** Raster images of forest structure variables with a true-color RGB composite produced from the USDA NRCS National Aerial Imaging Program imagery acquired in 2019 (bottom right). Forest struture metrics are masked to areas with conifer forest cover exceeding 100 stems ha^-1^ in density. 
 
 \clearpage
+
 \newpage
+
 ![](./Figures/FigS3.png)
 **Figure S3.** Raster images of abiotic explanatory variables. For geology, the numeric scale [1-9] corresponds denotes the following lithologic groups: [1] Dakota Sandstone, [2] Mancos Shale, [3] Mesa Verde Formation (Sand/Silt/Coal), [4] Gothic Formation (Sand/Shale), [5] Maroon Formation (Red Sand/Mud/Conglomerate), [6] Glacial Drift, [7] Landslide Deposits, [8] Middle-Tertiary Granodioritic Laccoliths, [9] Wasatch Formation (Claystone-Shale).
 
 \clearpage
+
 \newpage
 
 **Figure S4.** 
+
 \clearpage
+
 \newpage
 
+<!---
 ## Table X. Summary statistics by species for trees observed in field census.
 ```{r, echo=F, message=F, warning=F, layout="l-body-outset"}
 library(dplyr)
@@ -526,6 +438,7 @@ kable(full_unq_inv %>%
             'Stem Density'=round(n()/.16,0),
             'Basal area (m^2 ha^-1)'=round((sum(pi*(DBH_Avg_CM/2)^2, na.rm=T)/.16)*(10^-4),1)))
 ```
+--->
 
-\newpage
 # References
+
