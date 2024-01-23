@@ -17,9 +17,9 @@ drive_auth(path=config$drivesa)
 
 # Ingest trees
 #treefiles <- list.files(config$extdata$trees)
-treefiles <- list.files('/global/scratch/users/worsham/trees_lmffw', pattern='.shp', full.names=T)
-treefiles.mfp <- list.files('/global/scratch/users/worsham/trees_lmffw_missing_fp', pattern='.shp', full.names=T) # tree files from original NEON LAS for missing flightpath
-treefiles <- c(treefiles, treefiles.mfp)
+treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
+#treefiles.mfp <- list.files('/global/scratch/users/worsham/trees_lmffw_missing_fp', pattern='.shp', full.names=T) # tree files from original NEON LAS for missing flightpath
+#treefiles <- c(treefiles, treefiles.mfp)
 
 # Ingest field data
 tmpfile <- drive_download(
@@ -47,15 +47,26 @@ ggplot(allom, aes(x=DBH_Avg_CM, y=Height_Avg_M)) +
   labs(x='DBH (cm)', y='Height (m)')
 
 # Fit exponential model to field height and diameter
+library(ForestFit)
+nlmod <- fitcurve(allom$Height_Avg_M, allom$DBH_Avg_CM,
+                  model='weibull',
+                  start=c(20, 0.001, 0.5))
+
 nthroot = function(x,n) {
   (abs(x)^(1/n))*sign(x)
 }
 
-nlmod <- nls(DBH_Avg_CM~nthroot(Height_Avg_M/a, b),
-             start=list(a=0.1, b=0.01),
+nlmod <- nls(DBH_Avg_CM~nthroot(log(1-((allom$Height_Avg_M-1.3)/a))/-b, c),
+             start=list(a=20, b=0.01, c=1),
              data=allom,
              na.action=na.exclude,
              control=nls.control(maxiter=1000))
+
+# nlmod <- nls(DBH_Avg_CM~nthroot(Height_Avg_M/a, b),
+#              start=list(a=0.1, b=0.01),
+#              data=allom,
+#              na.action=na.exclude,
+#              control=nls.control(maxiter=1000))
 
 # nlmod <- nls(Height_Avg_M~a*DBH_Avg_CM^b,
 #              start=list(a=0.1, b=0.01),
@@ -64,20 +75,34 @@ nlmod <- nls(DBH_Avg_CM~nthroot(Height_Avg_M/a, b),
 #              control=nls.control(maxiter=1000))
 
 # Pull coefficients
-coef <- summary(nlmod)$coefficients
-a <- coef[1,'Estimate']
-b <- coef[2, 'Estimate']
-a.se <- coef[1, 'Std. Error']
-b.se <- coef[2, 'Std. Error']
+# coef <- summary(nlmod)$coefficients
+# a <- coef[1,'Estimate']
+# b <- coef[2, 'Estimate']
+# a.se <- coef[1, 'Std. Error']
+# b.se <- coef[2, 'Std. Error']
+
+# # Predict diameter from height in field data
+# #yhat <- predict(nlmod, allom$DBH_Height_M)
+# yhat <- nthroot(allom$Height_Avg_M/a, b)
+# allom$yhat <- yhat
+# resid <- allom$yhat-allom$DBH_Avg_CM
+
+# Pull coefficients
+coef <- nlmod$estimate
+b1 <- coef[1]
+b2 <- coef[2]
+b3 <- coef[3]
+b1.se <- coef[4]
+b2.se <- coef[5]
+b3.se <- coef[6]
 
 # Predict diameter from height in field data
-#yhat <- predict(nlmod, allom$DBH_Height_M)
-yhat <- nthroot(allom$Height_Avg_M/a, b)
+yhat <- nthroot(log(1-((allom$Height_Avg_M-1.3)/b1))/-b2, b3)
 allom$yhat <- yhat
 resid <- allom$yhat-allom$DBH_Avg_CM
 
 # What is RMSE of DBH estimate?
-dbh.est.rmse <- sqrt(mean(resid^2))
+dbh.est.rmse <- sqrt(mean(resid^2, na.rm=T))
 dbh.est.rmse
 
 # Plot predictions
@@ -98,7 +123,7 @@ mclapply(treefiles, \(x) {
   tf$BA_est_lb <- pi*(tf$DBH_lb/2)**2
   tf$BA_est_ub <- pi*(tf$DBH_ub/2)**2
   outname <- str_split(basename(x), '\\.', simplify=T)[1]
-  st_write(data.frame(tf), file.path('/global/scratch/users/worsham/trees_lmffw_csv', paste0(outname, '.csv')), layer_options = "GEOMETRY=AS_XY")
+  st_write(data.frame(tf), file.path('/global/scratch/users/worsham/trees_csv', paste0(outname, '.csv')), layer_options = "GEOMETRY=AS_XY")
 },
 mc.cores = getOption("mc.cores", 30)
 )
