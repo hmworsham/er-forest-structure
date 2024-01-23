@@ -2,9 +2,9 @@
 
 # Rclone data from Savio Scratch to watched Drive directory
 
-scratch=/global/scratch/users/worsham/trees/
+scratch=/global/scratch/users/worsham/trees_ls_lmffill/
 
-dest=er-drive:Data/LiDAR/trees/
+dest=er-drive:Data/LiDAR/trees_ls_lmffill/
 
 priority=15
 

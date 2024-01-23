@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=findtrees
 #SBATCH --account=fc_lmklab
-#SBATCH --partition=savio3_bigmem
+#SBATCH --partition=savio3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 #SBATCH --time=02:00:00
