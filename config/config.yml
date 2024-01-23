@@ -10,6 +10,7 @@ default:
   - xfun
   - tidyverse
   - ggplot2
+  - ggpattern
   - terra
   - sf
   - future
@@ -52,6 +53,8 @@ default:
   lcpattern: 'UER_landcover_1m_v4.tif'
   bndid: '1nkfaomyxsOjsRgPH8W9Q5a9cDR7xg9Xr'
   bndpattern: 'SDP_Boundary'
+  falcoid: '17hMfbqWv0bX6wNJD2fm2ci6GtCEvrat7'
+  classid: '14BRJ_Jydcm_nWV0M4M1tWwgtC0g-XkWH'
  data:
   raw: './data/raw'
   int: './data/intermediate'
