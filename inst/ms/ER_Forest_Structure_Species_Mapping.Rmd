@@ -1,0 +1,30 @@
+---
+title: "Snodgrass Species Mapping"
+author: "Marshall Worsham"
+date: "1/11/2024"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=F}
+source('inst/examples/snodgrass_species_mapping.R')
+```
+
+```{r}
+density.dbh.facsp
+```
+
+```{r}
+bar.dbh.sp
+```
+
+```{r}
+plot(sp.class.nes2)
+plot(stem.sf[stem.sf$Site_Name=='SG-NES2',], add=T)
+```
+
