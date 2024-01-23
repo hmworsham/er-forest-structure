@@ -32,7 +32,7 @@ length(start.seq)*length(res.seq)*length(ws1.seq)*length(ws2.seq)*length(buf.seq
 
 ## Run optimization
 ## ---------------------------------------------------------------------------------------------------
-testls <- lapply(lasplots, ls.opt, ls.params, hmin=1.8)
+testls <- lapply(lasplots, ls.opt, ls.params, hmin=1.3)
 
 ## Reformat results
 ## ---------------------------------------------------------------------------------------------------
@@ -82,3 +82,10 @@ write.csv(ls.match,
                     'itc_results',
                     'ls_itc_results.csv'),
           row.names=T)
+
+ls <- read.csv(file.path('/global',
+                    'scratch',
+                    'users',
+                    'worsham',
+                    'itc_results',
+                    'ls_itc_results.csv'))
