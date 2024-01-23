@@ -72,7 +72,6 @@ conif.sieve[conifpatches %in% excludeID] <- NA
 plot(conif100, col=c('red', NA))
 plot(conif.sieve, col=c('blue', NA), add=T)
 
-
 writeRaster(conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'), overwrite=T)
 
 ## ---------------------------------------------------------------------------------------------------
