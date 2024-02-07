@@ -1,30 +1,463 @@
 ---
-title: "Snodgrass Species Mapping"
+title: "East River Conifer Species Mapping"
 author: "Marshall Worsham"
 date: "1/11/2024"
 output:
   html_document:
     df_print: paged
+    code_folding: hide
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = F, warning = F, 
+                      message = F, fig.fullwidth = TRUE, fig.align = 'center')
 ```
 
 ```{r include=F}
-source('inst/examples/snodgrass_species_mapping.R')
+source('inst/examples/species_mapping.R')
+```
+
+This notebook reports on several approaches to selecting tree stems for individual-scale species classification, uniting Kueppers, Worsham et al. forest inventory data with Falco species classification map derived from the 2018 NEON spectroscopy mission. The approaches range from least to most conservative, that is, from preserving all trees to removing all but those in the uppermost canopy. Maps, agreement statistics, and agreement figures are shown for each approach.
+
+## Pipeline
+1. Align geolocated tree stem objects to classification raster. 
+2. Define a buffer of radius $r$ around each tree stem object, approximating crown area.
+3. Filter crown objects according to one of 4 specified procedures. 
+4. Plot a map of crown objects and classification data at an example site.
+5. For each crown object, extract intersecting raster values by majority vote. 
+6. Compute accuracy statistics.
+7. Generate agreement figures.
+
+--- 
+
+## 1. Least conservative approach: keep every tree
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.buff)
+```
+
+### Confusion matrix
+```{r}
+stems.comp1 <- get.spp(sp.class, stem.buff, sp.codes)
+
+cm1 <- confusionMatrix(stems.comp1$Reference, stems.comp1$Classified)
+cm1.overall <- cm1$overall
+
+data.frame(cm1$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm1.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm1$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+```
+
+### Probability density function
+```{r}
+pd1 <- plt.density(stems.comp1)
+pb1 <- plt.bar(stems.comp1)
+```
+
+```{r out.width='100%'}
+pd1
+```
+
+```{r out.width='100%'}
+pb1
+```
+
+## 2. Less conservative 
+
+Keep any tree whose height is in the 90th percentile or higher. For all other trees, only keep them if (a) they don't intersect another tree's crown area or (b) if the tree whose area they intersect is not in the 90th percentile height.
+
+1. Apply a height-dependent buffer of radius $r=0.03H + 0.5$, around every tree.
+2. For each tree $t_i$: 
+  - if: $H \ge H_{90pctl}$, keep $t_i$.
+  - else:
+  - Test whether crown area sits entirely within another tree crown area. 
+      - if True: discard $t_i$
+      - if False:
+        - Test whether crown area of $t_i$ intersects any other tree crown area.
+          - if True: test whether any of the trees $t_i$ intersects has $H \ge H_{90pctl}$
+            - if True: discard $t_i$
+            - if False: keep $t_i$
+          - if False: keep $t_i$
+      
+```{r echo=T}
+# Create canopy filter
+canopy.filter.a <- unlist(lapply(1:nrow(stem.buff), \(i) {
+  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .9)) {
+    if(length(stem.within[[i]])<=1) { 
+      tst <- stem.buff[i,]$Height > 0.9 * stem.buff[stem.overlap[[i]],]$Height &
+        !any(stem.buff[stem.overlap[[i]],]$Height >= quantile(stem.buff$Height, .8))
+      tst <- prod(tst)
+    } else { 
+      tst <- 0 }
+  } else {
+    tst <- 1
+  }
+  as.logical(tst)
+}
+))
+
+# Apply canopy filter to buffered stems
+stem.filt.a <- stem.buff[canopy.filter.a,]
+```
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.filt.a)
+```
+
+### Confusion matrix
+```{r}
+stems.comp2 <- get.spp(sp.class, stem.filt.a, sp.codes)
+cm2 <- confusionMatrix(stems.comp2$Reference, stems.comp2$Classified)
+cm2.overall <- cm2$overall
+
+data.frame(cm2$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm2.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm2$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+
+```
+
+### Probability density function
+```{r}
+pd2 <- plt.density(stems.comp2)
+pb2 <- plt.bar(stems.comp2)
+```
+
+```{r out.width='100%'}
+pd2
+```
+
+```{r out.width='100%'}
+pb2
+```
+
+## 3. More conservative 
+Keep any tree whose height is in the 90th percentile or higher. For all other trees, only keep them if (a) they don't intersect another tree's crown area.
+
+1. Apply a height-dependent buffer of radius $r=0.042H + 0.675$, around every tree.
+2. For each tree $t_i$: 
+  - if: $H \ge H_{90pctl}$, keep $t_i$.
+  - else:
+    - Test whether crown area of $t_i$ intersects any other tree crown area.
+      - if True: discard $t_i$
+      - if False: keep $t_i$
+      
+```{r echo=T}
+# Create canopy filter
+canopy.filter.b <- unlist(lapply(1:nrow(stem.buff), \(i) {
+  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .90)) {
+    if(length(stem.within[[i]])<=1) { 
+      if(length(stem.overlap[[i]])) {
+      tst <- 0
+      } else {
+        tst <- 1
+      }
+    } else {
+      tst <- 0
+    }
+  } else {
+  tst <- 1
+  }
+  as.logical(tst)
+  }
+)) 
+
+# Apply canopy filter
+stem.filt.b <- stem.buff[canopy.filter.b,]
+```
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.filt.b)
+```
+
+### Confusion matrix
+```{r}
+stems.comp3 <- get.spp(sp.class, stem.filt.b, sp.codes)
+cm3 <- confusionMatrix(stems.comp3$Reference, stems.comp3$Classified)
+cm3.overall <- cm3$overall
+
+data.frame(cm3$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm3.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm3$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+```
+
+### Probability density function
+```{r}
+pd3 <- plt.density(stems.comp3)
+pb3 <- plt.bar(stems.comp3)
+```
+
+```{r out.width='100%'}
+pd3
+```
+
+```{r out.width='100%'}
+pb3
+```
+
+## Most conservative
+Keep only trees in the 90th percentile of height or higher.
+```{r}
+canopy.filter.c <- unlist(lapply(1:nrow(stem.buff), \(i) {
+  
+  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .90)) {
+  tst <- 0 
+  } else {
+    tst <- 1
+  }
+  as.logical(tst)
+}))
+
+stem.filt.c <- stem.buff[canopy.filter.c,]
+```
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.filt.c)
+```
+
+### Confusion matrix
+```{r}
+stems.comp4 <- get.spp(sp.class, stem.filt.c, sp.codes)
+cm4 <- confusionMatrix(stems.comp4$Reference, stems.comp4$Classified)
+cm4.overall <- cm4$overall
+
+data.frame(cm4$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm4.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm4$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+```
+
+### Probability density function
+```{r out.width='100%'}
+pd4 <- plt.density(stems.comp4)
+pb4 <- plt.bar(stems.comp4)
+```
+
+```{r out.width='100%'}
+pd4
 ```
 
 ```{r}
-density.dbh.facsp
+pb4
+```
+
+## Most conservative, with a static 3 px window
+Keep only trees in the 90th percentile of height or higher and search only 3 px around
+```{r}
+canopy.filter.d <- unlist(lapply(1:nrow(stem.buff), \(i) {
+  
+  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .90)) {
+  tst <- 0 
+  } else {
+    tst <- 1
+  }
+  as.logical(tst)
+}))
+
+stem.filt.d <- stem.buff.3m[canopy.filter.d,]
+```
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.filt.d)
+```
+
+### Confusion matrix
+```{r}
+stems.comp5 <- get.spp(sp.class, stem.filt.d, sp.codes)
+summary(stems.comp5$Classified)
+cm5 <- confusionMatrix(stems.comp5$Reference, stems.comp5$Classified)
+cm5.overall <- cm5$overall
+
+data.frame(cm5$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm5.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm5$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+
+```
+
+### Probability density function
+```{r}
+pd5 <- plt.density(stems.comp5)
+pb5 <- plt.bar(stems.comp5)
+```
+
+```{r out.width='100%'}
+pd5
+```
+
+```{r out.width='100%'}
+pb5
+```
+
+## Use segmented tree polygons
+Keep only trees in the 90th percentile of height or higher.
+```{r}
+
+# Filter only top trees
+canopy.filter.e <- unlist(lapply(1:nrow(stem.buff), \(i) {
+  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .90)) {
+    if(length(stem.within[[i]])<=1) {
+      if(length(stem.overlap[[i]])) {
+        tst <- 0
+      } else {
+        tst <- 1
+      }
+    } else {
+      tst <- 0
+    }
+  } else {
+    tst <- 1
+  }
+  as.logical(tst)
+}
+))
+
+# Apply canopy filter to buffered stems
+stem.filt.e <- stem.sf[canopy.filter.e,]
+
+# Get tree crown objects at plots
+stem.filt.e$treeID <- 1:nrow(stem.filt.e)
+crowns_ras <- lapply(chm.smooth, mcws, treetops = stem.filt.e, minHeight = 1.3)
+#crowns_ras <- mcws(treetops = stem.filt.a, CHM=chm.smooth[[12]], minHeight = 1.3)
+#plot(crowns_ras, col = sample(rainbow(200), 300, replace = TRUE), legend = FALSE, xlab = "", ylab = "", xaxt='n', yaxt = 'n')
+
+# Plot CHM
+crowns_poly <- lapply(chm.smooth, mcws, treetops = stem.filt.e, minHeight = 1.3, format='polygons')
+plot(chm.smooth[[5]], xlab = "", ylab = "", xaxt='n', yaxt = 'n')
+plot(crowns_poly[[5]]$geometry, border = "blue", lwd = 0.5, add = TRUE)
+
+stem.seg <- do.call('rbind', crowns_poly)
+stem.seg <- st_join(st_as_sf(stem.seg), stem.sf, by=c('Z'='treeID'))
+```
+
+### Map
+```{r out.width='100%'}
+mapit(gt1.sp.fct, stem.seg)
+```
+
+### Confusion matrix
+```{r}
+stems.comp6 <- get.spp(sp.class, stem.seg, sp.codes)
+cm6 <- confusionMatrix(stems.comp6$Reference, stems.comp6$Classified)
+cm6.overall <- cm6$overall
+
+data.frame(cm6$table) %>%
+  pivot_wider(names_from=Reference, values_from=Freq) %>%
+  mutate(grp='Reference') %>%
+  gt(rowname_col='Prediction',
+     groupname_col='grp') %>%
+  rm_stubhead() %>%
+  tab_spanner(label='Classification', 
+              columns=ABLA:UNKN) %>%
+  tab_options(row_group.as_column = TRUE)
+
+data.frame(t(round(cm6.overall,2)))[c(2,1,3,4)] %>%
+  gt()
+
+data.frame(round(cm6$byClass,2)) %>%
+  rownames_to_column(var='Class') %>%
+  gt()
+```
+
+### Probability density function
+```{r out.width='100%'}
+pd4 <- plt.density(stems.comp4)
+pb4 <- plt.bar(stems.comp4)
+```
+
+```{r out.width='100%'}
+pd4
 ```
 
 ```{r}
-bar.dbh.sp
+pb4
 ```
 
+
+
+## Compare accuracy
+
 ```{r}
-plot(sp.class.nes2)
-plot(stem.sf[stem.sf$Site_Name=='SG-NES2',], add=T)
+acc.df <- bind_rows(cm1.overall, cm2.overall, cm3.overall,
+                cm4.overall, cm5.overall) %>%
+  mutate(across(everything(), ~round(.,2)),
+         Run = c('Least Conserv', 'Less Conserv', 'More Conserv', 
+                 'Most Conserv - Moving window', 'Most Conserv - 3px window')) %>%
+  dplyr::select(8, 2, 1, 3, 4)
+
+acc.df %>%
+  gt()
+```
+
+## Sanity check: maps of best-performing approach at every site
+```{r}
+siteplots
 ```
 
