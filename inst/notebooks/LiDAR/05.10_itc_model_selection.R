@@ -8,7 +8,7 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 # Read itc optimization results
-itc.res.files <- list.files('/global/scratch/users/worsham/itc_results', pattern='csv', full.names=T)
+itc.res.files <- list.files(config$extdata$itc, pattern='csv', full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
 
 # Bind into one dataframe
