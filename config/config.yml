@@ -11,6 +11,8 @@ default:
   - tidyverse
   - ggplot2
   - ggpattern
+  - ggmap
+  - gridExtra
   - terra
   - sf
   - future
@@ -18,6 +20,7 @@ default:
   - lidR
   - lidRplugins
   - rlas
+  - ForestTools
   - rgl
   - nngeo
   - broom
@@ -40,6 +43,7 @@ default:
   - car
   - reporter
   - officedown
+  - gt
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'
@@ -55,7 +59,7 @@ default:
   bndpattern: 'SDP_Boundary'
   falcoid: '17hMfbqWv0bX6wNJD2fm2ci6GtCEvrat7'
   classid: '14BRJ_Jydcm_nWV0M4M1tWwgtC0g-XkWH'
-  naipid: '11rc7aWJzDC6lw-RyaNkoJxzq4iwFmxCT'
+  naipid: '1OT-7ORM9VHiAyZ9VyDsG3s-KROfQQjjO'
  data:
   raw: './data/raw'
   int: './data/intermediate'
