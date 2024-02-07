@@ -15,7 +15,6 @@ load.pkgs(config$pkgs)
 ## ---------------------------------------------------------------------------------------------------
 drive_auth(path=config$drivesa)
 
-
 ## ---------------------------------------------------------------------------------------------------
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
 workerNodes <- rep(workerNodes, 32)
@@ -40,7 +39,6 @@ inv <- read.csv(tmpfile)
 # Ingest full LAS catalog of decimated points
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
-
 
 ## ---------------------------------------------------------------------------------------------------
 # Subset plot shapefiles to areas of interest (those within AOP flights)
@@ -87,7 +85,6 @@ stem.sf <- st_transform(stem.sf, crs=st_crs(plotsf))
 # Find intersection of stems and plots
 stems.in.plots <- st_intersection(plotsf, stem.sf)
 
-
 ## ---------------------------------------------------------------------------------------------------
 # Find intersection of stems and quadrants
 # Returns an `sf` object with each tree associated with a quadrant (and its parent plot)
@@ -118,6 +115,7 @@ lasplots <- mclapply(aois, function(x){
   p = plotsf[plotsf$PLOT_ID==x,][1]
   bnd = st_buffer(p$geometry, endCapStyle='ROUND', 3)
   pc = clip_roi(lascat, bnd)
+  st_crs(pc) <- 32613
   return(pc)
   },
   mc.cores = getOption("mc.cores", length(workerNodes)-2))
