@@ -2,9 +2,9 @@
 
 default:
  key1: default
- driveauth: 'config/eastriver-r-googledrive-clientsecret.json'
- drivekey: 'config/eastriver-r-googledrive_auth.txt'
+ driveauth: '~/.ssh/eastriver-r-googledrive-clientsecret.json'
  drivesa: '~/.ssh/eastriver-308601-65de0446573f.json'
+ mapkey: '~/.ssh/eastriver-r-googlemaps-key.txt'
  pkgs:
   - devtools
   - xfun
