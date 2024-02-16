@@ -9,7 +9,7 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 drive_auth(path=config$drivesa)
-register_google('AIzaSyCI98pl4UTuunjjLZEUtXHds8MNJbfQ8qU')
+register_google('')
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
@@ -128,7 +128,6 @@ chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.5, pitfree(), pkg = "terr
 kernel <- matrix(1,5,5)
 chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm = TRUE)
 lapply(chm.smooth, plot)
-
 
 # Prep for plotting: subset and reclassify raster
 gt1.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
