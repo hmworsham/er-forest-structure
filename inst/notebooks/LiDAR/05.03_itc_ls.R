@@ -13,7 +13,6 @@ config <- config::get(file=file.path('~',
 # Load local helper functions and packages
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-
 ## Define vectors of parameters on which to run algorithm
 ## ---------------------------------------------------------------------------------------------------
 
@@ -40,6 +39,16 @@ testls <- lapply(lasplots, ls.opt, ls.params, hmin=1.3)
 # Unnest results of algorithm
 testls <- unlist(testls, recursive=F)
 
+# Since there are extra detected trees outside the plot bound, within the buffer
+# specified in the clip_roi function applied to las objects (in 05.00_itc_traintest_loadup.R),
+# we must also remove those extra trees
+pltid <- paste0(gsub("[^a-zA-Z-]", "", names(testls)), substr(gsub("[^0-9]", '', names(testls)), 1,1))
+testls <- lapply(seq_along(testls), \(x) {
+  trs <- st_as_sf(testls[[x]], crs=32613)
+  trs <- st_intersection(trs, plotsf[plotsf$PLOT_ID==pltid[x],])
+  trs
+})
+
 # Create vector of ITD run IDs
 ls.runid <- expand.grid(names(lasplots), '_p', row.names(ls.params))
 ls.runid <- ls.runid[order(ls.runid$Var1),]
@@ -62,7 +71,7 @@ ls.match <- mclapply(ls.runid,
                      FUN=bipart.match3,
                      lasset=testls,
                      obset=stems.in.plots,
-                     plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'ls_itc_figs'),
+                     #plotdir=file.path('/global', 'scratch', 'users', 'worsham', 'itc_results', 'figs', 'ls_itc_figs'),
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
                      )
 
@@ -80,7 +89,7 @@ write.csv(ls.match,
                     'users',
                     'worsham',
                     'itc_results',
-                    'ls_itc_results.csv'),
+                    'ls_itc_results_1-3.csv'),
           row.names=T)
 
 ls <- read.csv(file.path('/global',
@@ -88,4 +97,4 @@ ls <- read.csv(file.path('/global',
                     'users',
                     'worsham',
                     'itc_results',
-                    'ls_itc_results.csv'))
+                    'ls_itc_results_1-3.csv'))

@@ -34,6 +34,16 @@ testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params, hmin=1.3)
 # Unnest results of algorithm
 testlmf.vw <- unlist(testlmf.vw, recursive=F)
 
+# Since there are extra detected trees outside the plot bound, within the buffer
+# specified in the clip_roi function applied to las objects (in 05.00_itc_traintest_loadup.R),
+# we must also remove those extra trees
+pltid <- paste0(gsub("[^a-zA-Z-]", "", names(testlmf.vw)), substr(gsub("[^0-9]", '', names(testlmf.vw)), 1,1))
+testlmf.vw <- lapply(seq_along(testlmf.vw), \(x) {
+  trs <- st_as_sf(testlmf.vw[[x]], crs=32613)
+  trs <- st_intersection(trs, plotsf[plotsf$PLOT_ID==pltid[x],])
+  trs
+})
+
 # Create vector of ITD run IDs
 lmf.vw.runid <- expand.grid(names(lasplots), '_p', row.names(lmf.vw.params))
 lmf.vw.runid <- lmf.vw.runid[order(lmf.vw.runid$Var1),]
