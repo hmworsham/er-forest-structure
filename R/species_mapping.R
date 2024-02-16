@@ -9,7 +9,7 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 drive_auth(path=config$drivesa)
-register_google('')
+register_google(readLines(config$mapkey))
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
@@ -45,11 +45,16 @@ sp.codes <- sp.codes %>%
   mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
   dplyr::select(-c(Genus:Common))
 
-# Ingest tree crowns
-treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
-crowns <- mclapply(treefiles, \(x) {
-  tf <- st_read(x) },
-  mc.cores = getOption("mc.cores", 16))
+# Ingest detected tree crowns
+# treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
+# crowns <- mclapply(treefiles, \(x) {
+#   tf <- st_read(x) },
+#   mc.cores = getOption("mc.cores", 16))
+
+modtrees <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
+modtrees <- modtrees %>%
+  filter(src==1) %>%
+  st_as_sf(coords=c('Xpred', 'Ypred'), crs='32613')
 
 # Ingest las
 infiles <- list.files(config$extdata$las_dec, full.names=T)
@@ -163,7 +168,7 @@ sp.pal <- PNWColors::pnw_palette('Sunset2', n=5)
 # Function to map at focal plot
 mapit <- function(spras, stems) {
   ggmap(gt1.bmap) +
-  #ggplot() +
+    #ggplot() +
     tidyterra::geom_spatraster(data=spras, aes(fill=Sp_Code), alpha=0.8) +
     scale_fill_manual(values=sp.pal, name='Classified Species', na.value = NA) +
     geom_sf(data=stems[stems$Site_Name=='ER-GT1', ],
@@ -243,9 +248,9 @@ plt.bar <- function(x){
     xlab('Size bins') +
     ylab('Frequency of observations') +
     ggthemes::theme_calc(base_size=18) # +
-    # theme(legend.position = 'bottom',
-    #       legend.direction = 'horizontal')
-    # theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  # theme(legend.position = 'bottom',
+  #       legend.direction = 'horizontal')
+  # theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 }
 
 # Maps at every site
