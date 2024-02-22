@@ -6,7 +6,7 @@ config <- config::get(file=file.path('config',
                                      'config.yml'))
 
 # Load local helper functions and packages
-#devtools::load_all()
+devtools::load_all()
 load.pkgs(config$pkgs)
 
 drive_auth(path=config$drivesa)
@@ -55,13 +55,10 @@ sp.codes <- sp.codes %>%
 #   tf <- st_read(x) },
 #   mc.cores = getOption("mc.cores", 16))
 modtrees <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
-modtrees <- modtrees %>%
-  filter(src==1) %>%
-  st_as_sf(coords=c('Xpred', 'Ypred'), crs='32613')
 
 # Ingest las
-# infiles <- list.files(config$extdata$las_dec, full.names=T)
-# lascat <- readLAScatalog(infiles)
+infiles <- list.files(config$extdata$las_dec, full.names=T)
+lascat <- readLAScatalog(infiles)
 
 # # Ingest NAIP base image
 # tmpfile <- drive_download(
@@ -70,6 +67,9 @@ modtrees <- modtrees %>%
 #   overwrite=T)$local_path
 #
 # naip <- rast(tmpfile)
+
+## ---------------------------------------------------------------------------------------------------
+# Process field data
 
 # Subset field data to AOP sites
 inv <- inv %>%
@@ -117,24 +117,43 @@ stem.buff.3m <- st_buffer(stem.sf, dist=1, endCapStyle='SQUARE', joinStyle='MITR
 stem.overlap <- st_overlaps(stem.buff)
 stem.within <- st_within(stem.buff)
 
-# Coerce all modeled trees to sf object
-# alltrees <- data.table::rbindlist(crowns, idcol='file')
-# alltrees <- alltrees[alltrees$Z<=36,]
-# ptsf <- st_as_sf(alltrees, crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+## ---------------------------------------------------------------------------------------------------
+# Process modeled trees
+modtrees <- modtrees %>%
+  filter(src==1) %>%
+  st_as_sf(coords=c('Xpred', 'Ypred'), crs='EPSG:32613') %>%
+  left_join(stem.xyz, by=c('obs'='Tag_Number')) %>%
+  mutate(Crown_Radius_Mod = 0.082*Zpred + 0.5)
 
-# Subset modeled trees to plot boundaries
-# plot.pts <- st_intersection(ptsf, plotsf)
+st_crs(modtrees) <- st_crs(plotsf)
+
+stem.sf <- modtrees
+
+# Apply diameter-weighted buffer around all trees
+stem.buff <- st_buffer(stem.sf, dist=stem.sf$Crown_Radius_Mod,
+                       endCapStyle = 'SQUARE', joinStyle='MITRE')
+
+# Apply 3px buffer around all trees
+stem.buff.3m <- st_buffer(stem.sf, dist=3, endCapStyle='SQUARE', joinStyle='MITRE')
+
+# Create sparse matrix describing overlapping trees
+stem.overlap <- st_overlaps(stem.buff)
+stem.within <- st_within(stem.buff)
+
+## ---------------------------------------------------------------------------------------------------
+# Make CHM
 
 # Clip las to plot boundaries
 lasplots <- clip_roi(lascat, plotsf)
 lasplots <- lasplots[lapply(lasplots, nrow)>0]
 
 # Rasterize canooy
-chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.5, pitfree(), pkg = "terra")
+chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.25, pitfree(), pkg = "terra")
 
 # Smooth canopy
 kernel <- matrix(1,5,5)
 chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm = TRUE)
+plot(chm.smooth[[1]])
 lapply(chm.smooth, plot)
 
 # Prep for plotting: subset and reclassify raster
