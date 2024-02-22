@@ -1,15 +1,19 @@
 ## East River tree species mapping
 
-# Load config
+## ---------------------------------------------------------------------------------------------------
+# Workspace setup
 config <- config::get(file=file.path('config',
                                      'config.yml'))
 
 # Load local helper functions and packages
-devtools::load_all()
+#devtools::load_all()
 load.pkgs(config$pkgs)
 
 drive_auth(path=config$drivesa)
 register_google(readLines(config$mapkey))
+
+## ---------------------------------------------------------------------------------------------------
+# Data ingest
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
@@ -50,15 +54,14 @@ sp.codes <- sp.codes %>%
 # crowns <- mclapply(treefiles, \(x) {
 #   tf <- st_read(x) },
 #   mc.cores = getOption("mc.cores", 16))
-
 modtrees <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
 modtrees <- modtrees %>%
   filter(src==1) %>%
   st_as_sf(coords=c('Xpred', 'Ypred'), crs='32613')
 
 # Ingest las
-infiles <- list.files(config$extdata$las_dec, full.names=T)
-lascat <- readLAScatalog(infiles)
+# infiles <- list.files(config$extdata$las_dec, full.names=T)
+# lascat <- readLAScatalog(infiles)
 
 # # Ingest NAIP base image
 # tmpfile <- drive_download(
