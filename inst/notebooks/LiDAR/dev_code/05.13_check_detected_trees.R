@@ -18,6 +18,7 @@ drive_auth(path=config$drivesa)
 ## ---------------------------------------------------------------------------------------------------
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
 workerNodes <- rep(workerNodes, 32)
+nCores <- as.integer(availableCores()-2)
 set_lidr_threads(length(workerNodes)-2)
 
 ## ---------------------------------------------------------------------------------------------------
@@ -28,79 +29,17 @@ datadir.500 <- file.path(scrdir, 'trees')
 datadir.500fill <- file.path(scrdir, 'trees_ls_500mfill')
 datadir.lmf <- file.path(scrdir, 'trees_lmffw')
 outdir <- file.path(scrdir, 'trees_ls_50m_remainder')
+dir100 <- file.path(scrdir, 'trees_ls_100m')
 
 ## ---------------------------------------------------------------------------------------------------
-# Ingest full LAS catalog of decimated points
+## Ingest full LAS catalog of decimated points
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 lascat@output_options$drivers$sf$param$append <- F
 lascat@output_options$drivers$sf$param$delete_dsn <- T
 
 ## ---------------------------------------------------------------------------------------------------
-# Check completion on original LS run on 50m grid
-trs.ls.fn <- list.files(datadir, pattern='shp', full.names=T)
-
-trs.ls <- mclapply(trs.ls.fn, FUN=st_read, mc.cores=getOption("mc.cores", 16))
-
-polys <- do.call(rbind, lapply(trs.ls, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  }
-}))
-
-ntrs <- unlist(lapply(trs.ls, nrow))
-ntrs <- ntrs[ntrs>0]
-
-npercell <- data.frame('n'=ntrs, 'geometry'=polys)
-
-plot(st_as_sf(npercell))
-plot(st_as_sf(npercell[90:200,]))
-plot(st_as_sf(npercell[555:556,]))
-
-
-## ---------------------------------------------------------------------------------------------------
-# Check completion for 500 m run
-
-trs.ls500.fn <- list.files(datadir.500, pattern='shp', full.names=T)
-trs.ls500 <- mclapply(trs.ls500.fn, FUN=st_read, mc.cores=getOption("mc.cores", 16))
-trs.ls500 <- st_as_sf(data.table::rbindlist(trs.ls500))
-
-polys.500 <- do.call(rbind, lapply(trs.ls500, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  }
-}))
-
-ntrs.500 <- unlist(lapply(trs.ls500, nrow))
-ntrs.500 <- ntrs.500[ntrs.500>0]
-
-plot(st_as_sf(data.frame('n'=ntrs.500, 'geometry'=polys.500)), lwd=0.001)
-
-
-## ---------------------------------------------------------------------------------------------------
-# Compare ls and lmf
-
-trs.lmf.fn <- list.files(datadir.lmf, pattern='shp', full.names=T)
-trs.lmf <- mclapply(trs.lmf.fn, FUN=st_read, mc.cores=getOption("mc.cores", 26L))
-
-polys.lmf <- do.call(rbind, lapply(trs.lmf, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  }
-}))
-
-ntrs.lmf <- unlist(lapply(trs.lmf, nrow))
-ntrs.lmf <- ntrs.lmf[ntrs.lmf>0]
-
-plot(st_as_sf(data.frame('n'=ntrs.lmf, 'geometry'=polys.lmf)), lwd=0.001)
-
-
-## ---------------------------------------------------------------------------------------------------
-# Make idealized grid on same resolution as processing
-
+## Make idealized grid on same resolution as processing and write out
 opt_output_files(lascat) <- file.path(outdir, 'grid_{XLEFT}_{YBOTTOM}')
 opt_chunk_size(lascat) <- 50
 opt_chunk_buffer(lascat) <- 10
@@ -126,37 +65,92 @@ fullgrid.df <- data.frame('id'=grid50, 'geometry'=fullgrid)
 fullgrid.sf <- st_as_sf(fullgrid.df, crs='EPSG:32613')
 # st_write(fullgrid.sf, file.path(scrdir, '50mgrid.geojson'), append=F)
 
-grids.incomp <- st_as_sf(fullgrid.df[!grids.df$id %in% comp50,], crs='EPSG:32613')
+## ---------------------------------------------------------------------------------------------------
+## Check completion on original LS run on 50m grid
+trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
 
-st_crs(grids.incomp) <- st_crs(trs.ls500) <- 'EPSG:32613'
+trs.ls50 <- mclapply(trs.ls50.fn, FUN=st_read,
+                   mc.cores=getOption("mc.cores", nCores))
 
+grids.comp.50 <- do.call(rbind, mclapply(trs.ls50, FUN=function(x) {
+  bb <- st_bbox(x)
+  if(!is.na(sum(bb))) {
+    bsf <- st_as_sfc(bb)
+  } else {
+    bsf <- NA
+  }
+  return(bsf)
+}, mc.cores=getOption('mc.cores', nCores)))
+
+ntrs <- unlist(lapply(trs.ls50, nrow))
+npercell <- data.frame('n'=ntrs, 'geometry'=grids.comp.50)
+npercell <- npercell[npercell$n>0,]
+
+plot(st_as_sf(npercell), lwd=0.01)
+
+## ---------------------------------------------------------------------------------------------------
+## Check completion for 500m LS run
+
+trs.ls500.fn <- list.files(datadir.500, pattern='shp', full.names=T)
+trs.ls500 <- mclapply(trs.ls500.fn, FUN=st_read, mc.cores=getOption("mc.cores", 16))
+#trs.ls500 <- st_as_sf(data.table::rbindlist(trs.ls500))
+
+grids.comp.500 <- do.call(rbind, mclapply(trs.ls, FUN=function(x) {
+  bb <- st_bbox(x)
+  if(!is.na(sum(bb))) {
+    bsf <- st_as_sfc(bb)
+  } else {
+    bsf <- NA
+  }
+  return(bsf)
+}, mc.cores=getOption('mc.cores', nCores)))
+
+ntrs.500 <- unlist(lapply(trs.ls500, nrow))
+ntrs.500 <- ntrs.500[ntrs.500>0]
+plot(st_as_sf(data.frame('n'=ntrs.500, 'geometry'=polys.500)), lwd=0.01)
+
+## ---------------------------------------------------------------------------------------------------
+## Merge all available LS results from 500m and 50m LS runs
+
+# Ingest the full 50 m grid template
+fullgrid.sf <- st_read(file.path(scrdir, '50mgrid.geojson'))
+fullgrid.df <- data.frame(fullgrid.sf)
+
+# Define dataframe of completed grid cells from 50 m run
+comp50 <- tools::file_path_sans_ext(basename(trs.ls50.fn))
+grids.comp50.df <- data.frame('id'=trs.ls50.fn, 'geometry'=grids.comp.50)
+
+# Find which 50m cells were incomplete (empty)
+grids.incomp50 <- st_as_sf(fullgrid.df[!fullgrid.df$id %in% comp50,], crs='EPSG:32613')
+
+# Pull all available results from 500m LS run into empty 50m grid cells
+st_crs(grids.incomp50) <- st_crs(trs.ls500) <- 'EPSG:32613'
 trees.fill500 <- st_intersection(grids.incomp, trs.ls500)
 trees.fill500.grid <- split(trees.fill500, f=trees.fill500$id)
 
-length(trees.fill500.grid)
-length(unique(trees.fill500$id))
-dim(grids.incomp)
-
-trees.fill500 %>%
-  group_by(id) %>%
-  summarise(n=n())
-
+# Write 50m cells "filled" with 500m results
 lapply(trees.fill500.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_500mfill', paste0(x$id[1], '.shp')))})
+
+## ---------------------------------------------------------------------------------------------------
+## After merging 50m and 500m results, check for completeness
+
 
 
 ## ---------------------------------------------------------------------------------------------------
-# After merging ALL 50 and 500, check for completeness
-trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
-#trs.ls500fill.fn <- list.files(datadir.500fill, pattern='shp', full.names=T)
-#trs.ls50remain.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remain'), pattern='shp', full.names=T)
-trs.ls50remainder.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp', full.names=T)
+## Find incompletes to run LS again
 
-# trs.ls.fn <- c(trs.ls50.fn, trs.ls500fill.fn,
-#                trs.ls50remain.fn, trs.ls50remainder.fn)
+# Ingest the full 50 m grid template
+fullgrid.sf <- st_read(file.path(scrdir, '50mgrid.geojson'))
+fullgrid.df <- data.frame(fullgrid.sf)
 
-trs.ls.fn <- c(trs.ls50.fn, trs.ls50remainder.fn)
+# Ingest completed tree files
+trs.ls.fn <- list.files(datadir, pattern='shp', full.names=T)
+trs.ls <- mclapply(trs.ls.fn, FUN=st_read,
+                   mc.cores=getOption("mc.cores", nCores))
 
-trs.ls <- mclapply(trs.ls.fn, FUN=st_read, mc.cores=getOption("mc.cores", 26L))
+# Define file IDs and grid cell IDs for comparison
+comp.files <- tools::file_path_sans_ext(basename(trs.ls.fn))
+fullgrid.id <- tools::file_path_sans_ext(basename(fullgrid.sf$id))
 
 grids.comp <- do.call(rbind, mclapply(trs.ls, FUN=function(x) {
   bb <- st_bbox(x)
@@ -166,82 +160,61 @@ grids.comp <- do.call(rbind, mclapply(trs.ls, FUN=function(x) {
     bsf <- NA
   }
   return(bsf)
-}, mc.cores=getOption('mc.cores', 26L)))
+}, mc.cores=getOption('mc.cores', nCores)))
 
-ntrs <- unlist(lapply(trs.ls, nrow))
+grids.df <- data.frame('id'=trs.ls.fn, 'geometry'=grids.comp)
 
-npercell <- data.frame('n'=ntrs, 'geometry'=grids.comp)
-npercell <- npercell[npercell$n>0,]
+# >>>> START: GENERATE GRID OF INCOMPLETES PROGRAMATICALLY AND WRITE OUT <<<<< #
+grids.incomp.d <- find.incompletes(fullgrid.sf, comp.files)
 
-plot(st_as_sf(npercell), lwd=0.001)
+grids.incomp.d.filt <- grids.incomp.d[as.integer(st_area(grids.incomp.d))>=100000]
 
+st_write(grids.incomp.d.filt, file.path(scrdir, '50mgrid_incomp.geojson'), append=F, crs='EPSG:32613')
+# >>>> END: GENERATE GRID OF INCOMPLETES PROGRAMATICALLY AND WRITE OUT <<<<< #
+
+# Ingest the grid of incompletes generated above and roll on
+grids.incomp.d.filt <- st_read(file.path(scrdir, '50mgrid_incomp.geojson'))
+plot(grids.incomp.d.filt, col=viridis(28))
+
+# Subset LAS catalog to large incomplete clusters
+tmpdir <- file.path(scrdir, 'las_remainder')
+opt_output_files(lascat) <- file.path(tmpdir, 'trees_{XLEFT}_{YBOTTOM}')
+lascat.incomp <- clip_roi(lascat, grids.incomp.d.filt)
+plot(lascat.incomp, chunk=T)
+
+# Retile incomplete LAS catalog to 50m incomplete grid
+tmpdir <- file.path(scrdir, 'las_remainder')
+infiles <- list.files(tmpdir, full.names=T)
+lascat.incomp <- readLAScatalog(infiles)
+plot(lascat.incomp, chunk=T)
+
+opt_stop_early(lascat.incomp) <- F # Proceed through errors, leaving gaps for failed chunks
+opt_output_files(lascat.incomp) <- file.path(scrdir, 'las_remainder_regrid', 'las_rem_rg_{XLEFT}_{YBOTTOM}')
+opt_chunk_size(lascat.incomp) <- 50
+opt_chunk_buffer(lascat.incomp) <- 0
+
+plan(multisession, workers=nCores)
+catalog_retile(lascat.incomp)
+
+## ---------------------------------------------------------------------------------------------------
+## Find final incompletes and run LS again
+
+# Ingest the full 50 m grid template
 fullgrid.sf <- st_read(file.path(scrdir, '50mgrid.geojson'))
+fullgrid.df <- data.frame(fullgrid.sf)
 
-comp50 <- tools::file_path_sans_ext(basename(trs.ls.fn))
+# Ingest the completed files in full 50m directory and remainder directory
+trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
+trs.ls50remainder.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp', full.names=T)
+trs.ls.fn <- c(trs.ls50.fn, trs.ls50remainder.fn)
+trs.ls <- mclapply(trs.ls.fn, FUN=st_read,
+                   mc.cores=getOption("mc.cores", nCores-4))
+
+# Define file IDs and grid cell IDs for comparison
+comp.files <- tools::file_path_sans_ext(basename(trs.ls.fn))
 fullgrid.id <- tools::file_path_sans_ext(basename(fullgrid.sf$id))
 
-# grids.df <- data.frame('id'=trs.ls.fn, 'geometry'=grids.comp)
-# fullgrid.df <- data.frame(fullgrid.sf)
-
-grids.incomp <- fullgrid.sf[!fullgrid.sf$id %in% comp50,]
-#grids.incomp <- st_as_sf(grids.incomp, crs='EPSG:32613')
-
-plot(grids.incomp)
-
-## ---------------------------------------------------------------------------------------------------
-# Now merge LMF into final missing grid cells... as a second-best solution
-
-# Filter out 0-row members of LMF-identified trees
-trs.lmf <- trs.lmf[lapply(trs.lmf, nrow)>0]
-
-# Make trs.lmf into an sf object
-trs.lmf <- st_as_sf(data.table::rbindlist(trs.lmf))
-st_crs(grids.incomp) <- st_crs(trs.lmf) <- 'EPSG:32613'
-
-# Extract LMF-identified trees at each grid cell in 50m grid of incompletes
-trees.fill.lmf <- st_intersection(grids.incomp, trs.lmf)
-
-### Subset trees in LMF fill to homogenize density with LS ###
-
-# Find n trees in LS grid
-View(npercell)
-summary(npercell$n)
-
-# Find n trees per cell in LMF fill
-npercell.lmffill <- trees.fill.lmf %>%
-  group_by(id) %>%
-  count()
-
-summary(npercell.lmffill$n)
-
-plot(st_as_sf(npercell.lmffill))
-
-# Split LMF-filled trees into lists by 50m grid ID
-trees.filllmf.grid <- split(trees.fill.lmf, f=trees.fill.lmf$id)
-
-length(trees.filllmf.grid)
-length(unique(trees.fill.lmf$id))
-dim(grids.incomp)
-
-
-lapply(trees.filllmf.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_lmffill', paste0(x$id[1], '.shp')))})
-
-## ---------------------------------------------------------------------------------------------------
-# After merging 50, 500, and LMF, check for completeness
-trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
-#trs.ls50remainder.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp', full.names=T)
-#trs.ls500fill.fn <- list.files(file.path(scrdir, 'trees_ls_500mfill'), pattern='shp', full.names=T)
-trs.lslmffill.fn <- list.files(file.path(scrdir, 'trees_ls_lmffill'), pattern='shp', full.names=T)
-
-trs.ls.fn <- c(trs.ls50.fn, trs.lslmffill.fn)
-
-trs.ls.all <- mclapply(trs.ls.fn, FUN=st_read, mc.cores=getOption("mc.cores", 28L))
-
-#trees.filllmf.grid <- lapply(trees.filllmf.grid, st_as_sf)
-#trs.ls.all <- c(trs.ls, trees.filllmf.grid)
-#trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
-
-grids.comp.all <- do.call(rbind, mclapply(trs.ls.all, FUN=function(x) {
+grids.comp <- do.call(rbind, mclapply(trs.ls, FUN=function(x) {
   bb <- st_bbox(x)
   if(!is.na(sum(bb))) {
     bsf <- st_as_sfc(bb)
@@ -249,33 +222,46 @@ grids.comp.all <- do.call(rbind, mclapply(trs.ls.all, FUN=function(x) {
     bsf <- NA
   }
   return(bsf)
-}, mc.cores=getOption('mc.cores', 24L)))
+}, mc.cores=getOption('mc.cores', nCores)))
 
-ntrs.all <- unlist(lapply(trs.ls.all, nrow))
+# Make DF of completed grid
+grids.df <- data.frame('id'=trs.ls.fn, 'geometry'=grids.comp)
 
-npercell.all <- data.frame('n'=ntrs.all, 'geometry'=grids.comp.all)
-npercell.all <- npercell.all[npercell.all$n>0,]
+# Check N per cell in completed grid
+ntrs <- unlist(lapply(trs.ls, nrow))
+npercell <- data.frame('n'=ntrs, 'geometry'=grids.comp)
+npercell <- npercell[npercell$n>0,]
+plot(st_as_sf(npercell), lwd=0.01)
 
-plot(st_as_sf(npercell.all), lwd=0.001)
+# Generate grid of incompletes programatically
+grids.incomp.d <- find.incompletes(fullgrid.sf, comp.files)
+grids.incomp.d.filt <- grids.incomp.d[as.integer(st_area(grids.incomp.d))>=150000]
+grids.incomp.d.filt <- st_as_sf(grids.incomp.d.filt)
 
-trs.lmffill.down <- lapply(trs.ls.all[130415:148084], function(x) {
+# st_write(grids.incomp.d.filt, file.path(scrdir, '50mgrid_incomp2.geojson'), append=F, crs='EPSG:32613')
+# grids.incomp.d.filt <- st_read(file.path(scrdir, '50mgrid_incomp2.geojson'))
 
-  if(nrow(x) > 450) {x.down <- sample_frac(x, .8)}
-  else{x.down <- x}
-  x.down
-})
+# Subset LAS catalog to large incomplete clusters
+tmpdir <- file.path(scrdir, 'las_remainder2')
+opt_output_files(lascat) <- file.path(tmpdir, 'trees_{XLEFT}_{YBOTTOM}')
+lascat.incomp <- clip_roi(lascat, grids.incomp.d.filt)
+plot(lascat.incomp, chunk=T)
 
-trs.ls.all <- trs.ls.all[1:130414]
-trs.ls.all <- c(trs.ls.all, trs.lmffill.down)
-length(trs.ls.all)
+# Retile incomplete LAS catalog to 50m incomplete grid
+tmpdir <- file.path(scrdir, 'las_remainder2')
+infiles <- list.files(tmpdir, full.names=T)
+lascat.incomp <- readLAScatalog(infiles)
+plot(lascat.incomp, chunk=T)
 
-ntrs.all.x <- unlist(lapply(trs.ls.all, nrow))
+opt_stop_early(lascat.incomp) <- F # Proceed through errors, leaving gaps for failed chunks
+opt_output_files(lascat.incomp) <- file.path(scrdir, 'las_remainder_regrid2', 'las_rem_rg_{XLEFT}_{YBOTTOM}')
+opt_chunk_size(lascat.incomp) <- 50
+opt_chunk_buffer(lascat.incomp) <- 0
 
-npercell.all.x <- data.frame('n'=ntrs.all.x, 'geometry'=grids.comp.all)
-npercell.all.x <- npercell.all.x[npercell.all.x$n>0,]
+plan(multisession, workers=nCores)
+catalog_retile(lascat.incomp)
 
-plot(st_as_sf(npercell.all.x), lwd=0.001)
-
+############# PICK UP HERE ###################
 ## ---------------------------------------------------------------------------------------------------
 # Resample to 100 m grid
 
@@ -457,63 +443,230 @@ npercell.500 <- npercell.500[npercell.500$n>0,]
 
 plot(st_as_sf(npercell.500), lwd=0.001)
 
+
+# COMPARE TREES TO REGRIDDED POINTS
+ls.treefiles <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp')
+rg.files <- list.files(file.path(scrdir, 'las_remainder_regrid'))[1:5400]
+
+inc.2.1 <- which(!str_replace_all(rg.files, '[A-z_.]', '') %in% str_replace_all(ls.treefiles, '[A-z.]', ''))
+
+
+# CHECK INTERMEDIATE COMPLETENESS AFTER REGRIDDING MOST INCOMPLETE AND LS ON MOST INCOMPLETE
+# trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
+# trs.ls50 <- mclapply(trs.ls50.fn, FUN=st_read, mc.cores=getOption("mc.cores", 28L))
+#
+# grids.comp50 <- do.call(rbind, mclapply(trs.ls50, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   } else {
+#     bsf <- NA
+#   }
+#   return(bsf)
+# }, mc.cores=getOption('mc.cores', 24L)))
+#
+# grids.comp50.df <- data.frame('id'=tools::file_path_sans_ext(basename(trs.ls50.fn)), 'geometry'=grids.comp50)
+#
+# plot(st_as_sf(grids.comp50.df), col='black', lwd=0.001)
+#
+# lascat.incomp.fn <- list.files(file.path(scrdir, 'las_remainder_regrid'), full.names=T)
+# lascat.incomp.rt <- readLAScatalog(lascat.incomp.fn)
+# plot(lascat.incomp.rt)
+#
+# #pull geometries from lascat.incomp.rt and merge with grids.comp.all
+# plan(multisession(workers=30))
+# inc.chks <- engine_chunks(lascat.incomp.rt)
+# incomp.grid <- do.call(rbind, lapply(inc.chks, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   }
+# }))
+#
+# incomp.grid.df <- data.frame('id'=tools::file_path_sans_ext(basename(lascat.incomp.fn)), 'geometry'=incomp.grid)
+#
+# grids.all <- rbind(grids.comp50.df, incomp.grid.df)
+#
+# plot(st_as_sf(grids.all), lwd=0.001)
+
+# comp50 <- tools::file_path_sans_ext(basename(trs.ls.fn))
+# fullgrid.id <- tools::file_path_sans_ext(basename(fullgrid.sf$id))
+#
+# grids.incomp <- fullgrid.sf[!fullgrid.sf$id %in% comp50,]
+# grids.incomp.diss <- st_cast(st_union(st_buffer(grids.incomp, 0.1)), 'POLYGON') #Buffer to make the corners touch, union to dissolve adjacent borders
+# dissolved <- st_sf(grids.incomp.diss) #Create a sf object from the geometries
+# dissolved$clusterID=1:length(grids.incomp.diss) #Add cluster id to each row
+# grids.incomp.cluster <- st_join(st_sf(grids.incomp), dissolved) #Join cluster id to the original polygons
+
+
+
+
+# algo <- LayerStacking(start=0.5, res=0.5, ws1=2, ws2=2, buf_size=0.2, hardwood=F, hmin=1.8)
+# plan(multisession, workers=30L)
+# #ls.trees <- find_trees(lascat.incomp, algo, uniqueness='incremental')
+#
+# findtrees.apply <- function(grid) {
+#   las <- clip_roi(lascat, grid)
+#   ls.trees <- tryCatch(find_trees(las, algo, uniqueness='incremental'), error=function(e) NULL)
+#   }
+#
+# ls.trees.rem <- mapply(findtrees.apply, grids.incomp[190:200,]$geometry)
+#
+# clip_roi(lascat, grids.incomp[1:5,])
+# opt_output_files(lascat) <- file.path(outdir, 'trees_{XLEFT}_{YBOTTOM}')
+# opt_chunk_size(lascat) <- 50
+# opt_chunk_buffer(lascat) <- 10
+# opt_stop_early(lascat) <- F # Proceed through errors, leaving gaps for failed chunks
+#
+# plan(multisession, workers=30L)
+# lascat.incomp <- clip_roi(lascat, grids.incomp)
+# #ls.trees.rem <- mapply(FUN=findtrees.apply, grids.incomp[1:5,])
+#
+# catalog_retile(lascat)
+
+# CHECK TO MAKE SURE NO OVERLAPPING TREES
+
+jkl <- list.files(datadir, pattern='.shp', full.names=T)[120000:120005]
+
+mno <- lapply(jkl, st_read)
+mno.bb <- lapply(mno, \(x) st_as_sf(st_as_sfc(st_bbox(x))))
+mno.bb <- do.call('rbind', mno.bb)
+
+pqr <- st_as_sf(data.table::rbindlist(mno, idcol='file'))
+
+ggplot(pqr) +
+  geom_sf(aes(color=factor(file), alpha=0.2), size=0.1, shape=3) +
+  geom_sf(data=mno.bb, fill=NA)
+
+ggplot(mno.bb) +
+  geom_sf()
+
+mno.bb
+
+# @ 100
+
+efg <- list.files(dir100, pattern='.shp', full.names=T)[c(1200:1205, 1356:1361)]
+
+hij <- lapply(efg, st_read)
+hij.bb <- lapply(hij, \(x) st_as_sf(st_as_sfc(st_bbox(x))))
+hij.bb <- do.call('rbind', hij.bb)
+
+bcd <- st_as_sf(data.table::rbindlist(hij, idcol='file'))
+
+ggplot(bcd) +
+  geom_sf(aes(color=factor(file), alpha=0.2), size=0.1, shape=3) +
+  geom_sf(data=hij.bb, fill=NA)
+
+
+##
+##------------------------------------------------------------------------------
+## SCRATCH
+
 ## ---------------------------------------------------------------------------------------------------
-# Run LS on remaining missing grids
-fullgrid.sf <- st_read(file.path(scrdir, '50mgrid.geojson'))
+# Compare ls and lmf
 
-comp50 <- tools::file_path_sans_ext(basename(trs.ls.fn))
-fullgrid.id <- tools::file_path_sans_ext(basename(fullgrid.sf$id))
-
-#grids.df <- data.frame('id'=trs.ls.fn, 'geometry'=grids.comp)
-#fullgrid.df <- data.frame(fullgrid.sf)
-
-grids.incomp <- fullgrid.sf[!fullgrid.sf$id %in% comp50,]
-grids.incomp.diss <- st_cast(st_union(st_buffer(grids.incomp, 0.1)), 'POLYGON') #Buffer to make the corners touch, union to dissolve adjacent borders
-dissolved <- st_sf(grids.incomp.diss) #Create a sf object from the geometries
-dissolved$clusterID=1:length(grids.incomp.diss) #Add cluster id to each row
-grids.incomp.cluster <- st_join(st_sf(grids.incomp), dissolved) #Join cluster id to the original polygons
-
-st_write(grids.incomp.cluster, file.path(scrdir, '50mgrid_incomp.geojson'), append=F, crs='EPSG:32613')
-
-grids.incomp1 <- st_read(file.path(scrdir, '50mgrid_incomp.geojson'))
-
-trs.ls <- trs.ls[lapply(trs.ls, nrow)>0]
-trs.ls <- lapply(trs.ls, '[', c('treeID', 'Z', 'geometry'))
-trs.ls <- st_as_sf(data.table::rbindlist(trs.ls))
-
-st_crs(grids.incomp) <- st_crs(trs.ls) <- 'EPSG:32613'
-plot(grids.incomp)
-
-lascat.incomp <- catalog_intersect(lascat, grids.incomp)
-plot(lascat.incomp, chunk=T)
-
-opt_output_files(lascat.incomp) <- file.path(outdir, 'trees_{XLEFT}_{YBOTTOM}')
-opt_chunk_size(lascat.incomp) <- 50
-opt_chunk_buffer(lascat.incomp) <- 10
-opt_stop_early(lascat.incomp) <- F # Proceed through errors, leaving gaps for failed chunks
+# trs.lmf.fn <- list.files(datadir.lmf, pattern='shp', full.names=T)
+# trs.lmf <- mclapply(trs.lmf.fn, FUN=st_read, mc.cores=getOption("mc.cores", 26L))
+#
+# polys.lmf <- do.call(rbind, lapply(trs.lmf, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   }
+# }))
+#
+# ntrs.lmf <- unlist(lapply(trs.lmf, nrow))
+# ntrs.lmf <- ntrs.lmf[ntrs.lmf>0]
+#
+# plot(st_as_sf(data.frame('n'=ntrs.lmf, 'geometry'=polys.lmf)), lwd=0.001)
+#
 
 
-plot(lascat.incomp, chunk=T)
+## ---------------------------------------------------------------------------------------------------
+# Now merge LMF into final missing grid cells... as a second-best solution
 
-algo <- LayerStacking(start=0.5, res=0.5, ws1=2, ws2=2, buf_size=0.2, hardwood=F, hmin=1.8)
-plan(multisession, workers=30L)
-#ls.trees <- find_trees(lascat.incomp, algo, uniqueness='incremental')
+# Filter out 0-row members of LMF-identified trees
+# trs.lmf <- trs.lmf[lapply(trs.lmf, nrow)>0]
+#
+# # Make trs.lmf into an sf object
+# trs.lmf <- st_as_sf(data.table::rbindlist(trs.lmf))
+# st_crs(grids.incomp) <- st_crs(trs.lmf) <- 'EPSG:32613'
+#
+# # Extract LMF-identified trees at each grid cell in 50m grid of incompletes
+# trees.fill.lmf <- st_intersection(grids.incomp, trs.lmf)
+#
+# ### Subset trees in LMF fill to homogenize density with LS ###
+#
+# # Find n trees in LS grid
+# View(npercell)
+# summary(npercell$n)
+#
+# # Find n trees per cell in LMF fill
+# npercell.lmffill <- trees.fill.lmf %>%
+#   group_by(id) %>%
+#   count()
+#
+# summary(npercell.lmffill$n)
+#
+# plot(st_as_sf(npercell.lmffill))
+#
+# # Split LMF-filled trees into lists by 50m grid ID
+# trees.filllmf.grid <- split(trees.fill.lmf, f=trees.fill.lmf$id)
+#
+# length(trees.filllmf.grid)
+# length(unique(trees.fill.lmf$id))
+# dim(grids.incomp)
+#
+#
+# lapply(trees.filllmf.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_lmffill', paste0(x$id[1], '.shp')))})
+#
+# ## ---------------------------------------------------------------------------------------------------
+# # After merging 50, 500, and LMF, check for completeness
+# trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
+# #trs.ls50remainder.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp', full.names=T)
+# #trs.ls500fill.fn <- list.files(file.path(scrdir, 'trees_ls_500mfill'), pattern='shp', full.names=T)
+# trs.lslmffill.fn <- list.files(file.path(scrdir, 'trees_ls_lmffill'), pattern='shp', full.names=T)
+#
+# trs.ls.fn <- c(trs.ls50.fn, trs.lslmffill.fn)
+#
+# trs.ls.all <- mclapply(trs.ls.fn, FUN=st_read, mc.cores=getOption("mc.cores", 28L))
+#
+# #trees.filllmf.grid <- lapply(trees.filllmf.grid, st_as_sf)
+# #trs.ls.all <- c(trs.ls, trees.filllmf.grid)
+# #trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
+#
+# grids.comp.all <- do.call(rbind, mclapply(trs.ls.all, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   } else {
+#     bsf <- NA
+#   }
+#   return(bsf)
+# }, mc.cores=getOption('mc.cores', 24L)))
+#
+# ntrs.all <- unlist(lapply(trs.ls.all, nrow))
+#
+# npercell.all <- data.frame('n'=ntrs.all, 'geometry'=grids.comp.all)
+# npercell.all <- npercell.all[npercell.all$n>0,]
+#
+# plot(st_as_sf(npercell.all), lwd=0.001)
+#
+# trs.lmffill.down <- lapply(trs.ls.all[130415:148084], function(x) {
+#
+#   if(nrow(x) > 450) {x.down <- sample_frac(x, .8)}
+#   else{x.down <- x}
+#   x.down
+# })
+#
+# trs.ls.all <- trs.ls.all[1:130414]
+# trs.ls.all <- c(trs.ls.all, trs.lmffill.down)
+# length(trs.ls.all)
+#
+# ntrs.all.x <- unlist(lapply(trs.ls.all, nrow))
+#
+# npercell.all.x <- data.frame('n'=ntrs.all.x, 'geometry'=grids.comp.all)
+# npercell.all.x <- npercell.all.x[npercell.all.x$n>0,]
+#
+# plot(st_as_sf(npercell.all.x), lwd=0.001)
 
-findtrees.apply <- function(grid) {
-  las <- clip_roi(lascat, grid)
-  ls.trees <- tryCatch(find_trees(las, algo, uniqueness='incremental'), error=function(e) NULL)
-  }
-
-ls.trees.rem <- mapply(findtrees.apply, grids.incomp[190:200,]$geometry)
-
-clip_roi(lascat, grids.incomp[1:5,])
-opt_output_files(lascat) <- file.path(outdir, 'trees_{XLEFT}_{YBOTTOM}')
-opt_chunk_size(lascat) <- 50
-opt_chunk_buffer(lascat) <- 10
-opt_stop_early(lascat) <- F # Proceed through errors, leaving gaps for failed chunks
-
-plan(multisession, workers=30L)
-lascat.incomp <- clip_roi(lascat, grids.incomp)
-#ls.trees.rem <- mapply(FUN=findtrees.apply, grids.incomp[1:5,])
-
-catalog_retile(lascat)
