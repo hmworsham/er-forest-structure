@@ -8,7 +8,7 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 # Read itc optimization results
-itc.res.files <- list.files(config$extdata$itc, pattern='csv', full.names=T)
+itc.res.files <- list.files(config$extdata$itc, pattern='results.csv', full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
 
 # Bind into one dataframe
@@ -43,23 +43,24 @@ itc.modsiten <- itc.res %>%
 # Get means
 itc.means <- itc.res %>%
   group_by(model, paramset) %>%
-  #summarise(across(nobstrees:loss, \(x) mean(x, na.rm=T)))
-  summarise(across(nobstrees:loss, \(x) sqrt(mean(x^2, na.rm=T))))
+  summarise(across(nobstrees:npredtrees, \(x) sum(x, na.rm=T)),
+            across(c(ext.rt, match.rt, accuracy:f), \(x) round(sqrt(mean(x^2, na.rm=T)),2)),
+            .groups='drop'
+  ) %>%
+  mutate(ext.rt = round(npredtrees/nobstrees,2))
 
 # Find model that maximizes f score (or minimizes loss)
 optmod <- itc.means[which.max(itc.means$f),]
-optmod
 #optmod <- itc.means[which.min(itc.means$loss),]
 
 ggplot(itc.res, aes(x=model, y=f)) +
   geom_boxplot() +
   facet_wrap(~quad)
 
-chkmod <- itc.res[itc.res$model=='ls' & itc.res$paramset==12,]
+chkmod <- itc.res[itc.res$model=='ls' & itc.res$paramset==7,]
 
 ggplot(chkmod, aes(x=quad, y=f)) +
   geom_point()
-
 
 # Generate summary stats for optimal model
 opt.res <- itc.res[itc.res$model=='ls' & itc.res$paramset==7,]
@@ -90,8 +91,8 @@ opt.sd <- opt.res %>%
 
 # Generate summary stats for best-performing run of each model
 itc.best <- itc.means %>%
-  filter(f==max(f)) %>%
   group_by(model) %>%
+  filter(f==max(f)) %>%
   filter(row_number()==1) %>%
   mutate(best=paste0(model, paramset))
 
@@ -114,6 +115,7 @@ best.mean <- best.res %>%
                  'MultiCHM',
                  'PTrees',
                  'Watershed'))
+
 names(best.mean) <- c('Model', names(opt.mean))
 
 # Flextables
