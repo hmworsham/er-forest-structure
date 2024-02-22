@@ -18,10 +18,10 @@ drive_auth(path=config$drivesa)
 # Ingest data
 
 # Ingest trees
-datadir <- config$extdata$trees
-datadir <- '/global/scratch/users/worsham/trees_lmffw_csv'
+#datadir <- config$extdata$trees
+datadir <- '/global/scratch/users/worsham/trees_csv'
 trfiles <- list.files(datadir, full.names=T)
-trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', 16))
+trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', 30))
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -33,14 +33,17 @@ bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
 # Bind all trees together into one dataframe
 alltrees <- data.table::rbindlist(trees, idcol='file')
 
+# Remove trees missing geoinfo
+alltrees <- alltrees[!is.na(alltrees$X) & !is.na(alltrees$Y),]
+
 # Remove unlikely trees
-alltrees <- alltrees[alltrees$Z<=36,]
+alltrees <- alltrees[alltrees$H<=40,]
 
 # Create a shapefile of all trees
 ptsf <- st_as_sf(alltrees, coords = c('X', 'Y'), crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
 
 # Reformat trees to populate raster
-returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$Z, d=alltrees$DBH_est, ba=alltrees$BA_est)
+returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$H, d=alltrees$DBH_est, ba=alltrees$BA_est)
 coordinates(returns) <- ~x+y
 
 ## ---------------------------------------------------------------------------------------------------
@@ -48,7 +51,7 @@ coordinates(returns) <- ~x+y
 reso <- 100
 ncells <- 100^2
 rs = raster(matrix(1:ncells,reso,reso), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[1], ymn=st_bbox(ptsf)[2], ymx=st_bbox(ptsf)[4], crs='+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-res(rs) <- 100
+res(rs) <- 10
 ncell(rs)
 values(rs) <- 1:ncell(rs)
 plot(rs, col=sample(rainbow(ncell(rs))))
@@ -70,7 +73,6 @@ ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=function(x, ...) sum(x
 
 # Density raster
 density.raster = pointcount(rs, alltrees)
-plot(density.raster)
 
 ## Clean density
 density.raster <- reclassify(density.raster, cbind(-Inf, 0, 1), right=T) # Reclassify
