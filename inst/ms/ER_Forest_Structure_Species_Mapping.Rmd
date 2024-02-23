@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = F, warning = F,
 ```
 
 ```{r include=F}
-source('inst/examples/species_mapping.R')
+source('inst/examples/species.mapping.R')
 ```
 
 This notebook reports on several approaches to selecting tree stems for individual-scale species classification, uniting Kueppers, Worsham et al. forest inventory data with Falco species classification map derived from the 2018 NEON spectroscopy mission. The approaches range from least to most conservative, that is, from preserving all trees to removing all but those in the uppermost canopy. Maps, agreement statistics, and agreement figures are shown for each approach.
