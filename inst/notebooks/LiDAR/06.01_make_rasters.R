@@ -51,7 +51,7 @@ coordinates(returns) <- ~x+y
 reso <- 100
 ncells <- 100^2
 rs = raster(matrix(1:ncells,reso,reso), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[1], ymn=st_bbox(ptsf)[2], ymx=st_bbox(ptsf)[4], crs='+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
-res(rs) <- 10
+res(rs) <- 100
 ncell(rs)
 values(rs) <- 1:ncell(rs)
 plot(rs, col=sample(rainbow(ncell(rs))))
