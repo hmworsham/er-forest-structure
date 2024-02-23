@@ -20,9 +20,6 @@ drive_auth(path=config$drivesa)
 
 # Ingest trees
 treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
-#treefiles <- list.files(config$extdata$trees, pattern='.shp', full.names=T)
-#treefiles.mfp <- list.files('/global/scratch/users/worsham/trees_lmffw_missing_fp', pattern='.shp', full.names=T) # tree files from original NEON LAS for missing flightpath
-#treefiles <- c(treefiles, treefiles.mfp)
 
 # Ingest field data
 tmpfile <- drive_download(
