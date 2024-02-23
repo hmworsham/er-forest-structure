@@ -238,28 +238,36 @@ grids.incomp.d <- find.incompletes(fullgrid.sf, comp.files)
 grids.incomp.d.filt <- grids.incomp.d[as.integer(st_area(grids.incomp.d))>=150000]
 grids.incomp.d.filt <- st_as_sf(grids.incomp.d.filt)
 
-# st_write(grids.incomp.d.filt, file.path(scrdir, '50mgrid_incomp2.geojson'), append=F, crs='EPSG:32613')
+# st_write(grids.incomp.d, file.path(scrdir, '50mgrid_incomp3.geojson'), append=F, crs='EPSG:32613')
 # grids.incomp.d.filt <- st_read(file.path(scrdir, '50mgrid_incomp2.geojson'))
 
 # Subset LAS catalog to large incomplete clusters
-tmpdir <- file.path(scrdir, 'las_remainder2')
+tmpdir <- file.path(scrdir, 'las_remainder3')
 opt_output_files(lascat) <- file.path(tmpdir, 'trees_{XLEFT}_{YBOTTOM}')
 lascat.incomp <- clip_roi(lascat, grids.incomp.d.filt)
-plot(lascat.incomp, chunk=T)
 
-# Retile incomplete LAS catalog to 50m incomplete grid
-tmpdir <- file.path(scrdir, 'las_remainder2')
+# Retile incomplete LAS catalog to 50m grid
+tmpdir <- file.path(scrdir, 'las_remainder3')
 infiles <- list.files(tmpdir, full.names=T)
 lascat.incomp <- readLAScatalog(infiles)
 plot(lascat.incomp, chunk=T)
 
 opt_stop_early(lascat.incomp) <- F # Proceed through errors, leaving gaps for failed chunks
-opt_output_files(lascat.incomp) <- file.path(scrdir, 'las_remainder_regrid2', 'las_rem_rg_{XLEFT}_{YBOTTOM}')
+opt_output_files(lascat.incomp) <- file.path(scrdir, 'las_remainder_regrid3', 'las_rem_rg_{XLEFT}_{YBOTTOM}')
 opt_chunk_size(lascat.incomp) <- 50
 opt_chunk_buffer(lascat.incomp) <- 0
 
 plan(multisession, workers=nCores)
 catalog_retile(lascat.incomp)
+
+
+
+
+
+
+
+
+
 
 ############# PICK UP HERE ###################
 ## ---------------------------------------------------------------------------------------------------
