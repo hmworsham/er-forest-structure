@@ -17,7 +17,8 @@ drive_auth(path=config$drivesa)
 
 ## ---------------------------------------------------------------------------------------------------
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
-workerNodes <- rep(workerNodes, 32)
+workerNodes <- rep(workerNodes, availableCores())
+nCores <- as.integer(availableCores()-2)
 set_lidr_threads(length(workerNodes)-2)
 
 ## ---------------------------------------------------------------------------------------------------
@@ -55,14 +56,3 @@ npercell.rast <- rast(st_rasterize(npercell.sf))
 
 plot(npercell.sf)
 
-# Mask
-conif.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
-npercell.rast <- resample(npercell.rast, conif.mask, 'bilinear')
-npercell.rast <- crop(npercell.rast, ext(conif.mask))
-ext(conif.mask) <- ext(npercell.rast)
-npercell.rast
-conif.mask
-
-npercell.conif <- terra::mask(npercell.rast, conif.mask)
-plot(npercell.conif)
-plot(npercell.sf)
