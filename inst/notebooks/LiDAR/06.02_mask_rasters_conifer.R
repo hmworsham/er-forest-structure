@@ -27,7 +27,9 @@ tmpfile <- drive_download(
   path=file.path(tempdir(), config$extdata$invid),
   overwrite=T)$local_path
 
+# Make target raster
 lc <- rast(tmpfile)
+plot(lc)
 
 # Ingest Nicola's classification map
 tmpfile <- drive_download(
@@ -147,7 +149,11 @@ plot(nf.conif.sieve, col=c('red', NA))
 plot(conif.sieve, col=c('blue', NA), alpha=0.4, add=T)
 
 # Write Falco conif sieve
-writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'), overwrite=T)
+writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'), overwrite=T)
+
+nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
+
+plot(nf.conif.sieve, col='white', add=T)
 
 ## ---------------------------------------------------------------------------------------------------
 # Overlay masks on NAIP imagery
