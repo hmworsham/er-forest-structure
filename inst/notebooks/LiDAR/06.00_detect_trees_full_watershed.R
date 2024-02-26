@@ -24,8 +24,8 @@ set_lidr_threads(length(workerNodes)-2)
 ## ---------------------------------------------------------------------------------------------------
 # Specify directories
 scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
-datadir <- file.path(scrdir, 'las_remainder_regrid3')
-outdir <- file.path(scrdir, 'trees_ls_50m_remainder')
+datadir <- file.path(scrdir, 'las_decimated')
+outdir <- file.path(scrdir, 'trees_ls_50m')
 dir.create(outdir)
 
 ## ---------------------------------------------------------------------------------------------------
