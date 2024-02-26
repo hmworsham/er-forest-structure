@@ -19,7 +19,7 @@ drive_auth(path=config$drivesa)
 
 # Ingest trees
 #datadir <- config$extdata$trees
-datadir <- '/global/scratch/users/worsham/trees_csv'
+datadir <- '/global/scratch/users/worsham/trees_ls_100m_csv'
 trfiles <- list.files(datadir, full.names=T)
 trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', 30))
 
