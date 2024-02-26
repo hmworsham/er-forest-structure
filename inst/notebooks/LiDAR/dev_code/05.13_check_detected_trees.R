@@ -17,7 +17,7 @@ drive_auth(path=config$drivesa)
 
 ## ---------------------------------------------------------------------------------------------------
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
-workerNodes <- rep(workerNodes, 32)
+workerNodes <- rep(workerNodes, availableCores())
 nCores <- as.integer(availableCores()-2)
 set_lidr_threads(length(workerNodes)-2)
 
@@ -208,7 +208,7 @@ trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
 trs.ls50remainder.fn <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp', full.names=T)
 trs.ls.fn <- c(trs.ls50.fn, trs.ls50remainder.fn)
 trs.ls <- mclapply(trs.ls.fn, FUN=st_read,
-                   mc.cores=getOption("mc.cores", nCores-4))
+                   mc.cores=getOption("mc.cores", nCores))
 
 # Define file IDs and grid cell IDs for comparison
 comp.files <- tools::file_path_sans_ext(basename(trs.ls.fn))
@@ -260,277 +260,108 @@ opt_chunk_buffer(lascat.incomp) <- 0
 plan(multisession, workers=nCores)
 catalog_retile(lascat.incomp)
 
-
-
-
-
-
-
-
-
-
-############# PICK UP HERE ###################
 ## ---------------------------------------------------------------------------------------------------
 # Resample to 100 m grid
-
-opt_output_files(lascat) <- file.path(scrdir, '100m_grid', 'grid_{XLEFT}_{YBOTTOM}')
-opt_chunk_size(lascat) <- 100
-opt_chunk_buffer(lascat) <- 0
-
-plan(multisession, workers=30)
-chks100 <- engine_chunks(lascat)
-
-grid100 <- mclapply(chks100, 'slot', 'save', mc.cores=getOption('mc.cores', 30))
-grid100 <- unlist(grid100, recursive=F)
-grid100 <- lapply(str_split(grid100, '/'), '[', 7)
-grid100 <- str_replace_all(grid100, 'grid', 'trees')
-
-fullgrid100 <- do.call(rbind, lapply(chks100, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  }
-}))
-
-fullgrid.df <- data.frame('id'=grid100, 'geometry'=fullgrid100)
-fullgrid.sf <- st_as_sf(fullgrid.df, crs='EPSG:32613')
-st_write(fullgrid.sf, file.path(scrdir, '100mgrid.geojson'), append=F)
-
-fullgrid100.sf <- st_read(file.path(scrdir, '100mgrid.geojson'))
-
-trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
-trs.ls.all <- data.table::rbindlist(trs.ls.all, fill=T)
-trs.ls.all <- st_as_sf(trs.ls.all, crs='EPSG:32613')
-# st_crs(trs.ls.all) <- st_crs(fullgrid.sf)
-
-trees100 <- mcmapply(st_intersection, fullgrid100.sf, trs.ls.all, mc.cores=getOption('mc.cores', 24L))
-
-cl = parallel::makeCluster(detectCores(), type="FORK")
-doParallel::registerDoParallel(cl, detectCores())
-
-gridcells <- unique(fullgrid.sf$id) #different munis
-pols <-  foreach(i=1:length(gridcells)) %dopar% {
-  x <- fullgrid.sf %>% dplyr::filter(id == gridcells[[i]])
-  crop <- st_crop(trs.ls.all, x) %>% st_make_valid()
-
-  # remove invalid polygons
-  # this allows the process to continue. Sometimes topology is not perfectly
-  # made and tinny pols can ruin your process
-  notvalid <- which(s2_is_valid_detail(crop)==FALSE)
-  if(length(notvalid) > 0){crop <- crop[-notvalid,]}
-
-  # intersection between x and eeoval and esfval
-  x2 <- crop %>% st_intersection(x) %>% st_make_valid()
-
-  # "dissolve" to get
-  # x3 <- x2 %>% group_by(NAME, id, name) %>%
-  #   summarize()
-
-  # return
-  x2
-}
-
-parallel::stopCluster(cl)
-toc()
-
-trees100 <- st_intersection(fullgrid100.sf, trs.ls.all)
-trees100.grid <- split(trees100, f=trees100$id)
-
-length(trees100.grid)
-length(unique(trees100$id))
-dim(fullgrid100)
-
-mclapply(trees100.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_100m', paste0(x$id[1], '.shp')))},
-         mc.cores=getOption('mc.cores', 24L))
-
-grids100 <- do.call(rbind, mclapply(trees100.grid, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  } else {
-    bsf <- NA
-  }
-  return(bsf)
-}, mc.cores=getOption('mc.cores', 24L)))
-
-ntrs.all <- unlist(lapply(grids100, nrow))
-
-npercell.all <- data.frame('n'=ntrs.all, 'geometry'=grids.comp.all)
-npercell.all <- npercell.all[npercell.all$n>0,]
-
-plot(st_as_sf(npercell.all), lwd=0.001)
-
-
-
-# Resample to 500 m grid
-opt_output_files(lascat) <- file.path(scrdir, '500m_grid', 'grid_{XLEFT}_{YBOTTOM}')
-opt_chunk_size(lascat) <- 0
-opt_chunk_buffer(lascat) <- 0
-
-plan(multisession, workers=30)
-chks500 <- engine_chunks(lascat)
-
-grid500 <- mclapply(chks500, 'slot', 'save', mc.cores=getOption('mc.cores', 30))
-grid500 <- unlist(grid500, recursive=F)
-grid500 <- lapply(str_split(grid500, '/'), '[', 7)
-grid500 <- str_replace_all(grid500, 'grid', 'trees')
-
-fullgrid500 <- do.call(rbind, lapply(chks500, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  }
-}))
-
-fullgrid.df <- data.frame('id'=grid500, 'geometry'=fullgrid500)
-fullgrid.sf <- st_as_sf(fullgrid.df, crs='EPSG:32613')
-#st_write(fullgrid.sf, file.path(scrdir, '500mgrid.geojson'), append=F)
-fullgrid.sf <- st_read(file.path(scrdir, '500mgrid.geojson'))
-
-trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
-trs.ls.all <- data.table::rbindlist(trs.ls.all, fill=T)
-trs.ls.all <- st_as_sf(trs.ls.all, crs='EPSG:32613')
-# st_crs(trs.ls.all) <- st_crs(fullgrid.sf)
-
-trees500 <- mcmapply(st_intersection, fullgrid.sf, trs.ls.all, mc.cores=getOption('mc.cores', 24))
-cl = parallel::makeCluster(detectCores(), type="FORK")
-doParallel::registerDoParallel(cl, detectCores())
-
-gridcells <- unique(fullgrid.sf$id) #different munis
-pols = foreach(i=1:length(gridcells)) %dopar% {
-  x <- fullgrid.sf %>% dplyr::filter(id == gridcells[[i]])
-  crop <- st_crop(trs.ls.all, x) %>% st_make_valid()
-
-  # remove invalid polygons
-  # this allows the process to continue. Sometimes topology is not perfectly
-  # made and tinny pols can ruin your process
-  notvalid <- which(s2_is_valid_detail(crop)==FALSE)
-  if(length(notvalid) > 0){crop <- crop[-notvalid,]}
-
-  # intersection between x and eeoval and esfval
-  x2 <- crop %>% st_intersection(x) %>% st_make_valid()
-
-  # "dissolve" to get
-  # x3 <- x2 %>% group_by(NAME, id, name) %>%
-  #   summarize()
-
-  # return
-  x2
-}
-
-parallel::stopCluster(cl)
-toc()
-
-trees500 <- st_intersection(fullgrid.sf, trs.ls.all)
-trees500.grid <- split(trees500, f=trees500$id)
-
-length(trees500.grid)
-length(unique(trees500$id))
-dim(fullgrid.sf)
-
-mclapply(trees500.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_500m', paste0(x$id[1], '.shp')))},
-         mc.cores=getOption('mc.cores', 16L))
-
-trees500.grid.fn <- list.files(file.path(scrdir, 'trees_ls_500m'), pattern='shp', full.names=T)
-trees500.grid <- lapply(trees500.grid.fn, st_read)
-
-grids.500 <- do.call(rbind, mclapply(trees500.grid, FUN=function(x) {
-  bb <- st_bbox(x)
-  if(!is.na(sum(bb))) {
-    bsf <- st_as_sfc(bb)
-  } else {
-    bsf <- NA
-  }
-  return(bsf)
-}, mc.cores=getOption('mc.cores', 24L)))
-
-ntrs.500 <- unlist(lapply(trees500.grid, nrow))
-
-npercell.500 <- data.frame('n'=ntrs.500, 'geometry'=grids.500)
-npercell.500 <- npercell.500[npercell.500$n>0,]
-
-plot(st_as_sf(npercell.500), lwd=0.001)
-
-
-# COMPARE TREES TO REGRIDDED POINTS
-ls.treefiles <- list.files(file.path(scrdir, 'trees_ls_50m_remainder'), pattern='shp')
-rg.files <- list.files(file.path(scrdir, 'las_remainder_regrid'))[1:5400]
-
-inc.2.1 <- which(!str_replace_all(rg.files, '[A-z_.]', '') %in% str_replace_all(ls.treefiles, '[A-z.]', ''))
-
-
-# CHECK INTERMEDIATE COMPLETENESS AFTER REGRIDDING MOST INCOMPLETE AND LS ON MOST INCOMPLETE
-# trs.ls50.fn <- list.files(datadir, pattern='shp', full.names=T)
-# trs.ls50 <- mclapply(trs.ls50.fn, FUN=st_read, mc.cores=getOption("mc.cores", 28L))
 #
-# grids.comp50 <- do.call(rbind, mclapply(trs.ls50, FUN=function(x) {
-#   bb <- st_bbox(x)
-#   if(!is.na(sum(bb))) {
-#     bsf <- st_as_sfc(bb)
-#   } else {
-#     bsf <- NA
-#   }
-#   return(bsf)
-# }, mc.cores=getOption('mc.cores', 24L)))
+# opt_output_files(lascat) <- file.path(scrdir, '100m_grid', 'grid_{XLEFT}_{YBOTTOM}')
+# opt_chunk_size(lascat) <- 100
+# opt_chunk_buffer(lascat) <- 0
 #
-# grids.comp50.df <- data.frame('id'=tools::file_path_sans_ext(basename(trs.ls50.fn)), 'geometry'=grids.comp50)
+# plan(multisession, workers=30)
+# chks100 <- engine_chunks(lascat)
 #
-# plot(st_as_sf(grids.comp50.df), col='black', lwd=0.001)
+# grid100 <- mclapply(chks100, 'slot', 'save', mc.cores=getOption('mc.cores', 30))
+# grid100 <- unlist(grid100, recursive=F)
+# grid100 <- lapply(str_split(grid100, '/'), '[', 7)
+# grid100 <- str_replace_all(grid100, 'grid', 'trees')
 #
-# lascat.incomp.fn <- list.files(file.path(scrdir, 'las_remainder_regrid'), full.names=T)
-# lascat.incomp.rt <- readLAScatalog(lascat.incomp.fn)
-# plot(lascat.incomp.rt)
-#
-# #pull geometries from lascat.incomp.rt and merge with grids.comp.all
-# plan(multisession(workers=30))
-# inc.chks <- engine_chunks(lascat.incomp.rt)
-# incomp.grid <- do.call(rbind, lapply(inc.chks, FUN=function(x) {
+# fullgrid100 <- do.call(rbind, lapply(chks100, FUN=function(x) {
 #   bb <- st_bbox(x)
 #   if(!is.na(sum(bb))) {
 #     bsf <- st_as_sfc(bb)
 #   }
 # }))
 #
-# incomp.grid.df <- data.frame('id'=tools::file_path_sans_ext(basename(lascat.incomp.fn)), 'geometry'=incomp.grid)
-#
-# grids.all <- rbind(grids.comp50.df, incomp.grid.df)
-#
-# plot(st_as_sf(grids.all), lwd=0.001)
+# fullgrid.df <- data.frame('id'=grid100, 'geometry'=fullgrid100)
+# fullgrid.sf <- st_as_sf(fullgrid.df, crs='EPSG:32613')
+# st_write(fullgrid.sf, file.path(scrdir, '100mgrid.geojson'), append=F)
 
-# comp50 <- tools::file_path_sans_ext(basename(trs.ls.fn))
-# fullgrid.id <- tools::file_path_sans_ext(basename(fullgrid.sf$id))
-#
-# grids.incomp <- fullgrid.sf[!fullgrid.sf$id %in% comp50,]
-# grids.incomp.diss <- st_cast(st_union(st_buffer(grids.incomp, 0.1)), 'POLYGON') #Buffer to make the corners touch, union to dissolve adjacent borders
-# dissolved <- st_sf(grids.incomp.diss) #Create a sf object from the geometries
-# dissolved$clusterID=1:length(grids.incomp.diss) #Add cluster id to each row
-# grids.incomp.cluster <- st_join(st_sf(grids.incomp), dissolved) #Join cluster id to the original polygons
+# Ingest 100m grid file
+fullgrid100.sf <- st_read(file.path(scrdir, '100mgrid.geojson'))
 
+# Ingest tree files
+trs.ls.all.fn <- list.files(datadir, pattern='shp', full.names=T)
+trs.ls.all <- mclapply(trs.ls.all.fn, FUN=st_read,
+                   mc.cores=getOption("mc.cores", nCores))
 
+trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
+trs.ls.all <- data.table::rbindlist(trs.ls.all, fill=T)
+trs.ls.all <- st_as_sf(trs.ls.all, crs='EPSG:32613')
 
+# trees100 <- mcmapply(st_intersection,
+#                      fullgrid100.sf,
+#                      trs.ls.all,
+#                      mc.cores=getOption('mc.cores', nCores))
+#
+# cl = parallel::makeCluster(detectCores(), type="FORK")
+# doParallel::registerDoParallel(cl, detectCores())
+#
+# gridcells <- unique(fullgrid.sf$id) #different munis
+# pols <-  foreach(i=1:length(gridcells)) %dopar% {
+#   x <- fullgrid.sf %>% dplyr::filter(id == gridcells[[i]])
+#   crop <- st_crop(trs.ls.all, x) %>% st_make_valid()
+#
+#   # remove invalid polygons
+#   # this allows the process to continue. Sometimes topology is not perfectly
+#   # made and tinny pols can ruin your process
+#   notvalid <- which(s2_is_valid_detail(crop)==FALSE)
+#   if(length(notvalid) > 0){crop <- crop[-notvalid,]}
+#
+#   # intersection between x and eeoval and esfval
+#   x2 <- crop %>% st_intersection(x) %>% st_make_valid()
+#
+#   # "dissolve" to get
+#   # x3 <- x2 %>% group_by(NAME, id, name) %>%
+#   #   summarize()
+#
+#   # return
+#   x2
+# }
+#
+# parallel::stopCluster(cl)
+# toc()
 
-# algo <- LayerStacking(start=0.5, res=0.5, ws1=2, ws2=2, buf_size=0.2, hardwood=F, hmin=1.8)
-# plan(multisession, workers=30L)
-# #ls.trees <- find_trees(lascat.incomp, algo, uniqueness='incremental')
-#
-# findtrees.apply <- function(grid) {
-#   las <- clip_roi(lascat, grid)
-#   ls.trees <- tryCatch(find_trees(las, algo, uniqueness='incremental'), error=function(e) NULL)
-#   }
-#
-# ls.trees.rem <- mapply(findtrees.apply, grids.incomp[190:200,]$geometry)
-#
-# clip_roi(lascat, grids.incomp[1:5,])
-# opt_output_files(lascat) <- file.path(outdir, 'trees_{XLEFT}_{YBOTTOM}')
-# opt_chunk_size(lascat) <- 50
-# opt_chunk_buffer(lascat) <- 10
-# opt_stop_early(lascat) <- F # Proceed through errors, leaving gaps for failed chunks
-#
-# plan(multisession, workers=30L)
-# lascat.incomp <- clip_roi(lascat, grids.incomp)
-# #ls.trees.rem <- mapply(FUN=findtrees.apply, grids.incomp[1:5,])
-#
-# catalog_retile(lascat)
+trees100 <- st_intersection(fullgrid100.sf, trs.ls.all)
+trees100.grid <- split(trees100, f=trees100$id)
+
+length(trees100.grid)
+length(unique(trees100$id))
+dim(fullgrid100.sf)
+
+mclapply(trees100.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_100m', paste0(x$id[1], '.shp')))},
+         mc.cores=getOption('mc.cores', nCores))
+
+trs100.fn <- list.files(dir100, pattern='shp', full.names=T)
+trs100.grid <- mclapply(trs100.fn, FUN=st_read,
+                   mc.cores=getOption("mc.cores", nCores))
+
+grids100 <- do.call(rbind, mclapply(trs100.grid, FUN=function(x) {
+  bb <- st_bbox(x)
+  if(!is.na(sum(bb))) {
+    bsf <- st_as_sfc(bb)
+  } else {
+    bsf <- NA
+  }
+  return(bsf)
+}, mc.cores=getOption('mc.cores', nCores)))
+
+ntrs.all <- unlist(lapply(trs100.grid, nrow))
+
+npercell.all <- data.frame('n'=ntrs.all, 'geometry'=grids100)
+npercell.all <- npercell.all[npercell.all$n>0,]
+
+plot(st_as_sf(npercell.all), lwd=0.001)
+
 
 # CHECK TO MAKE SURE NO OVERLAPPING TREES
 
@@ -677,4 +508,96 @@ ggplot(bcd) +
 # npercell.all.x <- npercell.all.x[npercell.all.x$n>0,]
 #
 # plot(st_as_sf(npercell.all.x), lwd=0.001)
+
+
+#
+# # Resample to 500 m grid
+# opt_output_files(lascat) <- file.path(scrdir, '500m_grid', 'grid_{XLEFT}_{YBOTTOM}')
+# opt_chunk_size(lascat) <- 0
+# opt_chunk_buffer(lascat) <- 0
+#
+# plan(multisession, workers=30)
+# chks500 <- engine_chunks(lascat)
+#
+# grid500 <- mclapply(chks500, 'slot', 'save', mc.cores=getOption('mc.cores', 30))
+# grid500 <- unlist(grid500, recursive=F)
+# grid500 <- lapply(str_split(grid500, '/'), '[', 7)
+# grid500 <- str_replace_all(grid500, 'grid', 'trees')
+#
+# fullgrid500 <- do.call(rbind, lapply(chks500, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   }
+# }))
+#
+# fullgrid.df <- data.frame('id'=grid500, 'geometry'=fullgrid500)
+# fullgrid.sf <- st_as_sf(fullgrid.df, crs='EPSG:32613')
+# #st_write(fullgrid.sf, file.path(scrdir, '500mgrid.geojson'), append=F)
+# fullgrid.sf <- st_read(file.path(scrdir, '500mgrid.geojson'))
+#
+# trs.ls.all <- trs.ls.all[lapply(trs.ls.all, nrow)>0]
+# trs.ls.all <- data.table::rbindlist(trs.ls.all, fill=T)
+# trs.ls.all <- st_as_sf(trs.ls.all, crs='EPSG:32613')
+# # st_crs(trs.ls.all) <- st_crs(fullgrid.sf)
+#
+# trees500 <- mcmapply(st_intersection, fullgrid.sf, trs.ls.all, mc.cores=getOption('mc.cores', 24))
+# cl = parallel::makeCluster(detectCores(), type="FORK")
+# doParallel::registerDoParallel(cl, detectCores())
+#
+# gridcells <- unique(fullgrid.sf$id) #different munis
+# pols = foreach(i=1:length(gridcells)) %dopar% {
+#   x <- fullgrid.sf %>% dplyr::filter(id == gridcells[[i]])
+#   crop <- st_crop(trs.ls.all, x) %>% st_make_valid()
+#
+#   # remove invalid polygons
+#   # this allows the process to continue. Sometimes topology is not perfectly
+#   # made and tinny pols can ruin your process
+#   notvalid <- which(s2_is_valid_detail(crop)==FALSE)
+#   if(length(notvalid) > 0){crop <- crop[-notvalid,]}
+#
+#   # intersection between x and eeoval and esfval
+#   x2 <- crop %>% st_intersection(x) %>% st_make_valid()
+#
+#   # "dissolve" to get
+#   # x3 <- x2 %>% group_by(NAME, id, name) %>%
+#   #   summarize()
+#
+#   # return
+#   x2
+# }
+#
+# parallel::stopCluster(cl)
+# toc()
+#
+# trees500 <- st_intersection(fullgrid.sf, trs.ls.all)
+# trees500.grid <- split(trees500, f=trees500$id)
+#
+# length(trees500.grid)
+# length(unique(trees500$id))
+# dim(fullgrid.sf)
+#
+# mclapply(trees500.grid, function(x){st_write(x, dsn=file.path(scrdir, 'trees_ls_500m', paste0(x$id[1], '.shp')))},
+#          mc.cores=getOption('mc.cores', 16L))
+#
+# trees500.grid.fn <- list.files(file.path(scrdir, 'trees_ls_500m'), pattern='shp', full.names=T)
+# trees500.grid <- lapply(trees500.grid.fn, st_read)
+#
+# grids.500 <- do.call(rbind, mclapply(trees500.grid, FUN=function(x) {
+#   bb <- st_bbox(x)
+#   if(!is.na(sum(bb))) {
+#     bsf <- st_as_sfc(bb)
+#   } else {
+#     bsf <- NA
+#   }
+#   return(bsf)
+# }, mc.cores=getOption('mc.cores', 24L)))
+#
+# ntrs.500 <- unlist(lapply(trees500.grid, nrow))
+#
+# npercell.500 <- data.frame('n'=ntrs.500, 'geometry'=grids.500)
+# npercell.500 <- npercell.500[npercell.500$n>0,]
+#
+# plot(st_as_sf(npercell.500), lwd=0.001)
+#
 
