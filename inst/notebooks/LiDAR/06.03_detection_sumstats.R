@@ -13,12 +13,14 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 ## ---------------------------------------------------------------------------------------------------
+## Configure Drive auth
 drive_auth(path=config$drivesa)
 
-# Ingest trees
-#treefiles <- list.files(config$extdata$trees)
-treefiles <- list.files('/global/scratch/users/worsham/trees_lmffw_csv', pattern='.csv', full.names=T)
+## ---------------------------------------------------------------------------------------------------
+## Ingest data
 
+# Ingest trees
+treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.csv', full.names=T)
 
 # Ingest field data
 tmpfile <- drive_download(
@@ -28,6 +30,13 @@ tmpfile <- drive_download(
   overwrite=T)$local_path
 
 inv <- read.csv(tmpfile)
+
+# Clean field data
+inv <- inv[grep('XX', inv$Site_Name, invert=T),] # Target plots
+inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
+inv <- inv[inv$Status == 'Live',] # Living stems
+inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
+# inv <- inv[inv$DBH_Avg_CM >= 5,]
 
 # Summary stats on detected trees
 trees <- mclapply(treefiles, read.csv, mc.cores=24)
