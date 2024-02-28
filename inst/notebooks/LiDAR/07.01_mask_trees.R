@@ -10,9 +10,13 @@ config <- config::get(file=file.path('~',
 devtools::load_all()
 load.pkgs(config$pkgs)
 
+# Set number of cores
+nCores <- as.integer(availableCores()-2)
+
 ## ---------------------------------------------------------------------------------------------------
 # Configure Drive auth
 drive_auth(path=config$drivesa)
+register_google(key=readLines(config$mapkey))
 
 ## ---------------------------------------------------------------------------------------------------
 # Ingest data
@@ -21,15 +25,18 @@ drive_auth(path=config$drivesa)
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
                     pattern=config$extdata$bndpattern)
 
+# Ingest trees
+treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m_csv', pattern='.csv', full.names=T)
+trees <- mclapply(treefiles, read.csv, mc.cores=getOption('mc.cores', nCores))
+alltrees <- data.table::rbindlist(trees, idcol='file')
+
 # Ingest landcover dataset
 tmpfile <- drive_download(
   config$extdata$lcpattern,
   path=file.path(tempdir(), config$extdata$invid),
   overwrite=T)$local_path
 
-# Make target raster
 lc <- rast(tmpfile)
-plot(lc)
 
 # Ingest Nicola's classification map
 tmpfile <- drive_download(
@@ -60,11 +67,24 @@ tmpfile <- drive_download(
 
 naip <- rast(tmpfile)
 
+# Ingest boundary of missing flightpath
+missfp <-st_read(file.path(config$extdata$scratch, 'missing_flightpath', 'missing_flightpath.shp'))
+
+# Ingest developed zones
+devzones <- load.plot.sf(path=as_id(config$extdata$devid),
+                            pattern=config$extdata$devpattern)
+# Ingest roads
+roads <- load.plot.sf(path=as_id(config$extdata$roadsid),
+                         pattern=config$extdata$roadspattern)
+
 # Ingest template forest structure raster to resample conifers to
-template <- rast('/global/scratch/users/worsham/tifs/gapfilled/ba_100m.tif')
+template <- rast(file.path(config$extdata$scratch, 'tifs', 'ls', 'density_100m.tif'))
 
 # Ingest all rasters
-# TURN BACK ON AFTER TESTING ---------------> rasters <- lapply(list.files(file.path(config$extdata$scratch, 'tifs', 'gapfilled'), full.names=T), rast)
+rasters <- lapply(list.files(file.path(config$extdata$scratch, 'tifs', 'ls'),
+                             full.names=T, pattern='tif'),
+                  FUN=rast)
+lapply(rasters, \(x) set.names(x, str_replace(basename(sources(x)), '.tif', '')))
 
 ## ---------------------------------------------------------------------------------------------------
 # Create conifer mask from Breckheimer classification data
@@ -105,16 +125,14 @@ plot(conif.sieve, col=c('blue', NA), add=T)
 
 writeRaster(conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'), overwrite=T)
 
-conif.sieve.ib <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
-
 ## ---------------------------------------------------------------------------------------------------
 # Create conifer mask from Falco classification data
 
 # Reclassify Falco data using species codes -- DON'T THINK THIS IS NECESSARY...??
 
 # Set all non-conifer classes in Falco data to NA
-sp.class[!sp.class %in% c(45:47, 101:104, 105:109)] <- NA
-sp.class[sp.class %in% c(45:47, 101:104, 105:109)] <- 1
+sp.class[!sp.class %in% c(45:47)] <- NA
+sp.class[sp.class %in% c(45:47)] <- 1
 
 # Smooth with 9-pixel window
 nf.conif <- terra::focal(sp.class, w=9, fun='mean', na.policy='only', na.rm=T)
@@ -126,13 +144,13 @@ nf.conifpatches <- patches(nf.conif100, directions=8)
 nf.patch.freq <- freq(nf.conifpatches)
 
 # Which rows of the dataframe are represented by 5 or fewer pixels?
-str(which(nf.patch.freq$count<=5))
+str(which(nf.patch.freq$count<=9))
 
 # Which values do these indices correspond to?
-str(nf.patch.freq$value[which(nf.patch.freq$count<=5)])
+str(nf.patch.freq$value[which(nf.patch.freq$count<=9)])
 
 # Put these into a vector of patch ID's to be removed
-nf.excludeID <- nf.patch.freq$value[which(nf.patch.freq$count <= 5)]
+nf.excludeID <- nf.patch.freq$value[which(nf.patch.freq$count <= 9)]
 
 # Make a new forest mask for sieving
 nf.conif.sieve <- nf.conif100
@@ -149,65 +167,155 @@ plot(nf.conif.sieve, col=c('red', NA))
 plot(conif.sieve, col=c('blue', NA), alpha=0.4, add=T)
 
 # Write Falco conif sieve
-writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'), overwrite=T)
-
-nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
-
-plot(nf.conif.sieve, col='white', add=T)
+writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'), overwrite=T)
 
 ## ---------------------------------------------------------------------------------------------------
-# Overlay masks on NAIP imagery
+## Overlay masks on NAIP imagery
+
+# Read in saved sieves
+nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'))
+ib.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
 
 plot(naip)
 plot(nf.conif.sieve, col=c('turquoise', NA), alpha=0.4, add=T)
 
 plot(naip)
-plot(conif.sieve, col=c('red', NA), alpha=0.5, add=T)
+plot(ib.conif.sieve, col=c('red', NA), alpha=0.5, add=T)
 
 # Pull basemap from google
 er.bmap <- get_map(location=c(lon = -106.995, lat = 38.900),
-                    zoom=11,
+                    zoom=12,
                     maptype = 'satellite',
                     source = 'google')
 
-conif.sieve.fact <- as.factor(project(conif.sieve, 'EPSG:4326'))
-nf.conif.sieve.fact <- as.factor(project(nf.conif.sieve, 'EPSG:4326'))
+ib.conif.sieve.fact <- terra::as.factor(project(ib.conif.sieve, 'EPSG:4326'))
+nf.conif.sieve.fact <- terra::as.factor(project(nf.conif.sieve, 'EPSG:4326'))
 
 ggmap(er.bmap) +
-  #tidyterra::geom_spatraster(data=conif.sieve.fact, aes(fill=label), alpha=0.5) +
-  tidyterra::geom_spatraster(data=nf.conif.sieve.fact, aes(fill=label), alpha=0.5) +
-  scale_fill_continuous(na.value=NA)
+  tidyterra::geom_spatraster(data=nf.conif.sieve.fact, aes(fill=label), alpha=0.2) +
+  scale_fill_gradientn(colors='turquoise', na.value=NA)
+
 
 ## ---------------------------------------------------------------------------------------------------
-# Apply masks
+# Add density mask
 
-# Mask out any values where density < 100 stems ha
-density.mask <- rasters[[2]]
+# Read in saved sieves
+nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'))
+
+# Mask out any values where density < 500 stems ha
+density.mask <- template
 density.mask[density.mask<500] <- NA
 density.mask[density.mask>=500] <- 1
 
 plot(density.mask, col=c('red', NA))
 
-# Make a new forest mask for sieving
-nf.conif.sieve.dm <- nf.conif.sieve
+# Make a new forest mask for further masking with density
+conif.density.mask <- alignfun(nf.conif.sieve, density.mask)
 
-# Assign NA to all patches whose IDs are found in excludeID
-nf.conif.sieve.dm[is.na(density.mask)] <- NA
+# Assign NA to all pixels with forest density <= 500 stems / ha
+conif.density.mask[is.na(density.mask)] <- NA
 
-# Mask rasters and write out
-conif.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'))
-rast.mask <- lapply(rasters, mask, conif.mask)
-
-rast.mask <- lapply(rasters, mask, density.mask)
-plot(rast.mask[[6]])
+plot(naip)
+plot(conif.density.mask, col='red', add=T)
+plot(mask(template, conif.density.mask))
 
 ## ---------------------------------------------------------------------------------------------------
-# Write
+# Buffer AOP boundary inward 100m
+bnd100 <- st_buffer(bnd, -100)
 
-## Assign names from input basenames
-names(rast.mask) <- tools::file_path_sans_ext(list.files(file.path(config$extdata$scratch, 'tifs', 'gapfilled')))
+# Buffer missing flightpath outward 100m
+missfp100 <- st_buffer(missfp, 100)
 
-## Write out
-lapply(seq_along(rast.mask), \(x){
-  writeRaster(rast.mask[[x]], file.path(config$extdata$scratch, 'tifs', 'conifer_masked', paste0(names(rast.mask)[x], '_conifmask.tif')), overwrite=T)
-})
+# Plot to check
+plot(naip)
+plot(mask(template, conif.density.mask), add=T)
+plot(bnd100, col=NA, add=T)
+plot(missfp100, col=NA, add=T)
+
+# Add boundary masks
+conif.density.bnd.mask <- mask(conif.density.mask, bnd100)
+conif.density.bnd.mfp.mask <- mask(conif.density.bnd.mask, missfp100, inverse=T)
+plot(conif.density.bnd.mask, col='red', add=T)
+plot(conif.density.bnd.mfp.mask, col='blue', add=T)
+
+# Add developed area mask
+conif.density.bnd.mfp.dev.mask <- mask(conif.density.bnd.mfp.mask, devzones, inverse=T)
+
+# Add road buffer mask
+conif.density.bnd.mfp.dev.rd.mask <- mask(conif.density.bnd.mfp.dev.mask, roads, inverse=T)
+
+plot(conif.density.bnd.mfp.dev.rd.mask, col='grey', add=T)
+
+# Write out final composite mask
+writeRaster(conif.density.bnd.mfp.dev.rd.mask,
+            file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'),
+            overwrite=T)
+
+## ---------------------------------------------------------------------------------------------------
+## Mask trees and write out
+
+# Read full mask
+full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'))
+full.mask.poly <- st_as_sf(as.polygons(full.mask))
+
+# Subset detected trees to unmasked zones
+alltrees.df <- data.frame(alltrees)
+trees_geos <- geos::geos_read_xy(alltrees.df[c("X", "Y")])
+full.mask.geos <- geos::as_geos_geometry(full.mask.poly)
+wk::wk_crs(full.mask.geos) <- NULL
+trees_tree <- geos::geos_strtree(trees_geos)
+keys <- geos::geos_contains_matrix(full.mask.geos, trees_tree)
+trees_conif <- alltrees.df[unlist(keys),]
+trees_conif <- trees_conif %>%
+  dplyr::select(-c(file))
+
+# Write masked trees as csv
+data.table::fwrite(trees_conif, file.path(config$extdata$scratch, 'trees_masked_100m.csv'), append=F)
+
+
+
+#
+#
+# ## ---------------------------------------------------------------------------------------------------
+# ## Mask rasters and write out
+# # Read mask
+# full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'conif_density_bnd_mfp_mask.tif'))
+# plot(naip)
+# plot(full.mask, col='red', alpha=0.3, add=T)
+# rast.mask <- lapply(rasters, mask, full.mask)
+# plot(rast.mask[[18]])
+# plot(missfp100, col=NA, add=T)
+#
+# # Assign names from input basenames
+# names(rast.mask) <- tools::file_path_sans_ext(list.files(file.path(config$extdata$scratch, 'tifs', 'ls'),
+#                                                          pattern='tif'))
+# lapply(rast.mask, \(x) set.names(x, paste0(names(x), '_mask')))
+#
+# # Specify png print colors
+# pngpal <- list(cividis(20),
+#                viridis(20),
+#                heat.colors(20),
+#                inferno(20),
+#                inferno(20, direction=-1),
+#                cividis(20),
+#                rocket(20),
+#                magma(20),
+#                magma(20),
+#                magma(20),
+#                plasma(20),
+#                heat.colors(20),
+#                magma(20),
+#                magma(20),
+#                magma(20),
+#                magma(20),
+#                magma(20),
+#                magma(20))
+#
+# # Write out
+# lapply(seq_along(rast.mask), \(x){
+#   writeRaster(rast.mask[[x]], file.path(config$extdata$scratch, 'tifs', 'ls', 'masked', paste0(names(rast.mask)[x], '_mask.tif')), overwrite=T)
+# })
+#
+# lapply(seq_along(rast.mask), \(x) {
+#   runpng(rast.mask[[x]], bnd, pngpal[[x]], file.path(config$extdata$scratch, 'pngs', 'ls', 'masked', paste0(names(rast.mask)[x], '_mask.png')))
+# })
