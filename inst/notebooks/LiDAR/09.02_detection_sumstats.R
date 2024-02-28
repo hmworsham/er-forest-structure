@@ -12,6 +12,9 @@ config <- config::get(file=file.path('~',
 devtools::load_all()
 load.pkgs(config$pkgs)
 
+# Set number of cores
+nCores <- as.integer(availableCores()-2)
+
 ## ---------------------------------------------------------------------------------------------------
 ## Configure Drive auth
 drive_auth(path=config$drivesa)
@@ -19,8 +22,11 @@ drive_auth(path=config$drivesa)
 ## ---------------------------------------------------------------------------------------------------
 ## Ingest data
 
+# Ingest conifer mask
+full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'))
+
 # Ingest trees
-treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.csv', full.names=T)
+alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
 
 # Ingest field data
 tmpfile <- drive_download(
@@ -31,26 +37,47 @@ tmpfile <- drive_download(
 
 inv <- read.csv(tmpfile)
 
+## ---------------------------------------------------------------------------------------------------
+## Clean data
+
 # Clean field data
-inv <- inv[grep('XX', inv$Site_Name, invert=T),] # Target plots
-inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
-inv <- inv[inv$Status == 'Live',] # Living stems
-inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),]
-# inv <- inv[inv$DBH_Avg_CM >= 5,]
+inv <- inv %>%
+  filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-CAR3',
+                           'XX-PLN1', 'XX-PLN2', 'SG-NWS1',
+                           'XX-FAR1', 'ER-BME3'),
+         Height_Avg_M>=1.3,
+         Height_Avg_M/DBH_Avg_CM > 0.17,
+         Height_Avg_M/DBH_1_CM < 10,
+         !grepl('outside plot', Comments),
+         Status=='Live',
+         !is.na(inv$Latitude) | !is.na(inv$Longitude))
 
-# Summary stats on detected trees
-trees <- mclapply(treefiles, read.csv, mc.cores=24)
-alltrees <- data.table::rbindlist(trees, idcol='file')
+## ---------------------------------------------------------------------------------------------------
+## Summary stats on detected trees
 
-qmd <- sqrt(mean(trees$DBH_est^2, na.rm=T))
-mean.ht <- mean(trees$Z, na.rm=T)
-sd.ht <- sd(trees$Z, na.rm=T)
-sd.ht
-p90.ht <- quantile(trees$Z, .9, na.rm=T)
-p90.ht
+qmd <- sqrt(mean(alltrees$DBH_est^2, na.rm=T))
+sd.dbh <- sd(alltrees$DBH_est, na.rm=T)
+median.ht <- median(alltrees$H, na.rm=T)
+p90.ht <- quantile(alltrees$H, .9, na.rm=T)
+sd.ht <- sd(alltrees$H, na.rm=T)
 
-# Summary stats on inventory trees
+data.frame('QMD'=qmd,
+           'SD DBH'=sd.dbh,
+           'Median Height'=median.ht,
+           'Percentile-90 Height'=p90.ht,
+           'SD Height'=sd.ht)
+
+## ---------------------------------------------------------------------------------------------------
+
+## Summary stats on inventory trees
 inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
+inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
 inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
 inv.p90.ht <- quantile(inv$Height_Avg_M, .9, na.rm=T)
+inv.sd.ht <- sd(inv$Height_Avg_M, na.rm=T)
 
+data.frame('QMD'=inv.qmd,
+           'SD DBH'=inv.sd.dbh,
+           'Median Height'=inv.median.ht,
+           'Percentile-90 Height'=inv.p90.ht,
+           'SD Height'=inv.sd.ht)
