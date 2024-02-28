@@ -51,7 +51,7 @@ get.rasters <- function(x, dir){
 
 # Function to crop raster to aop boundary
 cropfun <- function(ras, shp){
-  ras <- crop(ras, extent(shp))
+  ras <- crop(ras, ext(shp))
   ras <- mask(ras, shp)
   return(ras)
 }
@@ -59,7 +59,7 @@ cropfun <- function(ras, shp){
 # Function to align rasters on same grid (resample and align)
 alignfun <- function(x, target, method='bilinear'){
   xnew = resample(x, target, method)
-  ex = extent(target)
+  ex = ext(target)
   xnew = crop(xnew, ex)
   return(xnew)
 }
@@ -84,3 +84,20 @@ runpng <- function(ras, bound, clrs, filepath){
 nthroot = function(x,n) {
   (abs(x)^(1/n))*sign(x)
 }
+
+# Function to export pngs on specific dimensions
+runpng <- function(ras, bound, clrs, filepath){
+  outras = mask(ras, bound)
+  png(
+    file=filepath,
+    width=1200,
+    height=1200)
+  par(mar=c(5,5,5,5)+0.25)
+  plot(outras,
+       col=clrs,
+       axis.args=list(cex.axis=1.8, line=2.5),
+       legend.args=list(text=NULL, font=2, line=2.5, cex=1.2))
+  plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
+  dev.off()
+}
+
