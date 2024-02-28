@@ -10,6 +10,9 @@ config <- config::get(file=file.path('~',
 devtools::load_all()
 load.pkgs(config$pkgs)
 
+# Set number of cores
+nCores <- as.integer(availableCores()-2)
+
 ## ---------------------------------------------------------------------------------------------------
 # Configure drive auth
 drive_auth(path=config$drivesa)
@@ -19,9 +22,8 @@ drive_auth(path=config$drivesa)
 
 # Ingest trees
 #datadir <- config$extdata$trees
-datadir <- '/global/scratch/users/worsham/trees_ls_100m_csv'
-trfiles <- list.files(datadir, full.names=T)
-trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', 30))
+trfiles <- list.files(config$extdata$trees, full.names=T)
+trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', nCores))
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -40,7 +42,9 @@ alltrees <- alltrees[!is.na(alltrees$X) & !is.na(alltrees$Y),]
 alltrees <- alltrees[alltrees$H<=40,]
 
 # Create a shapefile of all trees
-ptsf <- st_as_sf(alltrees, coords = c('X', 'Y'), crs = '+proj=utm +zone=13 +ellps=WGS84 +datum=WGS84 +units=m +no_defs')
+ptsf <- st_as_sf(alltrees,
+                 coords = c('X', 'Y'),
+                 crs = 'EPSG:32613')
 
 # Reformat trees to populate raster
 returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$H, d=alltrees$DBH_est, ba=alltrees$BA_est)
@@ -54,29 +58,39 @@ rs = raster(matrix(1:ncells,reso,reso), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[
 res(rs) <- 100
 ncell(rs)
 values(rs) <- 1:ncell(rs)
-plot(rs, col=sample(rainbow(ncell(rs))))
+# plot(rs, col=sample(rainbow(ncell(rs))))
 
 ## ---------------------------------------------------------------------------------------------------
 # Compute rasters
 
 # Height rasters
-height.raster = rasterize(returns[,1:2], rs, returns$z, fun=mean)
-heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .8, .9, .95)))
-heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)moments::skewness(x))
+height.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...) mean(x, na.rm=T))
+heightq.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .8, .9, .95), na.rm=T))
+heightsk.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...)moments::skewness(x, na.rm=T))
 
 # Diameter rasters
 qmd.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...) sqrt(mean(x^2, na.rm=T)))
-diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95)))
+diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quantile(x, c(.1, .25, .5, .75, .9, .95), na.rm=T))
 
 # Basal area raster
 ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=function(x, ...) sum(x, na.rm=T)*10^(-4)) # scale from cm^2 to m^2
+
+# Vertical complexity raster
+vc.raster <- rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...){
+  ord <- data.frame(y=x[order(-x)])
+  ord$i <- 1:nrow(ord)
+  mod1 <- lm(log(y)~log(i), data=ord, na.action='na.omit')
+  expo <- mod1$coefficients[[2]]
+  return(expo)
+})
+
+plot(vc.raster, col=cls)
 
 # Density raster
 density.raster = pointcount(rs, alltrees)
 
 ## Clean density
 density.raster <- reclassify(density.raster, cbind(-Inf, 0, 1), right=T) # Reclassify
-#dr <- mask(density.raster, bnd) # Mask
 values(density.raster)[values(density.raster)==1] <- NA # Assign 1 to NA
 
 ## Plot density
@@ -86,7 +100,7 @@ plot(density.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
 ## ---------------------------------------------------------------------------------------------------
-# Compute rasters
+# Write rasters
 
 rasters <- c(
   'ba_100m'=ba.raster,
@@ -98,7 +112,6 @@ rasters <- c(
   'diam_90pctl_100m'=diamq.raster[[5]],
   'diam_95pctl_100m'=diamq.raster[[6]],
   'diam_qmd_100m'=qmd.raster,
-  'height_mean_100m'=height.raster,
   'height_10pctl_100m'=heightq.raster[[1]],
   'height_25pctl_100m'=heightq.raster[[2]],
   'height_50pctl_100m'=heightq.raster[[3]],
@@ -106,6 +119,7 @@ rasters <- c(
   'height_80pctl_100m'=heightq.raster[[5]],
   'height_90pctl_100m'=heightq.raster[[6]],
   'height_95pctl_100m'=heightq.raster[[7]],
+  'height_mean_100m'=height.raster,
   'height_skew_100m'=heightsk.raster
   )
 
@@ -130,26 +144,11 @@ pngpal <- list(cividis(20),
 
 assertthat::are_equal(length(pngpal), length(rasters))
 
-runpng <- function(ras, bound, clrs, filepath){
-  outras = mask(ras, bound)
-  png(
-    file=filepath,
-    width=1200,
-    height=1200)
-  par(mar=c(5,5,5,5)+0.25)
-  plot(outras,
-       col=clrs,
-       axis.args=list(cex.axis=1.8, line=2.5),
-       legend.args=list(text=NULL, font=2, line=2.5, cex=1.2))
-  plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
-  dev.off()
-}
-
 lapply(seq_along(rasters), \(x) {
-  runpng(rasters[[x]], bnd, pngpal[[x]], file.path(config$extdata$scratch, 'pngs', paste0(names(rasters)[x], '.png')))
+  runpng(rasters[[x]], bnd, pngpal[[x]], file.path(config$extdata$scratch, 'pngs', 'ls', paste0(names(rasters)[x], '.png')))
 })
 
 lapply(seq_along(rasters), \(x){
-  writeRaster(rasters[[x]], file.path(config$extdata$scratch, 'tifs', 'gapfilled', paste0(names(rasters)[x], '.tif')), overwrite=T)
+  writeRaster(rasters[[x]], file.path(config$extdata$scratch, 'tifs', 'ls', paste0(names(rasters)[x], '.tif')), overwrite=T)
 })
 
