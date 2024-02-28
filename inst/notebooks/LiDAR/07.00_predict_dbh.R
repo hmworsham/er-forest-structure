@@ -15,6 +15,9 @@ load.pkgs(config$pkgs)
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
+# Set number of cores
+nCores <- as.integer(availableCores()-2)
+
 ## ---------------------------------------------------------------------------------------------------
 ## Data ingest
 
@@ -34,13 +37,17 @@ inv <- read.csv(tmpfile)
 ## Cleaning and processing
 
 # Select the variables of interest
+
 allom <- inv %>%
   filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-CAR3',
                            'XX-PLN1', 'XX-PLN2', 'SG-NWS1',
                            'XX-FAR1', 'ER-BME3'),
          Height_Avg_M>=1.3,
          Height_Avg_M/DBH_Avg_CM > 0.17,
-         Height_Avg_M/DBH_1_CM < 10) %>%
+         Height_Avg_M/DBH_1_CM < 10,
+         !grepl('outside plot', Comments),
+         Status=='Live',
+         !is.na(inv$Latitude) | !is.na(inv$Longitude)) %>%
   dplyr::select(Site_Name,
                 Tree_ID=Tag_Number,
                 Height_Avg_M,
@@ -51,14 +58,14 @@ allom <- inv %>%
 # Scatterplot with a smooth fit
 ggplot(allom, aes(x=Height_Avg_M, y=DBH_Avg_CM)) +
   geom_point(shape=21) +
-  geom_smooth(se=F) +
+  geom_smooth(formula=log(y)~log(x), se=F) +
   labs(x='Height (m)', y='DBH (cm)')
 
 # Break data into bins
-allom.bins <- allom %>%
-  mutate(bin = ntile(Height_Avg_M, 50)) %>%
-  group_by(bin) %>%
-  summarise(across(Height_Avg_M:DBH_Avg_CM, \(x) mean(x, na.rm=T)))
+# allom.bins <- allom %>%
+#   mutate(bin = ntile(Height_Avg_M, 50)) %>%
+#   group_by(bin) %>%
+#   summarise(across(Height_Avg_M:DBH_Avg_CM, \(x) mean(x, na.rm=T)))
 
 ## ---------------------------------------------------------------------------------------------------
 ## Jucker approach
@@ -248,8 +255,12 @@ ggplot(allom.val, aes(x=log(H), y=log(DBH))) +
 
 # Predict DBH from original
 allom.val$DBH_pred <- exp(predict(m2,allom.val))*exp(summary(m2)$sigma^2/2)
+# allom.val$DBH_pred <- exp(summary(m2)$coefficients[1] + summary(m2)$coefficients[2]*log(allom.val$H)) *
+#   exp(summary(m2)$sigma^2/2)
+# allom.val$DBH_pred <- exp(summary(m3)$coefficients[1] + log((allom.val$H - summary(m3)$coefficients[2])^
+#                                                               summary(m3)$coefficients[3]))
 
-# Compute RMSE, bias, CV
+# Compute RMSE, bias, CV.
 allom.val.RMSE <- RMSE(allom.val$DBH, allom.val$DBH_pred)
 allom.val.bias <- bias(allom.val$DBH, allom.val$DBH_pred)
 allom.val.CV <- CV(allom.val$DBH, allom.val$DBH_pred)
@@ -291,11 +302,11 @@ mclapply(treefiles, \(x) {
   tf$BA_est_ub <- tf$BA_est + Prediction_interval(t_crit, sigma.v.mean, n, tf$DBH_est^2, mean(tf$DBH_est), sd(tf$DBH_est))
   outname <- str_split(basename(x), '\\.', simplify=T)[1]
   st_write(data.frame(tf),
-           file.path('/global/scratch/users/worsham/trees_csv', paste0(outname, '.csv')),
+           file.path('/global/scratch/users/worsham/trees_ls_100m_csv', paste0(outname, '.csv')),
            layer_options = "GEOMETRY=AS_XY",
            append=F)
   },
-  mc.cores = getOption("mc.cores", 30)
+  mc.cores = getOption("mc.cores", nCores)
 )
 
 ## ---------------------------------------------------------------------------------------------------
