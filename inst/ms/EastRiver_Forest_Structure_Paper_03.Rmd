@@ -2,11 +2,11 @@
 title: |
   **Snow, soil, and elevation predominate over other factors in explaining variability in subalpine conifer forest structure**
 author:
-  - Hugh M. Worsham, Energy and Resources Group, U. C. Berkeley
+  - H. Marshall Worsham, Energy and Resources Group, U. C. Berkeley
   - Haruko M. Wainwright, Department of Nuclear Science and Engineering, Massachusetts Institute of Technology
-  - Thomas L. Powell, Sewanee College
-  - Nicola Falco, Lawrence Berkeley National Lab
-  - Lara M. Kueppers, Energy and Resources Group, U.C. Berkeley, Lawrence Berkeley National Lab
+  - Thomas L. Powell, Department of Earth and Environmental Sciences, The University of the South
+  - Nicola Falco, Lawrence Berkeley National Laboratory
+  - Lara M. Kueppers, Energy and Resources Group, U.C. Berkeley, Lawrence Berkeley National Laboratory
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
   officedown::rdocx_document:
