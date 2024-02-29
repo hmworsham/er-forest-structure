@@ -60,14 +60,6 @@ modtrees <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 
-# # Ingest NAIP base image
-# tmpfile <- drive_download(
-#   as_id(config$extdata$naipid),
-#   path=file.path(tempdir(), config$extdata$naipid),
-#   overwrite=T)$local_path
-#
-# naip <- rast(tmpfile)
-
 ## ---------------------------------------------------------------------------------------------------
 # Process field data
 
@@ -91,7 +83,8 @@ stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
                       'X'=as.numeric(inv$Longitude),
                       'Y'=as.numeric(inv$Latitude),
                       'Sp_Code'=as.factor(inv$Sp_Code),
-                      'Site_Name'=inv$Site_Name)
+                      'Site_Name'=inv$Site_Name,
+                      'Site_Tag'=paste0(inv$Site_Name, inv$Tag_Number))
 stem.xyz = stem.xyz[!is.na(stem.xyz$Height),]
 
 # Turn stem.xyz into sf object
@@ -121,8 +114,9 @@ stem.within <- st_within(stem.buff)
 # Process modeled trees
 modtrees <- modtrees %>%
   filter(src==1) %>%
+  mutate(Site_Tag=paste0(site, obs)) %>%
   st_as_sf(coords=c('Xpred', 'Ypred'), crs='EPSG:32613') %>%
-  left_join(stem.xyz, by=c('obs'='Tag_Number')) %>%
+  left_join(stem.xyz, by='Site_Tag') %>%
   mutate(Crown_Radius_Mod = 0.082*Zpred + 0.5)
 
 st_crs(modtrees) <- st_crs(plotsf)
@@ -243,8 +237,9 @@ plt.density <- function(x) {
     pivot_longer(cols=c('Reference', 'Classified'),
                  names_to='Source',
                  values_to='Species') %>%
-    ggplot(aes(x=DBH, color=Source, fill=Source)) +
-    geom_density(alpha=0.6) +
+    ggplot(aes(x=Height, color=Source, fill=Source)) +
+    geom_density(alpha=0.6,
+                 bounds=c(0,40)) +
     scale_fill_manual(values=c('green4', 'dodgerblue')) +
     scale_color_manual(values=c('green4', 'dodgerblue')) +
     ggtitle(paste('N =', nrow(x))) +
