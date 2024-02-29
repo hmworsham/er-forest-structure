@@ -18,12 +18,10 @@ nCores <- as.integer(availableCores()-2)
 drive_auth(path=config$drivesa)
 
 ## ---------------------------------------------------------------------------------------------------
-# Ingest data
+## Ingest data
 
 # Ingest trees
-#datadir <- config$extdata$trees
-trfiles <- list.files(config$extdata$trees, full.names=T)
-trees <- mclapply(trfiles, read.csv, mc.cores=getOption('mc.cores', nCores))
+alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -32,14 +30,11 @@ bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
 ## ---------------------------------------------------------------------------------------------------
 # Clean trees
 
-# Bind all trees together into one dataframe
-alltrees <- data.table::rbindlist(trees, idcol='file')
-
 # Remove trees missing geoinfo
 alltrees <- alltrees[!is.na(alltrees$X) & !is.na(alltrees$Y),]
 
 # Remove unlikely trees
-alltrees <- alltrees[alltrees$H<=40,]
+alltrees <- alltrees[alltrees$H<=60,]
 
 # Create a shapefile of all trees
 ptsf <- st_as_sf(alltrees,
@@ -75,17 +70,6 @@ diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quant
 # Basal area raster
 ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=function(x, ...) sum(x, na.rm=T)*10^(-4)) # scale from cm^2 to m^2
 
-# Vertical complexity raster
-vc.raster <- rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...){
-  ord <- data.frame(y=x[order(-x)])
-  ord$i <- 1:nrow(ord)
-  mod1 <- lm(log(y)~log(i), data=ord, na.action='na.omit')
-  expo <- mod1$coefficients[[2]]
-  return(expo)
-})
-
-plot(vc.raster, col=cls)
-
 # Density raster
 density.raster = pointcount(rs, alltrees)
 
@@ -96,7 +80,7 @@ values(density.raster)[values(density.raster)==1] <- NA # Assign 1 to NA
 ## Plot density
 par(mar = c(4, 4, 4, 2) + 0.1)
 cls <- c('white', viridis(20))
-plot(density.raster, col=cls)
+plot(heightsk.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
 ## ---------------------------------------------------------------------------------------------------
@@ -121,34 +105,39 @@ rasters <- c(
   'height_95pctl_100m'=heightq.raster[[7]],
   'height_mean_100m'=height.raster,
   'height_skew_100m'=heightsk.raster
-  )
+)
 
 pngpal <- list(cividis(20),
-              viridis(20),
-              heat.colors(20),
-              inferno(20),
-              inferno(20, direction=-1),
-              cividis(20),
-              rocket(20),
-              magma(20),
-              magma(20),
-              magma(20),
-              plasma(20),
-              heat.colors(20),
-              magma(20),
-              magma(20),
-              magma(20),
-              magma(20),
-              magma(20),
-              magma(20))
+               viridis(20),
+               heat.colors(20),
+               inferno(20),
+               inferno(20, direction=-1),
+               cividis(20),
+               rocket(20),
+               magma(20),
+               magma(20),
+               magma(20),
+               plasma(20),
+               heat.colors(20),
+               magma(20),
+               magma(20),
+               magma(20),
+               magma(20),
+               magma(20),
+               magma(20))
 
 assertthat::are_equal(length(pngpal), length(rasters))
 
 lapply(seq_along(rasters), \(x) {
-  runpng(rasters[[x]], bnd, pngpal[[x]], file.path(config$extdata$scratch, 'pngs', 'ls', paste0(names(rasters)[x], '.png')))
+  runpng(rasters[[x]],
+         bnd,
+         pngpal[[x]],
+         file.path(config$extdata$scratch, 'pngs', 'ls', 'masked', paste0(names(rasters)[x], '.png')))
 })
 
 lapply(seq_along(rasters), \(x){
-  writeRaster(rasters[[x]], file.path(config$extdata$scratch, 'tifs', 'ls', paste0(names(rasters)[x], '.tif')), overwrite=T)
+  writeRaster(rasters[[x]],
+              file.path(config$extdata$scratch, 'tifs', 'ls', 'masked', paste0(names(rasters)[x], '.tif')),
+              overwrite=T)
 })
 
