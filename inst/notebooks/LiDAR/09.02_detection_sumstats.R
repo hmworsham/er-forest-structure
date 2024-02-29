@@ -22,10 +22,7 @@ drive_auth(path=config$drivesa)
 ## ---------------------------------------------------------------------------------------------------
 ## Ingest data
 
-# Ingest conifer mask
-full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'))
-
-# Ingest trees
+# Ingest detected trees
 alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
 
 # Ingest field data
@@ -51,6 +48,9 @@ inv <- inv %>%
          !grepl('outside plot', Comments),
          Status=='Live',
          !is.na(inv$Latitude) | !is.na(inv$Longitude))
+
+# Remove unlikely detected trees
+alltrees <- alltrees[alltrees$H<=60,]
 
 ## ---------------------------------------------------------------------------------------------------
 ## Summary stats on detected trees
