@@ -76,7 +76,7 @@ runpng <- function(ras, bound, clrs, filepath){
     height=1200)
   par(mar= c(5,4,4,2)+0.1)
   plot(outras, col=clrs)
-  plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
+  plot(bound$geometry, col=NA, border='grey10', lwd=1, axes=T, labels=T, add=T)
   dev.off()
 }
 
@@ -84,20 +84,3 @@ runpng <- function(ras, bound, clrs, filepath){
 nthroot = function(x,n) {
   (abs(x)^(1/n))*sign(x)
 }
-
-# Function to export pngs on specific dimensions
-runpng <- function(ras, bound, clrs, filepath){
-  outras = mask(ras, bound)
-  png(
-    file=filepath,
-    width=1200,
-    height=1200)
-  par(mar=c(5,5,5,5)+0.25)
-  plot(outras,
-       col=clrs,
-       axis.args=list(cex.axis=1.8, line=2.5),
-       legend.args=list(text=NULL, font=2, line=2.5, cex=1.2))
-  plot(bound$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
-  dev.off()
-}
-
