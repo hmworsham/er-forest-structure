@@ -11,7 +11,7 @@
 slurm*.out
 
 # rclone stuff
-nohup.out
+inst/shell_scripts/nohup.out
 
 # Auth stuff
 er-forest-structure/config/eastriver-r-googledrive-clientsecret.json
