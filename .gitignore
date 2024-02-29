@@ -10,6 +10,9 @@
 # Slurm stuff
 slurm*.out
 
+# rclone stuff
+nohup.out
+
 # Auth stuff
 er-forest-structure/config/eastriver-r-googledrive-clientsecret.json
 er-forest-structure/config/eastriver-r-googledrive_auth.txt
