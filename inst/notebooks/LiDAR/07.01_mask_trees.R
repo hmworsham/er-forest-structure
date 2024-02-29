@@ -80,12 +80,6 @@ roads <- load.plot.sf(path=as_id(config$extdata$roadsid),
 # Ingest template forest structure raster to resample conifers to
 template <- rast(file.path(config$extdata$scratch, 'tifs', 'ls', 'density_100m.tif'))
 
-# Ingest all rasters
-rasters <- lapply(list.files(file.path(config$extdata$scratch, 'tifs', 'ls'),
-                             full.names=T, pattern='tif'),
-                  FUN=rast)
-lapply(rasters, \(x) set.names(x, str_replace(basename(sources(x)), '.tif', '')))
-
 ## ---------------------------------------------------------------------------------------------------
 # Create conifer mask from Breckheimer classification data
 
@@ -128,19 +122,23 @@ writeRaster(conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100
 ## ---------------------------------------------------------------------------------------------------
 # Create conifer mask from Falco classification data
 
-# Reclassify Falco data using species codes -- DON'T THINK THIS IS NECESSARY...??
-
 # Set all non-conifer classes in Falco data to NA
 sp.class[!sp.class %in% c(45:47)] <- NA
 sp.class[sp.class %in% c(45:47)] <- 1
+plot(sp.class, col=c('red', NULL))
 
 # Smooth with 9-pixel window
 nf.conif <- terra::focal(sp.class, w=9, fun='mean', na.policy='only', na.rm=T)
-nf.conif100 <- resample(nf.conif, template)
-plot(nf.conif100, col=c('red', NULL))
+#nf.conif100 <- resample(nf.conif, template)
+plot(nf.conif, col=c('blue', NULL))
+plot(sp.class, col=c('red', NULL), add=T)
 
 # Remove non-contiguous clumps
-nf.conifpatches <- patches(nf.conif100, directions=8)
+nf.conifpatches <- patches(nf.conif, directions=8)
+
+rz <- zonal(cellSize(nf.conif.patches, unit="m"), nf.conif.patches, sum, as.raster=TRUE)
+nf.conif.sieve <- ifel(rz < 100, NA, nf.conif.patches)
+
 nf.patch.freq <- freq(nf.conifpatches)
 
 # Which rows of the dataframe are represented by 5 or fewer pixels?
@@ -197,7 +195,7 @@ ggmap(er.bmap) +
 
 
 ## ---------------------------------------------------------------------------------------------------
-# Add density mask
+# Add density and other masks
 
 # Read in saved sieves
 nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'))
@@ -235,8 +233,6 @@ plot(missfp100, col=NA, add=T)
 # Add boundary masks
 conif.density.bnd.mask <- mask(conif.density.mask, bnd100)
 conif.density.bnd.mfp.mask <- mask(conif.density.bnd.mask, missfp100, inverse=T)
-plot(conif.density.bnd.mask, col='red', add=T)
-plot(conif.density.bnd.mfp.mask, col='blue', add=T)
 
 # Add developed area mask
 conif.density.bnd.mfp.dev.mask <- mask(conif.density.bnd.mfp.mask, devzones, inverse=T)
