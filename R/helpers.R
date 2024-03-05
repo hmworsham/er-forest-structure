@@ -71,7 +71,7 @@ getvals <- function(ras) return(values(ras))
 runpng <- function(ras, bound, clrs, filepath){
   outras = mask(ras, bound)
   png(
-    file=file.path,
+    file=filepath,
     width=1200,
     height=1200)
   par(mar= c(5,4,4,2)+0.1)
