@@ -89,7 +89,7 @@ lc[!lc==1] <- NA
 
 # Smooth with 9-pixel window
 #conif <- terra::focal(lc, w=3, fun='mean', na.policy='only', na.rm=T)
-conif <- terra::focal(lc, w=9, fun='mean', na.policy='only', na.rm=T)
+conif <- terra::focal(lc, w=9, fun='mean', na.policy='only')
 plot(conif, col=c('red', NULL))
 conif100 <- resample(conif, template)
 plot(conif100, col=c('red', NULL))
@@ -127,37 +127,36 @@ sp.class[!sp.class %in% c(45:47)] <- NA
 sp.class[sp.class %in% c(45:47)] <- 1
 plot(sp.class, col=c('red', NULL))
 
-# Smooth with 9-pixel window
-nf.conif <- terra::focal(sp.class, w=9, fun='mean', na.policy='only', na.rm=T)
+# Smooth with 7-pixel window
+nf.conif <- terra::focal(sp.class, w=7, fun='mean', na.policy='only', na.rm=T)
 #nf.conif100 <- resample(nf.conif, template)
+nf.conif5 <- aggregate(sp.class, 3, fun='mean', na.rm=T)
 plot(nf.conif, col=c('blue', NULL))
 plot(sp.class, col=c('red', NULL), add=T)
+plot(nf.conif10, col=c('yellow', NULL), add=T)
 
 # Remove non-contiguous clumps
-nf.conifpatches <- patches(nf.conif, directions=8)
-
-rz <- zonal(cellSize(nf.conif.patches, unit="m"), nf.conif.patches, sum, as.raster=TRUE)
-nf.conif.sieve <- ifel(rz < 100, NA, nf.conif.patches)
+nf.conifpatches <- patches(nf.conif5, directions=8)
 
 nf.patch.freq <- freq(nf.conifpatches)
 
 # Which rows of the dataframe are represented by 5 or fewer pixels?
-str(which(nf.patch.freq$count<=9))
+str(which(nf.patch.freq$count<=30))
 
 # Which values do these indices correspond to?
-str(nf.patch.freq$value[which(nf.patch.freq$count<=9)])
+str(nf.patch.freq$value[which(nf.patch.freq$count<=30)])
 
 # Put these into a vector of patch ID's to be removed
-nf.excludeID <- nf.patch.freq$value[which(nf.patch.freq$count <= 9)]
+nf.excludeID <- nf.patch.freq$value[which(nf.patch.freq$count <= 30)]
 
 # Make a new forest mask for sieving
-nf.conif.sieve <- nf.conif100
+nf.conif.sieve <- nf.conif5
 
 # Assign NA to all patches whose IDs are found in excludeID
 nf.conif.sieve[nf.conifpatches %in% nf.excludeID] <- NA
 
 # Check conifer sieve
-plot(nf.conif100, col=c('red', NA))
+plot(nf.conif5, col=c('red', NA))
 plot(nf.conif.sieve, col=c('blue', NA), add=T)
 
 # Compare Falco sieve to Breckheimer sieve
@@ -165,7 +164,7 @@ plot(nf.conif.sieve, col=c('red', NA))
 plot(conif.sieve, col=c('blue', NA), alpha=0.4, add=T)
 
 # Write Falco conif sieve
-writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'), overwrite=T)
+writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'nf_conifers_5m.tif'), overwrite=T)
 
 ## ---------------------------------------------------------------------------------------------------
 ## Overlay masks on NAIP imagery
@@ -198,12 +197,12 @@ ggmap(er.bmap) +
 # Add density and other masks
 
 # Read in saved sieves
-nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'))
+nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_5m.tif'))
 
 # Mask out any values where density < 500 stems ha
-density.mask <- template
-density.mask[density.mask<500] <- NA
-density.mask[density.mask>=500] <- 1
+density.mask <- disagg(template, 20)
+density.mask[density.mask<100] <- NA
+density.mask[density.mask>=100] <- 1
 
 plot(density.mask, col=c('red', NA))
 
@@ -244,15 +243,18 @@ plot(conif.density.bnd.mfp.dev.rd.mask, col='grey', add=T)
 
 # Write out final composite mask
 writeRaster(conif.density.bnd.mfp.dev.rd.mask,
-            file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'),
+            file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'),
             overwrite=T)
 
 ## ---------------------------------------------------------------------------------------------------
 ## Mask trees and write out
 
 # Read full mask
-full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask.tif'))
+full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'))
 full.mask.poly <- st_as_sf(as.polygons(full.mask))
+full.mask.poly <- st_cast(full.mask.poly, 'POLYGON')
+full.mask.area <- as.numeric(st_area(full.mask.poly))
+full.mask.poly <- full.mask.poly[full.mask.area>=1000,]
 
 # Subset detected trees to unmasked zones
 alltrees.df <- data.frame(alltrees)
@@ -266,4 +268,4 @@ trees_conif <- trees_conif %>%
   dplyr::select(-c(file))
 
 # Write masked trees as csv
-data.table::fwrite(trees_conif, file.path(config$extdata$scratch, 'trees_masked_100m.csv'), append=F)
+data.table::fwrite(trees_conif, file.path(config$extdata$scratch, 'trees_masked_5m.csv'), append=F)
