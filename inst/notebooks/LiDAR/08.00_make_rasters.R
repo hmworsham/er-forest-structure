@@ -21,7 +21,7 @@ drive_auth(path=config$drivesa)
 ## Ingest data
 
 # Ingest trees
-alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
+alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_5m.csv'))
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -80,11 +80,11 @@ values(density.raster)[values(density.raster)==1] <- NA # Assign 1 to NA
 ## Plot density
 par(mar = c(4, 4, 4, 2) + 0.1)
 cls <- c('white', viridis(20))
-plot(heightsk.raster, col=cls)
+plot(density.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
 ## ---------------------------------------------------------------------------------------------------
-# Write rasters
+# Collate rasters
 
 rasters <- c(
   'ba_100m'=ba.raster,
@@ -106,6 +106,22 @@ rasters <- c(
   'height_mean_100m'=height.raster,
   'height_skew_100m'=heightsk.raster
 )
+
+## ---------------------------------------------------------------------------------------------------
+# Mask rasters to density >=100 stems / ha
+
+# Across rasters, assign NA to all pixels with forest density <= 100 stems / ha
+density.mask <- density.raster
+density.mask[density.mask<100] <- NA
+density.mask[density.mask>=100] <- 1
+
+rasters <- lapply(rasters, \(x) {
+  y <- mask(x, density.mask)
+  y
+})
+
+## ---------------------------------------------------------------------------------------------------
+# Write rasters
 
 pngpal <- list(cividis(20),
                viridis(20),
@@ -132,12 +148,12 @@ lapply(seq_along(rasters), \(x) {
   runpng(rasters[[x]],
          bnd,
          pngpal[[x]],
-         file.path(config$extdata$scratch, 'pngs', 'ls', 'masked', paste0(names(rasters)[x], '.png')))
+         file.path(config$extdata$scratch, 'pngs', 'ls_masked', paste0(names(rasters)[x], '_masked.png')))
 })
 
 lapply(seq_along(rasters), \(x){
   writeRaster(rasters[[x]],
-              file.path(config$extdata$scratch, 'tifs', 'ls', 'masked', paste0(names(rasters)[x], '.tif')),
+              file.path(config$extdata$scratch, 'tifs', 'ls_masked', paste0(names(rasters)[x], '_masked.tif')),
               overwrite=T)
 })
 
