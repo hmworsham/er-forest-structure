@@ -190,7 +190,7 @@ mapit <- function(spras, stems) {
     tidyterra::geom_spatraster(data=spras, aes(fill=Sp_Code), alpha=0.8) +
     scale_fill_manual(values=sp.pal, name='Classified Species', na.value = NA) +
     geom_sf(data=stems[stems$Site_Name=='ER-GT1', ],
-            fill=NA, linewidth=1, color='gold', inherit.aes=F) +
+            fill=NA, linewidth=0.5, color='gold', inherit.aes=F) +
     scale_color_manual(values=sp.pal, name='Classified Species', na.value = NA) +
     ggtitle(paste('Global N =', nrow(stems), '\nSite N =', nrow(stems[stems$Site_Name=='ER-GT1',]))) +
     xlab('Longitude') +
@@ -273,20 +273,20 @@ plt.bar <- function(x){
 }
 
 # Maps at every site
-siteplots <- lapply(unique(stem.sf$Site_Name), \(i) {
-  site.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID==i,]))
-  names(site.sp) <- 'Sp_Code'
-  site.sp <- reclass(site.sp, sp.codes)
-  ggplot() +
-    tidyterra::geom_spatraster(data=site.sp, aes(fill=Sp_Code), alpha=0.8) +
-    scale_fill_manual(values=sp.pal, name='Classified Species', na.value = NA) +
-    geom_sf(data=stem.buff[stem.buff$Site_Name==i,],
-            fill=NA, linewidth=1, color='gold', inherit.aes=F) +
-    #ggtitle(paste('Global N =', nrow(stem.sf), '\nSite N =', nrow(stem.sf[stem.sf$Site_Name==i,]))) +
-    xlab('Longitude') +
-    ylab('Latitude') +
-    ggthemes::theme_calc(base_size=14)
-})
+# siteplots <- lapply(unique(stem.sf$Site_Name), \(i) {
+#   site.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID==i,]))
+#   names(site.sp) <- 'Sp_Code'
+#   site.sp <- reclass(site.sp, sp.codes)
+#   ggplot() +
+#     tidyterra::geom_spatraster(data=site.sp, aes(fill=Sp_Code), alpha=0.8) +
+#     scale_fill_manual(values=sp.pal, name='Classified Species', na.value = NA) +
+#     geom_sf(data=stem.buff[stem.buff$Site_Name==i,],
+#             fill=NA, linewidth=1, color='gold', inherit.aes=F) +
+#     #ggtitle(paste('Global N =', nrow(stem.sf), '\nSite N =', nrow(stem.sf[stem.sf$Site_Name==i,]))) +
+#     xlab('Longitude') +
+#     ylab('Latitude') +
+#     ggthemes::theme_calc(base_size=14)
+# })
 
 
 # Scratch
