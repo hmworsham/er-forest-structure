@@ -56,7 +56,6 @@ mapit(gt1.sp.fct, stem.buff)
 ### Confusion matrix
 ```{r}
 stems.comp1 <- get.spp(sp.class, stem.buff, sp.codes)
-
 cm1 <- confusionMatrix(stems.comp1$Reference, stems.comp1$Classified)
 cm1.overall <- cm1$overall
 
@@ -394,7 +393,7 @@ crowns_poly <- lapply(chm.smooth, mcws, treetops = stem.sf, minHeight = 3, forma
 stem.seg <- do.call('rbind', crowns_poly)
 stem.seg <- st_join(st_as_sf(stem.seg), stem.sf, by=c('treeID'))
 
-# Filter only top trees
+# Estimate crown area
 stem.seg <- stem.seg %>%
   mutate(Crown_Area=st_area(.))
 
