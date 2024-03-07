@@ -150,7 +150,9 @@ chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm
 plot(chm.smooth[[1]])
 lapply(chm.smooth, plot)
 
-# Prep for plotting: subset and reclassify raster
+## ---------------------------------------------------------------------------------------------------
+## Prep for plotting: subset and reclassify raster
+
 gt1.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
 # gt1.naip <- crop(naip, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
 
