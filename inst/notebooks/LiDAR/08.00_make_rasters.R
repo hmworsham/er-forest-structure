@@ -22,6 +22,7 @@ drive_auth(path=config$drivesa)
 
 # Ingest trees
 alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_5m.csv'))
+trees.spp <- read_csv(file.path(config$extdata$scratch, 'trees_species.csv'))
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -44,6 +45,19 @@ ptsf <- st_as_sf(alltrees,
 # Reformat trees to populate raster
 returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$H, d=alltrees$DBH_est, ba=alltrees$BA_est)
 coordinates(returns) <- ~x+y
+
+## ---------------------------------------------------------------------------------------------------
+# Clean trees_spp
+
+# Remove trees missing geoinfo
+trees.spp <- trees.spp[!is.na(trees.spp$geometry),]
+
+# Remove unlikely trees
+trees.spp <- trees.spp[trees.spp$H<=60,]
+
+# Convert geometry to X,Y
+trees.spp$X <- as.numeric(str_split(trees.spp$geometry, '\\|', simplify=T)[,1])
+trees.spp$Y <- as.numeric(str_split(trees.spp$geometry, '\\|', simplify=T)[,2])
 
 ## ---------------------------------------------------------------------------------------------------
 # Initialize the raster frame
@@ -70,25 +84,40 @@ diamq.raster = rasterize(returns[,1:2], rs, returns$d, fun=function(x, ...)quant
 # Basal area raster
 ba.raster <- rasterize(returns[,1:2], rs, returns$ba, fun=function(x, ...) sum(x, na.rm=T)*10^(-4)) # scale from cm^2 to m^2
 
-# Density raster
-density.raster = pointcount(rs, alltrees)
+# Function to generate and clean up density raster
+make.density <- function(ras, pts) {
+  density.raster = pointcount(ras, pts)
+  density.raster = reclassify(density.raster, cbind(-Inf, 0, 1), right=T)
+  values(density.raster)[values(density.raster)==1] <- NA
+  return(density.raster)
+}
 
-## Clean density
-density.raster <- reclassify(density.raster, cbind(-Inf, 0, 1), right=T) # Reclassify
-values(density.raster)[values(density.raster)==1] <- NA # Assign 1 to NA
+# Density raster
+density.raster = make.density(rs, alltrees)
+
+## Species rasters
+trees.abla <- trees.spp[trees.spp$Sp_Code=='ABLA',]
+trees.pien <- trees.spp[trees.spp$Sp_Code=='PIEN',]
+trees.pico <- trees.spp[trees.spp$Sp_Code=='PICO',]
+
+density.abla.raster <- make.density(rs, trees.abla)
+density.pien.raster <- make.density(rs, trees.pien)
+density.pico.raster <- make.density(rs, trees.pico)
 
 ## Plot density
 par(mar = c(4, 4, 4, 2) + 0.1)
-cls <- c('white', viridis(20))
-plot(density.raster, col=cls)
+cls <- c('white', mako(20))
+plot(density.pico.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
 ## ---------------------------------------------------------------------------------------------------
 # Collate rasters
-
 rasters <- c(
   'ba_100m'=ba.raster,
   'density_100m'=density.raster,
+  'density_abla_100m'=density.abla.raster,
+  'density_pien_100m'=density.pien.raster,
+  'density_pico_100m'=density.pico.raster,
   'diam_10pctl_100m'=diamq.raster[[1]],
   'diam_25pctl_100m'=diamq.raster[[2]],
   'diam_50pctl_100m'=diamq.raster[[3]],
@@ -123,24 +152,29 @@ rasters <- lapply(rasters, \(x) {
 ## ---------------------------------------------------------------------------------------------------
 # Write rasters
 
-pngpal <- list(cividis(20),
-               viridis(20),
-               heat.colors(20),
-               inferno(20),
-               inferno(20, direction=-1),
-               cividis(20),
-               rocket(20),
-               magma(20),
-               magma(20),
-               magma(20),
-               plasma(20),
-               heat.colors(20),
-               magma(20),
-               magma(20),
-               magma(20),
-               magma(20),
-               magma(20),
-               magma(20))
+pngpal <- list(
+  cividis(20),
+  viridis(20),
+  mako(20),
+  mako(20),
+  mako(20),
+  heat.colors(20),
+  inferno(20),
+  inferno(20, direction=-1),
+  cividis(20),
+  rocket(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  plasma(20),
+  heat.colors(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20)
+)
 
 assertthat::are_equal(length(pngpal), length(rasters))
 
