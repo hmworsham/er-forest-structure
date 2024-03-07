@@ -96,10 +96,10 @@ Keep any tree whose height is in the 90th percentile or higher. For all other tr
 ```{r echo=T}
 # Create canopy filter
 canopy.filter.a <- unlist(lapply(1:nrow(stem.buff), \(i) {
-  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .9)) {
+  if(stem.buff[i,]$Zpred < quantile(stem.buff$Zpred, .9)) {
     if(length(stem.within[[i]])<=1) { 
-      tst <- stem.buff[i,]$Height > 0.9 * stem.buff[stem.overlap[[i]],]$Height &
-        !any(stem.buff[stem.overlap[[i]],]$Height >= quantile(stem.buff$Height, .8))
+      tst <- stem.buff[i,]$Zpred > 0.9 * stem.buff[stem.overlap[[i]],]$Zpred &
+        !any(stem.buff[stem.overlap[[i]],]$Zpred >= quantile(stem.buff$Zpred, .8))
       tst <- prod(tst)
     } else { 
       tst <- 0 }
@@ -172,7 +172,7 @@ Keep any tree whose height is in the 90th percentile or higher. For all other tr
 ```{r echo=T}
 # Create canopy filter
 canopy.filter.b <- unlist(lapply(1:nrow(stem.buff), \(i) {
-  if(stem.buff[i,]$Height < quantile(stem.buff$Height, .90)) {
+  if(stem.buff[i,]$Zpred < quantile(stem.buff$Zpred, .90)) {
     if(length(stem.within[[i]])<=1) { 
       if(length(stem.overlap[[i]])) {
       tst <- 0
@@ -369,12 +369,12 @@ stem.seg <- st_join(st_as_sf(stem.seg), stem.sf, by=c('treeID'))
 # Filter only top trees
 stem.filt.e <- stem.seg %>%
   group_by(Site_Name) %>%
-  filter(Zpred >= quantile(Zpred, 0.9)) %>%
+  filter(Zpred >= quantile(Zpred, 0.5)) %>%
   ungroup() %>%
   mutate(Crown_Area=st_area(.))
 
 # Shrink crowns
-stem.filt.e <- st_buffer(stem.filt.e, -0.2*sqrt(stem.filt.e$Crown_Area))
+stem.filt.e <- st_buffer(stem.filt.e, -0.1*sqrt(stem.filt.e$Crown_Area))
 ```
 
 ### Map
@@ -424,10 +424,11 @@ pb6
 
 ```{r}
 acc.df <- bind_rows(cm1.overall, cm2.overall, cm3.overall,
-                cm4.overall, cm5.overall) %>%
+                cm4.overall, cm5.overall, cm6.overall) %>%
   mutate(across(everything(), ~round(.,2)),
          Run = c('Least Conserv', 'Less Conserv', 'More Conserv', 
-                 'Most Conserv - Moving window', 'Most Conserv - 3px window')) %>%
+                 'Most Conserv - Moving window', 'Most Conserv - 3px window', 
+                 'Most Conserv - Segmented Trees')) %>%
   dplyr::select(8, 2, 1, 3, 4)
 
 acc.df %>%
