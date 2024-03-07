@@ -70,12 +70,12 @@ inv <- inv %>%
                            'XX-FAR1', 'ER-BME3'))
 
 # Filter out field trees not meeting criteria
-#inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Within plot bounds
+inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Within plot bounds
 inv <- inv[inv$Status == 'Live',] # Living stems
 inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),] # Have geolocation data
 
 # Keep stem x,y,z data
-stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
+stem.inv.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
                       'Height'=as.numeric(inv$Height_Avg_M),
                       'DBH'=as.numeric(inv$DBH_Avg_CM),
                       'Crown_Radius'=0.082*inv$Height_Avg_M + 0.5,
@@ -85,12 +85,11 @@ stem.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
                       'Sp_Code'=as.factor(inv$Sp_Code),
                       'Site_Name'=inv$Site_Name,
                       'Site_Tag'=paste0(inv$Site_Name, inv$Tag_Number))
-stem.xyz = stem.xyz[!is.na(stem.xyz$Height),]
+stem.inv.xyz = stem.xyz[!is.na(stem.inv.xyz$Height),]
 
 # Turn stem.xyz into sf object
-stem.sf <- st_as_sf(stem.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
-stem.sf <- st_transform(stem.sf, crs=st_crs(plotsf))
-# stem.sf <- vect(stem.sf)
+stem.sf.inv <- st_as_sf(stem.inv.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
+stem.sf.inv <- st_transform(stem.sf.inv, crs=st_crs(plotsf))
 
 # FILTER OUT SUBORDINATE TREES
 # Buffer around all trees
@@ -100,15 +99,15 @@ stem.sf <- st_transform(stem.sf, crs=st_crs(plotsf))
 # C. any of those trees are larger
 
 # Apply diameter-weighted buffer around all trees
-stem.buff <- st_buffer(stem.sf, dist=stem.sf$Crown_Radius,
+stem.inv.buff <- st_buffer(stem.sf.inv, dist=stem.sf.inv$Crown_Radius,
                        endCapStyle = 'SQUARE', joinStyle='MITRE')
 
 # Apply 3px buffer around all trees
-stem.buff.3m <- st_buffer(stem.sf, dist=1, endCapStyle='SQUARE', joinStyle='MITRE')
+stem.inv.buff.3m <- st_buffer(stem.sf.inv, dist=1, endCapStyle='SQUARE', joinStyle='MITRE')
 
 # Create sparse matrix describing overlapping trees
-stem.overlap <- st_overlaps(stem.buff)
-stem.within <- st_within(stem.buff)
+stem.inv.overlap <- st_overlaps(stem.inv.buff)
+stem.inv.within <- st_within(stem.inv.buff)
 
 ## ---------------------------------------------------------------------------------------------------
 # Process modeled trees
@@ -147,14 +146,11 @@ chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.25, pitfree(), pkg = "ter
 # Smooth canopy
 kernel <- matrix(1,5,5)
 chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm = TRUE)
-plot(chm.smooth[[1]])
-lapply(chm.smooth, plot)
 
 ## ---------------------------------------------------------------------------------------------------
 ## Prep for plotting: subset and reclassify raster
 
 gt1.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
-# gt1.naip <- crop(naip, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
 
 reclass <- function(rs, target) {
   v <- rast(rs)
@@ -186,7 +182,6 @@ sp.pal <- PNWColors::pnw_palette('Sunset2', n=5)
 # Function to map at focal plot
 mapit <- function(spras, stems) {
   ggmap(gt1.bmap) +
-    #ggplot() +
     tidyterra::geom_spatraster(data=spras, aes(fill=Sp_Code), alpha=0.8) +
     scale_fill_manual(values=sp.pal, name='Classified Species', na.value = NA) +
     geom_sf(data=stems[stems$Site_Name=='ER-GT1', ],
@@ -202,17 +197,16 @@ mapit <- function(spras, stems) {
 
 # Pull species from classification map
 
-getmode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
 get.spp <- function(spras, stems, spcodes) {
 
-  class.sp.plots <- extract(spras, stems, fun=\(x) modal(x, na.rm=T, ties='random'), touches=T)
-  names(class.sp.plots) <- c('N', 'Pixel_Code')
+  #class.sp.plots <- extract(spras, stems, fun=\(x) modal(x, na.rm=T, ties='random'), touches=T)
+  #names(class.sp.plots) <- c('N', 'Pixel_Code')
   #class.sp.plots$N <- as.character(class.sp.plots$N)
-  class.sp.plots$Pixel_Code <- as.numeric(class.sp.plots$Pixel_Code)
+  #class.sp.plots$Pixel_Code <- as.numeric(class.sp.plots$Pixel_Code)
+
+  class.sp.plots <- exactextractr::exact_extract(spras, stems, 'mode', progress=T)
+  class.sp.plots <- data.frame('N'=1:length(class.sp.plots),
+                               'Pixel_Code'=as.numeric(class.sp.plots))
 
   # Join classifications to field data
   stems$N <- 1:nrow(stems)
