@@ -8,7 +8,7 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 # Specify number of cores
-nCores <- as.integer(availableCores()-10)
+nCores <- as.integer(availableCores()-6)
 
 source(file.path('inst', 'notebooks',
                  'regressions', '01.00_stats_ingest_data.R'))
@@ -56,8 +56,8 @@ target.itx <-c('elevation, heat_load',
                'heat_load, delta_swe',
                'heat_load, awc',
                'heat_load, aet',
-               'heat_load, cwd'#,
-               #'x, y'
+               'heat_load, cwd',
+               'x, y'
                )
 
 ##################################
@@ -65,12 +65,11 @@ target.itx <-c('elevation, heat_load',
 ##################################
 height.mf <- make.modframe('height', vars, 'gam', target.vars, itx=target.itx)
 
-gam.height <- gamm(height.mf$formula,
+gam.height <- gam(height.mf$formula,
                   data=height.mf$data,
                   method='REML',
                   select=T,
                   family='gaussian',
-                  correlation = corExp(form=~x+y),
                   control=list(nthreads=nCores))
 
 sum.height <- summary(gam.height)
@@ -150,7 +149,7 @@ gam.density <- gam(density.mf$formula,
                   data=density.mf$data,
                   method='REML',
                   select=T,
-                  family='poisson',
+                  family='gamma',
                   control=list(nthreads=nCores))
 
 sum.density <- summary(gam.density)
@@ -164,13 +163,13 @@ corrplot(concurv.density)
 ##################################
 # ABLA density GAM
 ##################################
-abla.density.mf <- make.modframe('abla.density', vars, 'gam', target.vars, itx=target.itx)
+abla.density.mf <- make.modframe('abla_density', vars, 'gam', target.vars, itx=target.itx)
 
 gam.abla.density <- gam(abla.density.mf$formula,
                   data=abla.density.mf$data,
                   method='REML',
                   select=T,
-                  family='poisson',
+                  family='gamma',
                   control=list(nthreads=nCores))
 
 sum.abla.density <- summary(gam.abla.density)
@@ -184,13 +183,13 @@ corrplot(concurv.abla.density)
 ##################################
 # PIEN density GAM
 ##################################
-pien.density.mf <- make.modframe('pien.density', vars, 'gam', target.vars, itx=target.itx)
+pien.density.mf <- make.modframe('pien_density', vars, 'gam', target.vars, itx=target.itx)
 
 gam.pien.density <- gam(pien.density.mf$formula,
                   data=pien.density.mf$data,
                   method='REML',
                   select=T,
-                  family='poisson',
+                  family='gamma',
                   control=list(nthreads=nCores))
 
 sum.pien.density <- summary(gam.pien.density)
@@ -204,13 +203,13 @@ corrplot(concurv.pien.density)
 ##################################
 # PICO density GAM
 ##################################
-pico.density.mf <- make.modframe('pico.density', vars, 'gam', target.vars, itx=target.itx)
+pico.density.mf <- make.modframe('pico_density', vars, 'gam', target.vars, itx=target.itx)
 
 gam.pico.density <- gam(pico.density.mf$formula,
                   data=pico.density.mf$data,
                   method='REML',
                   select=T,
-                  family='poisson',
+                  family='Gamma',
                   control=list(nthreads=nCores))
 
 sum.pico.density <- summary(gam.pico.density)

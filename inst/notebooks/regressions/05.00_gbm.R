@@ -192,7 +192,7 @@ cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
 
 gbm.density <- train(density.mf$formula,
-                     distribution='poisson',
+                     distribution='gaussian',
                      data=density.mf$data,
                      method = "gbm",
                      bag.fraction = 0.5,
@@ -222,7 +222,7 @@ cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
 
 gbm.abla.density <- train(abla.density.mf$formula,
-                          distribution='poisson',
+                          distribution='gaussian',
                           data=abla.density.mf$data,
                           method = "gbm",
                           bag.fraction = 0.5,
@@ -246,13 +246,13 @@ saveRDS(gbm.abla.density, file.path('models', 'abla_density_gbm.rda'))
 sample.int(10000, 5)
 set.seed(9311)
 
-pien.density.mf <- make.modframe('pien.density', vars, 'gbm', target.vars, itx='none')
+pien.density.mf <- make.modframe('pien_density', vars, 'gbm', target.vars, itx='none')
 
 cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
 
 gbm.pien.density <- train(pien.density.mf$formula,
-                          distribution='poisson',
+                          distribution='gaussian',
                           data=pien.density.mf$data,
                           method = "gbm",
                           bag.fraction = 0.5,
@@ -271,18 +271,18 @@ cve.pien.density <- sqrt(min(gbm.pien.density$finalModel$valid.error))
 saveRDS(gbm.pien.density, file.path('models', 'pien_density_gbm.rda'))
 
 ##################################
-# Density GBM
+# PICO Density GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
 
-pico.pico.density.mf <- make.modframe('pico.density', vars, 'gbm', target.vars, itx='none')
+pico.pico.density.mf <- make.modframe('pico_density', vars, 'gbm', target.vars, itx='none')
 
 cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
 
 gbm.pico.density <- train(pico.density.mf$formula,
-                          distribution='poisson',
+                          distribution='gaussian',
                           data=pico.density.mf$data,
                           method = "gbm",
                           bag.fraction = 0.5,
@@ -320,21 +320,21 @@ gbm.ba.sum <- summary(
 
 gbm.diam.sum <- summary(
   gbm.diam,
-  cBars = 10,
+  cBars = 5,
   method = relative.influence, # also can use permutation.test.gbm
   las = 2
 )
 
 gbm.height.skew.sum <- summary(
   gbm.height.skew,
-  cBars = 10,
+  cBars = 5,
   method = relative.influence, # also can use permutation.test.gbm
   las = 2
 )
 
 gbm.density.sum <- summary(
   gbm.density,
-  cBars = 10,
+  cBars = 5,
   method = relative.influence, # also can use permutation.test.gbm
   las = 2
 )
