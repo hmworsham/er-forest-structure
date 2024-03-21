@@ -80,6 +80,8 @@ concurv.height.full <- concurvity(gam.height, full=T)
 concurv.height <- concurvity(gam.height, full=F)$estimate
 corrplot(concurv.height)
 
+saveRDS(gam.height, file.path('models', 'height_95p_gam.rda'))
+
 ##################################
 # BA GAM
 ##################################
@@ -99,6 +101,8 @@ de.ba <- summary(gam.ba)$dev.expl
 concurv.ba.full <- concurvity(gam.ba, full=T)
 concurv.ba <- concurvity(gam.ba, full=F)$estimate
 corrplot(concurv.ba)
+
+saveRDS(gam.ba, file.path('models', 'ba_gam.rda'))
 
 ##################################
 # QMD GAM
@@ -120,6 +124,8 @@ concurv.diam.full <- concurvity(gam.diam, full=T)
 concurv.diam <- concurvity(gam.diam, full=F)$estimate
 corrplot(concurv.diam)
 
+saveRDS(gam.diam, file.path('models', 'diam_gam.rda'))
+
 ##################################
 # Height skew GAM
 ##################################
@@ -129,7 +135,7 @@ gam.height.skew <- gam(height.skew.mf$formula,
                   data=height.skew.mf$data,
                   method='REML',
                   select=T,
-                  family='gamma',
+                  family='gaussian',
                   control=list(nthreads=nCores))
 
 sum.height.skew <- summary(gam.height.skew)
@@ -140,6 +146,8 @@ concurv.height.skew.full <- concurvity(gam.height.skew, full=T)
 concurv.height.skew <- concurvity(gam.height.skew, full=F)$estimate
 corrplot(concurv.height.skew)
 
+saveRDS(gam.height.skew, file.path('models', 'height_skew_gam.rda'))
+
 ##################################
 # Density GAM
 ##################################
@@ -149,7 +157,7 @@ gam.density <- gam(density.mf$formula,
                   data=density.mf$data,
                   method='REML',
                   select=T,
-                  family='gamma',
+                  family='Gamma',
                   control=list(nthreads=nCores))
 
 sum.density <- summary(gam.density)
@@ -160,6 +168,8 @@ concurv.density.full <- concurvity(gam.density, full=T)
 concurv.density <- concurvity(gam.density, full=F)$estimate
 corrplot(concurv.density)
 
+saveRDS(gam.density, file.path('models', 'density_gam.rda'))
+
 ##################################
 # ABLA density GAM
 ##################################
@@ -169,7 +179,7 @@ gam.abla.density <- gam(abla.density.mf$formula,
                   data=abla.density.mf$data,
                   method='REML',
                   select=T,
-                  family='gamma',
+                  family='Gamma',
                   control=list(nthreads=nCores))
 
 sum.abla.density <- summary(gam.abla.density)
@@ -180,6 +190,8 @@ concurv.abla.density.full <- concurvity(gam.abla.density, full=T)
 concurv.abla.density <- concurvity(gam.abla.density, full=F)$estimate
 corrplot(concurv.abla.density)
 
+saveRDS(gam.abla.density, file.path('models', 'abla_density_gam.rda'))
+
 ##################################
 # PIEN density GAM
 ##################################
@@ -189,7 +201,7 @@ gam.pien.density <- gam(pien.density.mf$formula,
                   data=pien.density.mf$data,
                   method='REML',
                   select=T,
-                  family='gamma',
+                  family='Gamma',
                   control=list(nthreads=nCores))
 
 sum.pien.density <- summary(gam.pien.density)
@@ -199,6 +211,7 @@ de.pien.density <- summary(gam.pien.density)$dev.expl
 concurv.pien.density.full <- concurvity(gam.pien.density, full=T)
 concurv.pien.density <- concurvity(gam.pien.density, full=F)$estimate
 corrplot(concurv.pien.density)
+saveRDS(gam.pien.density, file.path('models', 'pien_density_gam.rda'))
 
 ##################################
 # PICO density GAM
@@ -219,6 +232,8 @@ de.pico.density <- summary(gam.pico.density)$dev.expl
 concurv.pico.density.full <- concurvity(gam.pico.density, full=T)
 concurv.pico.density <- concurvity(gam.pico.density, full=F)$estimate
 corrplot(concurv.pico.density)
+
+saveRDS(gam.pico.density, file.path('models', 'pico_density_gam.rda'))
 
 #####################
 # Aggregate objects

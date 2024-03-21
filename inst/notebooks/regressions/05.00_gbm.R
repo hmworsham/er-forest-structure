@@ -247,7 +247,7 @@ sample.int(10000, 5)
 set.seed(9311)
 
 pien.density.mf <- make.modframe('pien_density', vars, 'gbm', target.vars, itx='none')
-
+pien.density.mf$data <- pien.density.mf$data[complete.cases(pien.density.mf$data),]
 cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
 
@@ -276,7 +276,7 @@ saveRDS(gbm.pien.density, file.path('models', 'pien_density_gbm.rda'))
 sample.int(10000, 5)
 set.seed(9311)
 
-pico.pico.density.mf <- make.modframe('pico_density', vars, 'gbm', target.vars, itx='none')
+pico.density.mf <- make.modframe('pico_density', vars, 'gbm', target.vars, itx='none')
 
 cl <- makePSOCKcluster(nCores)
 registerDoParallel(cl)
@@ -300,79 +300,65 @@ cve.pico.density <- sqrt(min(gbm.pico.density$finalModel$valid.error))
 
 saveRDS(gbm.pico.density, file.path('models', 'pico_density_gbm.rda'))
 
+
+####################
+# Read saved models
+####################
+
+gbms <- lapply(list.files(file.path('.', 'models'), pattern='rda', full.names=T), readRDS)
+gbm.names <- str_replace_all(list.files(file.path('.', 'models'), pattern='_gbm.rda'),
+                             '_gbm.rda', '')
+
 #############
 # Summaries
 #############
 
-gbm.height.sum <- summary(
-  gbm.height,
-  cBars = 10,
-  method = relative.influence, # also can use permutation.test.gbm
-  las = 2
-)
+# Relative influence data
+gbm.sums <- lapply(gbms, \(x) {
+  m.sum <- summary(x$finalModel,
+  cBars=20,
+  method=relative.influence,
+  las=2)
+  m.sum
+})
 
-gbm.ba.sum <- summary(
-  gbm.ba,
-  cBars = 10,
-  method = relative.influence, # also can use permutation.test.gbm
-  las = 2
-)
+gbm.sums <- bind_rows(gbm.sums, .id='Model')
 
-gbm.diam.sum <- summary(
-  gbm.diam,
-  cBars = 5,
-  method = relative.influence, # also can use permutation.test.gbm
-  las = 2
-)
+gbm.geol <- gbm.sums %>%
+  filter(grepl('geology', var)) %>%
+  group_by(Model) %>%
+  summarise(rel.inf=sum(rel.inf)) %>%
+  mutate(var='geology')
 
-gbm.height.skew.sum <- summary(
-  gbm.height.skew,
-  cBars = 5,
-  method = relative.influence, # also can use permutation.test.gbm
-  las = 2
-)
+gbm.sums <- gbm.sums %>%
+  filter(!grepl('geology', var)) %>%
+  rbind(gbm.geol) %>%
+  arrange(Model, desc(rel.inf))
 
-gbm.density.sum <- summary(
-  gbm.density,
-  cBars = 5,
-  method = relative.influence, # also can use permutation.test.gbm
-  las = 2
-)
+gbm.biplots <- lapply(gbms, \(x) {
+  m.bi <- gbm.perf(x$finalModel, method='OOB')
+  m.bi
+})
 
-gbm.objs <- list('Height 90p'=gbm.height,
-                 'Basal area'=gbm.ba,
-                 'QMD'=gbm.diam,
-                 'Height skew'=gbm.height.skew,
-                 'Density'=gbm.density)
+# Train error
+gbm.trainerr <- unlist(lapply(gbms, \(x) {
+  trerr <- sqrt(min(x$finalModel$train.error, na.rm=T))
+  trerr
+}))
 
-lapply(seq_along(gbm.objs), function(x) saveRDS(x, file.path('models', paste(names(gbm.objs)[x], '_gbm.rda'))))
-
-gbm.summaries <- list('Height 90p'=gbm.height.sum,
-                      'Basal area'=gbm.ba.sum,
-                      'QMD'=gbm.diam.sum,
-                      'Height skew'=gbm.height.skew.sum,
-                      'Density'=gbm.density.sum)
-
-gbm.summaries <- bind_rows(gbm.summaries, .id='Model')
-
-gbm.cve <- c(cve.height,
-             cve.ba,
-             cve.diam,
-             cve.height.skew,
-             cve.density)
-
-gbm.trmse <- c(trmse.height,
-               trmse.ba,
-               trmse.diam,
-               trmse.height.skew,
-               trmse.density)
+# Test error
+gbm.cverr <- unlist(lapply(gbms, \(x) {
+  cverr <- sqrt(min(x$finalModel$valid.error, na.rm=T))
+  cverr
+}))
 
 ##########
 # Table
 ##########
 
-gbm.perf.df <- as.data.frame(cbind('Response'=names(gbm.objs),
-                                   'CV error'= gbm.cve),
+gbm.perf.df <- as.data.frame(cbind('Response'=gbm.names,
+                                   'Train error'=gbm.trainerr,
+                                   'CV error'= gbm.cverr),
                              check.names=F)
 
 write.csv(gbm.perf.df, file.path(config$data$pro, 'gbm_perf_df.csv'), row.names=F)
@@ -381,25 +367,30 @@ write.csv(gbm.perf.df, file.path(config$data$pro, 'gbm_perf_df.csv'), row.names=
 # Plots
 ##########
 
-gbm.var.labs <- c(elevation_10m='Elevation', slope='Slope',
-                  folded_aspect_205='Folded aspect',
-                  heat_load='Heat load', tpi_1km='TPI', twi_100m='TWI',
-                  td='Soil total depth', om='Soil % organic matter',
-                  k='Soil K', awc='Soil AWC',
-                  swe='SWE', delta_swe='∆ SWE', cwd='CWD', aet='AET',
-                  geology='Geology')
-gbm.var.labs <- rownames_to_column(data.frame(Variable=gbm.var.labs), 'var')
+varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'))
 
-gbm.summaries <- gbm.summaries %>%
-  mutate(Model=factor(Model, levels=c('Density', 'Height 90p',
-                                      'QMD', 'Basal area', 'Height skew')),
-         Category = case_when(var %in% c('elevation_10m', 'slope',
-                                         'folded_aspect_205', 'heat_load',
-                                         'tpi_1km', 'twi_100m') ~ 'Topography',
-                              var %in% c('td', 'om', 'k', 'awc') ~ 'Soil',
-                              var %in% c('swe', 'delta_swe', 'cwd', 'aet') ~ 'Climate',
-                              T ~ 'Geology')) %>%
-  left_join(gbm.var.labs, by='var')
+# gbm.var.labs <- c(elevation_10m='Elevation', slope='Slope',
+#                   folded_aspect_205='Folded aspect',
+#                   heat_load='Heat load', tpi_1km='TPI', twi_100m='TWI',
+#                   td='Soil total depth', om='Soil % organic matter',
+#                   k='Soil K', awc='Soil AWC',
+#                   swe='SWE', delta_swe='∆ SWE', cwd='CWD', aet='AET',
+#                   geology='Geology')
+#
+# gbm.var.labs <- rownames_to_column(data.frame(Variable=gbm.var.labs), 'var')
+#
+# gbm.summaries <- gbm.sums %>%
+#   mutate(Model=factor(Model, levels=c('Density', 'Height 90p',
+#                                       'QMD', 'Basal area', 'Height skew')),
+#          Category = case_when(var %in% c('elevation_10m', 'slope',
+#                                          'folded_aspect_205', 'heat_load',
+#                                          'tpi_1km', 'twi_100m') ~ 'Topography',
+#                               var %in% c('td', 'om', 'k', 'awc') ~ 'Soil',
+#                               var %in% c('swe', 'delta_swe', 'cwd', 'aet') ~ 'Climate',
+#                               T ~ 'Geology')) %>%
+#   left_join(gbm.var.labs, by='var')
+
+gbm.sums %>%
 
 gbm.summaries.10 <- gbm.summaries %>%
   group_by(Model) %>%
