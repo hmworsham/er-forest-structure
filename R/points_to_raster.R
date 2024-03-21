@@ -16,16 +16,13 @@ pointcount = function(ras, pts){
   r3[] = 0
 
   # get n returns
-  returns = data.frame(x=pts$X, y=pts$Y)
-
-  # get peaks
+  rr = data.frame(x=pts$X, y=pts$Y)
 
   # get the cell index for each point and make a table:
-  returns = table(cellFromXY(ras, returns))
-  #return(returns)
+  rr = table(cellFromXY(ras, rr))
 
   # fill in the raster with the counts from the cell index:
   #r2[as.numeric(names(peaks))] = peaks
-  r3[as.numeric(names(returns))] = returns
+  r3[as.numeric(names(rr))] = rr
   return(r3)
 }

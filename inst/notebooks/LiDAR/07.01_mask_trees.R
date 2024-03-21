@@ -26,7 +26,7 @@ bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
                     pattern=config$extdata$bndpattern)
 
 # Ingest trees
-treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m_csv', pattern='.csv', full.names=T)
+treefiles <- list.files(config$extdata$scratch, 'trees_ls_100m_csv', pattern='.csv', full.names=T)
 trees <- mclapply(treefiles, read.csv, mc.cores=getOption('mc.cores', nCores))
 alltrees <- data.table::rbindlist(trees, idcol='file')
 

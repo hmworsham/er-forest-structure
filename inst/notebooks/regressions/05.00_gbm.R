@@ -1,4 +1,4 @@
-# Script for generating generalized additive models on forest structure and explainers
+# Script for generating generalized boosted models on forest structure and explainers
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -7,269 +7,298 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks', 'regressions', '01.00_stats_ingest_data.R'))
+source(file.path('inst', 'notebooks',
+                 'regressions', '01.00_stats_ingest_data.R'))
+
+# Specify cores
+nCores <- as.integer(availableCores()-2)
+
+# Define variables we want to use in model
+target.vars <- c('heat_load',
+                 'elevation',
+                 'twi',
+                 #'folded_aspect_205',
+                 #'slope', #5
+                 'tpi',
+                 'curvature',
+                 'awc',
+                 'cec',
+                 #'sand', #10
+                 #'total_depth',
+                 'silt',
+                 'ksat',
+                 'ph',
+                 #'clay', #15
+                 'om',
+                 'swe',
+                 'delta_swe',
+                 'cwd',
+                 'aet', #20
+                 'geology',
+                 'x',
+                 'y')
 
 ##################################
-# GBMs
+# GBM controls
 ##################################
 
-# getModelInfo()$gbm$parameters
-# library(parallel)
-#
-# # Max shrinkage for gbm
-# nl = nrow(vars)
-# max(0.01, 0.1*min(1, nl/10000))
-# # Max Value for interaction.depth
-# floor(sqrt(NCOL(vars)))
-# gbmGrid <-  expand.grid(interaction.depth = c(1, 3, 5, 9, 10),
-#                         n.trees = seq(2000, 10000, 2000),
-#                         shrinkage = seq(.1, .01, -.01),
-#                         n.minobsinnode = 10)
-#
-# fitControl <- trainControl(method = "repeatedcv",
-#                            repeats = 5,
-#                            preProcOptions = list(thresh = 0.95),
-#                            ## Estimate class probabilities
-#                            classProbs = F)
-#
-#
-# set.seed(4673)
-# system.time(gbm.height <- train(height ~
-#                                 aet
-#                                 +elevation_10m
-#                                 +folded_aspect_205
-#                                 +slope
-#                                 +tpi_1km
-#                                 +twi_100m
-#                                 +heat_load
-#                                 +awc
-#                                 +om
-#                                 +k
-#                                 +td
-#                                 +swe
-#                                 +delta_swe
-#                                 +geology
-#                                 +cwd,
-#                                 distribution='gaussian',
-#                                 data=vars,
-#                                 method = "gbm", bag.fraction = 0.5,
-#                                 nTrain = round(nrow(vars) *.75),
-#                                 na.action=na.pass,
-#                                 trControl = fitControl,
-#                                 verbose = F,
-#                                 tuneGrid = gbmGrid,
-#                                 ## Specify which metric to optimize
-#                                 metric = "RMSE"))
+# Max shrinkage for gbm
+nl = nrow(vars)
+maxshrk <- max(0.01, 0.1*min(1, nl/10000))
+
+# Max Value for interaction.depth
+maxid <- floor(sqrt(NCOL(vars)))
+
+# Make tuning grid
+gbmGrid <-  expand.grid(interaction.depth = 1:maxid,
+                        n.trees = seq(2000, 10000, 2000),
+                        shrinkage = seq(.1, .01, -.02),
+                        n.minobsinnode = 10)
+
+fitControl <- trainControl(method="cv",
+                           number=10,
+                           #preProcOptions=list(thresh = 0.95),
+                           classProbs = F)
 
 ##################################
 # Height GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
-height.train <- createDataPartition(y=vars$height, p=0.75, list=F)
-train.height <- vars[height.train,]
-test.height <- vars[-height.train,]
 
-gbm.height <- gbm(formula=height ~
-            aet
-            +elevation_10m
-            #+folded_aspect_205
-            +slope
-            +tpi_1km
-            #+twi_100m
-            +heat_load
-            +awc
-            +om
-            +k
-            +td
-            +swe
-            +delta_swe
-            +geology
-            +cwd,
-            distribution='gaussian',
-            data=train.height,
-            n.trees=10000,
-            cv.folds=10,
-            shrinkage=0.01)
+height.mf <- make.modframe('height', vars, 'gbm', target.vars, itx='none')
 
-bi.height <- gbm.perf(gbm.height, method = "OOB")
-cve.height <- sqrt(min(gbm.height$cv.error))
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
 
-height.pred <- predict(object= gbm.height,
-                       newdata = test.height,
-                       n.trees= bi.height,
-                       type='link')
+gbm.height <- train(height.mf$formula,
+                    distribution='gaussian',
+                    data=height.mf$data,
+                    method = "gbm",
+                    bag.fraction = 0.5,
+                    nTrain = round(nrow(height.mf$data) *.75),
+                    na.action=na.omit,
+                    trControl = fitControl,
+                    verbose = F,
+                    tuneGrid = gbmGrid,
+                    metric = "RMSE")
 
-plot(height.pred, test.height$height)
-trmse.height <- RMSE(height.pred, test.height$height)
+stopCluster(cl)
+
+bi.height <- gbm.perf(gbm.height$finalModel, method = "OOB")
+cve.height <- sqrt(min(gbm.height$finalModel$valid.error))
+
+saveRDS(gbm.height, file.path('models', 'height_95p_gbm.rda'))
 
 ##################################
 # BA GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
-ba.train <- createDataPartition(y=vars$ba, p=0.75, list=F)
-train.ba <- vars[ba.train,]
-test.ba <- vars[-ba.train,]
 
-gbm.ba <- gbm(formula=ba ~
-                    aet
-                  +elevation_10m
-                  #+folded_aspect_205
-                  +slope
-                  +tpi_1km
-                  #+twi_100m
-                  +heat_load
-                  +awc
-                  +om
-                  +k
-                  +td
-                  +swe
-                  +delta_swe
-                  +geology
-                  +cwd,
-                  distribution='gaussian',
-                  data=train.ba,
-                  n.trees=10000,
-                  cv.folds=10,
-                  shrinkage=0.01)
+ba.mf <- make.modframe('ba', vars, 'gbm', target.vars, itx='none')
 
-bi.ba <- gbm.perf(gbm.ba, method = "OOB")
-cve.ba <- sqrt(min(gbm.ba$cv.error))
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
 
-ba.pred <- predict(object= gbm.ba,
-                       newdata = test.ba,
-                       n.trees= bi.ba,
-                       type='link')
+gbm.ba <- train(ba.mf$formula,
+                distribution='gaussian',
+                data=ba.mf$data,
+                method = "gbm",
+                bag.fraction = 0.5,
+                nTrain = round(nrow(ba.mf$data) *.75),
+                na.action=na.omit,
+                trControl = fitControl,
+                verbose = F,
+                tuneGrid = gbmGrid,
+                metric = "RMSE")
 
-plot(ba.pred, test.ba$ba)
-trmse.ba <- RMSE(ba.pred, test.ba$ba)
+stopCluster(cl)
+
+bi.ba <- gbm.perf(gbm.ba$finalModel, method = "OOB")
+cve.ba <- sqrt(min(gbm.ba$finalModel$valid.error))
+
+saveRDS(gbm.ba, file.path('models', 'ba_gbm.rda'))
 
 ##################################
 # QMD GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
-diam.train <- createDataPartition(y=vars$diam, p=0.75, list=F)
-train.diam <- vars[diam.train,]
-test.diam <- vars[-diam.train,]
 
-gbm.diam <- gbm(formula=diam ~
-                aet
-              +elevation_10m
-              #+folded_aspect_205
-              +slope
-              +tpi_1km
-              #+twi_100m
-              +heat_load
-              +awc
-              +om
-              +k
-              +td
-              +swe
-              +delta_swe
-              +geology
-              +cwd,
-              distribution='gaussian',
-              data=train.diam,
-              n.trees=10000,
-              cv.folds=10,
-              shrinkage=0.01)
+diam.mf <- make.modframe('diam', vars, 'gbm', target.vars, itx='none')
 
-bi.diam <- gbm.perf(gbm.diam, method = "OOB")
-cve.diam <- sqrt(min(gbm.diam$cv.error))
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
 
-diam.pred <- predict(object= gbm.diam,
-                   newdata = test.diam,
-                   n.trees= bi.diam,
-                   type='link')
+gbm.diam <- train(diam.mf$formula,
+                  distribution='gaussian',
+                  data=diam.mf$data,
+                  method = "gbm",
+                  bag.fraction = 0.5,
+                  nTrain = round(nrow(diam.mf$data) *.75),
+                  na.action=na.omit,
+                  trControl = fitControl,
+                  verbose = F,
+                  tuneGrid = gbmGrid,
+                  metric = "RMSE")
 
-plot(diam.pred, test.diam$diam)
-trmse.diam <- RMSE(diam.pred, test.diam$diam)
+stopCluster(cl)
+
+bi.diam <- gbm.perf(gbm.diam$finalModel, method = "OOB")
+cve.diam <- sqrt(min(gbm.diam$finalModel$valid.error))
+
+saveRDS(gbm.diam, file.path('models', 'diam_gbm.rda'))
 
 ##################################
 # Height skew GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
-height.skew.train <- createDataPartition(y=vars$height.skew, p=0.75, list=F)
-train.height.skew <- vars[height.skew.train,]
-test.height.skew <- vars[-height.skew.train,]
 
-gbm.height.skew <- gbm(formula=height.skew ~
-                aet
-              +elevation_10m
-              #+folded_aspect_205
-              +slope
-              +tpi_1km
-              #+twi_100m
-              +heat_load
-              +awc
-              +om
-              +k
-              +td
-              +swe
-              +delta_swe
-              +geology
-              +cwd,
-              distribution='gaussian',
-              data=train.height.skew,
-              n.trees=10000,
-              cv.folds=10,
-              shrinkage=0.01)
+height.skew.mf <- make.modframe('height.skew', vars, 'gbm', target.vars, itx='none')
 
-bi.height.skew <- gbm.perf(gbm.height.skew, method = "OOB")
-cve.height.skew <- sqrt(min(gbm.height.skew$cv.error))
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
 
-height.skew.pred <- predict(object= gbm.height.skew,
-                   newdata = test.height.skew,
-                   n.trees= bi.height.skew,
-                   type='link')
+gbm.height.skew <- train(height.skew.mf$formula,
+                         distribution='gaussian',
+                         data=height.skew.mf$data,
+                         method = "gbm",
+                         bag.fraction = 0.5,
+                         nTrain = round(nrow(height.skew.mf$data) *.75),
+                         na.action=na.omit,
+                         trControl = fitControl,
+                         verbose = F,
+                         tuneGrid = gbmGrid,
+                         metric = "RMSE")
 
-plot(height.skew.pred, test.height.skew$height.skew)
-trmse.height.skew <- RMSE(height.skew.pred, test.height.skew$height.skew)
+stopCluster(cl)
+
+bi.height.skew <- gbm.perf(gbm.height.skew$finalModel, method = "OOB")
+cve.height.skew <- sqrt(min(gbm.height.skew$finalModel$valid.error))
+
+saveRDS(gbm.height.skew, file.path('models', 'height_skew_gbm.rda'))
 
 ##################################
 # Density GBM
 ##################################
 sample.int(10000, 5)
 set.seed(9311)
-density.train <- createDataPartition(y=vars$density, p=0.75, list=F)
-train.density <- vars[density.train,]
-test.density <- vars[-density.train,]
 
-gbm.density <- gbm(formula=density ~
-                aet
-              +elevation_10m
-              #+folded_aspect_205
-              +slope
-              +tpi_1km
-              #+twi_100m
-              +heat_load
-              +awc
-              +om
-              +k
-              +td
-              +swe
-              +delta_swe
-              +geology
-              +cwd,
-              distribution='gaussian',
-              data=train.density,
-              n.trees=10000,
-              cv.folds=10,
-              shrinkage=0.01)
+density.mf <- make.modframe('density', vars, 'gbm', target.vars, itx='none')
 
-bi.density <- gbm.perf(gbm.density, method = "OOB")
-cve.density <- sqrt(min(gbm.density$cv.error))
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
 
-density.pred <- predict(object= gbm.density,
-                   newdata = test.density,
-                   n.trees= bi.density,
-                   type='link')
+gbm.density <- train(density.mf$formula,
+                     distribution='poisson',
+                     data=density.mf$data,
+                     method = "gbm",
+                     bag.fraction = 0.5,
+                     nTrain = round(nrow(density.mf$data) *.75),
+                     na.action=na.omit,
+                     trControl = fitControl,
+                     verbose = F,
+                     tuneGrid = gbmGrid,
+                     metric = "RMSE")
 
-plot(density.pred, test.density$density)
-trmse.density <- RMSE(density.pred, test.density$density)
+stopCluster(cl)
+
+bi.density <- gbm.perf(gbm.density$finalModel, method = "OOB")
+cve.density <- sqrt(min(gbm.density$finalModel$valid.error))
+
+saveRDS(gbm.density, file.path('models', 'density_gbm.rda'))
+
+##################################
+# ABLA Density GBM
+##################################
+sample.int(10000, 5)
+set.seed(9311)
+
+abla.density.mf <- make.modframe('abla_density', vars, 'gbm', target.vars, itx='none')
+abla.density.mf$data <- abla.density.mf$data[complete.cases(abla.density.mf$data),]
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
+
+gbm.abla.density <- train(abla.density.mf$formula,
+                          distribution='poisson',
+                          data=abla.density.mf$data,
+                          method = "gbm",
+                          bag.fraction = 0.5,
+                          nTrain = round(nrow(abla.density.mf$data) *.75),
+                          na.action=na.omit,
+                          trControl = fitControl,
+                          verbose = F,
+                          tuneGrid = gbmGrid,
+                          metric = "RMSE")
+
+stopCluster(cl)
+
+bi.abla.density <- gbm.perf(gbm.abla.density$finalModel, method = "OOB")
+cve.abla.density <- sqrt(min(gbm.abla.density$finalModel$valid.error))
+
+saveRDS(gbm.abla.density, file.path('models', 'abla_density_gbm.rda'))
+
+##################################
+# PIEN Density GBM
+##################################
+sample.int(10000, 5)
+set.seed(9311)
+
+pien.density.mf <- make.modframe('pien.density', vars, 'gbm', target.vars, itx='none')
+
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
+
+gbm.pien.density <- train(pien.density.mf$formula,
+                          distribution='poisson',
+                          data=pien.density.mf$data,
+                          method = "gbm",
+                          bag.fraction = 0.5,
+                          nTrain = round(nrow(pien.density.mf$data) *.75),
+                          na.action=na.omit,
+                          trControl = fitControl,
+                          verbose = F,
+                          tuneGrid = gbmGrid,
+                          metric = "RMSE")
+
+stopCluster(cl)
+
+bi.pien.density <- gbm.perf(gbm.pien.density$finalModel, method = "OOB")
+cve.pien.density <- sqrt(min(gbm.pien.density$finalModel$valid.error))
+
+saveRDS(gbm.pien.density, file.path('models', 'pien_density_gbm.rda'))
+
+##################################
+# Density GBM
+##################################
+sample.int(10000, 5)
+set.seed(9311)
+
+pico.pico.density.mf <- make.modframe('pico.density', vars, 'gbm', target.vars, itx='none')
+
+cl <- makePSOCKcluster(nCores)
+registerDoParallel(cl)
+
+gbm.pico.density <- train(pico.density.mf$formula,
+                          distribution='poisson',
+                          data=pico.density.mf$data,
+                          method = "gbm",
+                          bag.fraction = 0.5,
+                          nTrain = round(nrow(pico.density.mf$data) *.75),
+                          na.action=na.omit,
+                          trControl = fitControl,
+                          verbose = F,
+                          tuneGrid = gbmGrid,
+                          metric = "RMSE")
+
+stopCluster(cl)
+
+bi.pico.density <- gbm.perf(gbm.pico.density$finalModel, method = "OOB")
+cve.pico.density <- sqrt(min(gbm.pico.density$finalModel$valid.error))
+
+saveRDS(gbm.pico.density, file.path('models', 'pico_density_gbm.rda'))
 
 #############
 # Summaries
@@ -327,25 +356,24 @@ gbm.summaries <- list('Height 90p'=gbm.height.sum,
 gbm.summaries <- bind_rows(gbm.summaries, .id='Model')
 
 gbm.cve <- c(cve.height,
-                      cve.ba,
-                      cve.diam,
-                      cve.height.skew,
-                      cve.density)
+             cve.ba,
+             cve.diam,
+             cve.height.skew,
+             cve.density)
 
 gbm.trmse <- c(trmse.height,
-                  trmse.ba,
-                  trmse.diam,
-                  trmse.height.skew,
-                  trmse.density)
+               trmse.ba,
+               trmse.diam,
+               trmse.height.skew,
+               trmse.density)
 
 ##########
 # Table
 ##########
 
 gbm.perf.df <- as.data.frame(cbind('Response'=names(gbm.objs),
-                      'CV error'= gbm.cve,
-                      'Test error'=gbm.trmse),
-                      check.names=F)
+                                   'CV error'= gbm.cve),
+                             check.names=F)
 
 write.csv(gbm.perf.df, file.path(config$data$pro, 'gbm_perf_df.csv'), row.names=F)
 
@@ -428,12 +456,12 @@ p1 <- ggplot(gbm.summaries, aes(x=reorder_within(Variable, rel.inf, Model), y=re
   labs(x='Predictor variable', y='Relative influence') +
   facet_wrap(~Model, scales='free_y') +
   jtools::theme_apa()
-  # +
-  # theme(axis.text = element_text(size = 12),
-  #       plot.title = element_text(size=12),
-  #       strip.text = element_text(size=14),
-  #       strip.text.x = element_text(size=14),
-  #       strip.text.y = element_text(size=14))
+# +
+# theme(axis.text = element_text(size = 12),
+#       plot.title = element_text(size=12),
+#       strip.text = element_text(size=14),
+#       strip.text.x = element_text(size=14),
+#       strip.text.y = element_text(size=14))
 
 p1
 

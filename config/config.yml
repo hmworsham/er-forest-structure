@@ -17,10 +17,12 @@ default:
   - sf
   - future
   - parallel
+  - doParallel
   - lidR
   - lidRplugins
   - rlas
   - ForestTools
+  - FedData
   - rgl
   - nngeo
   - broom
@@ -35,6 +37,7 @@ default:
   - visreg
   - psych
   - raster
+  - tidyterra
   - RColorBrewer
   - viridis
   - lme4
@@ -43,7 +46,9 @@ default:
   - car
   - reporter
   - officedown
+  - jtools
   - gt
+
  extdata:
   scratch: '/global/scratch/users/worsham'
   las_dec: '/global/scratch/users/worsham/las_decimated'

@@ -7,257 +7,219 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-source(file.path('~', 'Repos', 'er', 'er-forest-structure', 'inst', 'notebooks', 'regressions', '01.00_stats_ingest_data.R'))
+# Specify number of cores
+nCores <- as.integer(availableCores()-10)
 
+source(file.path('inst', 'notebooks',
+                 'regressions', '01.00_stats_ingest_data.R'))
+
+# Define variables we want to use in model
+target.vars <- c('heat_load',
+                 'elevation',
+                 'twi',
+                 #'folded_aspect_205',
+                 #'slope', #5
+                 'tpi',
+                 'curvature',
+                 'awc',
+                 'cec',
+                 #'sand', #10
+                 #'total_depth',
+                 'silt',
+                 'ksat',
+                 'ph',
+                 #'clay', #15
+                 'om',
+                 'swe',
+                 'delta_swe',
+                 'cwd',
+                 'aet', #20
+                 'geology',
+                 'x',
+                 'y')
+
+target.itx <-c('elevation, heat_load',
+               'elevation, tpi',
+               'elevation, swe',
+               'elevation, delta_swe',
+               'elevation, cwd',
+               'elevation, aet',
+               'tpi, swe',
+               'tpi, delta_swe',
+               'tpi, cwd',
+               'tpi, aet',
+               'awc, swe',
+               'awc, delta_swe',
+               'awc, aet',
+               'awc, cwd',
+               'heat_load, swe',
+               'heat_load, delta_swe',
+               'heat_load, awc',
+               'heat_load, aet',
+               'heat_load, cwd'#,
+               #'x, y'
+               )
 
 ##################################
 # Height GAM
 ##################################
-sample.int(10000, 5)
-set.seed(6099)
-height.train <- createDataPartition(y=vars$height, p=0.75, list=F)
-train.height <- vars[height.train,]
-test.height <- vars[-height.train,]
+height.mf <- make.modframe('height', vars, 'gam', target.vars, itx=target.itx)
 
-gam.height <- gam(height ~
-                  s(elevation_10m, bs='tp') +
-                  #s(folded_aspect_205, bs='cc') +
-                  s(slope, bs='tp') +
-                  s(tpi_1km, bs='tp') +
-                  #s(twi_100m, bs='cc') +
-                  s(heat_load, bs='tp') +
-                  s(awc, bs='tp') +
-                  s(om, bs='tp') +
-                  s(k, bs='tp') +
-                  #s(ksat, bs='cc') +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc') +
-                  s(delta_swe, bs='cc') +
-                  s(awc, bs='tp') +
-                  s(om, bs='tp') +
-                  s(k, bs='tp') +
-                  #s(ksat, bs='cc') +
-                  s(td, bs='cc') +
-                  s(swe, bs='cc') +
-                  s(delta_swe, bs='cc') +
-                  s(cwd, bs='cc') +
-                  s(cwd, bs='cc') +
-                  s(elevation_10m, by = tpi_1km, bs='tp') +
-                  s(elevation_10m, by = swe, bs='tp') +
-                  s(elevation_10m, by = delta_swe, bs='tp') +
-                  s(elevation_10m, by = awc, bs='tp') +
-                  geology,
-                data=train.height,
-                family='gaussian')
+gam.height <- gamm(height.mf$formula,
+                  data=height.mf$data,
+                  method='REML',
+                  select=T,
+                  family='gaussian',
+                  correlation = corExp(form=~x+y),
+                  control=list(nthreads=nCores))
 
+sum.height <- summary(gam.height)
+concurv <- concurvity(gam.height)
 de.height <- summary(gam.height)$dev.expl
-gam.height.pred <- predict(object=gam.height,
-                       newdata=test.height,
-                       se.fit=T)
-plot(gam.height.pred$fit, test.height$height)
-trmse.gam.height <- RMSE(gam.height.pred$fit, test.height$height, na.rm=T)
-trmse.gam.height
+
+concurv.height.full <- concurvity(gam.height, full=T)
+concurv.height <- concurvity(gam.height, full=F)$estimate
+corrplot(concurv.height)
 
 ##################################
 # BA GAM
 ##################################
-sample.int(10000, 5)
-set.seed(6099)
-ba.train <- createDataPartition(y=vars$ba, p=0.75, list=F)
-train.ba <- vars[ba.train,]
-test.ba <- vars[-ba.train,]
+ba.mf <- make.modframe('ba', vars, 'gam', target.vars, itx=target.itx)
 
-gam.ba <- gam(ba ~
-                    s(elevation_10m, bs='tp') +
-                    #s(folded_aspect_205, bs='cc') +
-                    s(slope, bs='tp') +
-                    s(tpi_1km, bs='tp') +
-                    #s(twi_100m, bs='cc') +
-                    s(heat_load, bs='tp') +
-                    s(awc, bs='tp') +
-                    s(om, bs='tp') +
-                    s(k, bs='tp') +
-                    #s(ksat, bs='cc') +
-                    s(td, bs='cc') +
-                    s(swe, bs='cc') +
-                    s(delta_swe, bs='cc') +
-                    s(awc, bs='tp') +
-                    s(om, bs='tp') +
-                    s(k, bs='tp') +
-                    #s(ksat, bs='cc') +
-                    s(td, bs='cc') +
-                    s(swe, bs='cc') +
-                    s(delta_swe, bs='cc') +
-                    s(cwd, bs='cc') +
-                    s(cwd, bs='cc') +
-                    s(elevation_10m, by = tpi_1km, bs='tp') +
-                    s(elevation_10m, by = swe, bs='tp') +
-                    s(elevation_10m, by = delta_swe, bs='tp') +
-                    s(elevation_10m, by = awc, bs='tp') +
-                    geology,
-                  data=train.ba,
-                  family='gaussian')
+gam.ba <- gam(ba.mf$formula,
+                  data=ba.mf$data,
+                  method='REML',
+                  select=T,
+                  family='gaussian',
+                  control=list(nthreads=nCores))
+
 sum.ba <- summary(gam.ba)
-sum.ba
+concurv <- concurvity(gam.ba)
 de.ba <- summary(gam.ba)$dev.expl
-de.ba
-gam.ba.pred <- predict(object=gam.ba,
-                           newdata=test.ba,
-                           se.fit=T)
-plot(gam.ba.pred$fit, test.ba$ba)
-trmse.gam.ba <- RMSE(gam.ba.pred$fit, test.ba$ba, na.rm=T)
-trmse.gam.ba
 
+concurv.ba.full <- concurvity(gam.ba, full=T)
+concurv.ba <- concurvity(gam.ba, full=F)$estimate
+corrplot(concurv.ba)
 
 ##################################
 # QMD GAM
 ##################################
-sample.int(10000, 5)
-set.seed(6099)
-diam.train <- createDataPartition(y=vars$diam, p=0.75, list=F)
-train.diam <- vars[diam.train,]
-test.diam <- vars[-diam.train,]
+diam.mf <- make.modframe('diam', vars, 'gam', target.vars, itx=target.itx)
 
-gam.diam <- gam(diam ~
-                s(elevation_10m, bs='tp') +
-                #s(folded_aspect_205, bs='cc') +
-                s(slope, bs='tp') +
-                s(tpi_1km, bs='tp') +
-                #s(twi_100m, bs='cc') +
-                s(heat_load, bs='tp') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(cwd, bs='cc') +
-                s(cwd, bs='cc') +
-                s(elevation_10m, by = tpi_1km, bs='tp') +
-                s(elevation_10m, by = swe, bs='tp') +
-                s(elevation_10m, by = delta_swe, bs='tp') +
-                s(elevation_10m, by = awc, bs='tp') +
-                geology,
-              data=train.diam,
-              family='gaussian')
+gam.diam <- gam(diam.mf$formula,
+                  data=diam.mf$data,
+                  method='REML',
+                  select=T,
+                  family='gaussian',
+                  control=list(nthreads=nCores))
 
 sum.diam <- summary(gam.diam)
-sum.diam
+concurv <- concurvity(gam.diam)
 de.diam <- summary(gam.diam)$dev.expl
-gam.diam.pred <- predict(object=gam.diam,
-                       newdata=test.diam,
-                       se.fit=T)
-plot(gam.diam.pred$fit, test.diam$diam)
-trmse.gam.diam <- RMSE(gam.diam.pred$fit, test.diam$diam, na.rm=T)
-trmse.gam.diam
+
+concurv.diam.full <- concurvity(gam.diam, full=T)
+concurv.diam <- concurvity(gam.diam, full=F)$estimate
+corrplot(concurv.diam)
 
 ##################################
 # Height skew GAM
 ##################################
-sample.int(10000, 5)
-set.seed(6099)
-height.skew.train <- createDataPartition(y=vars$height.skew, p=0.75, list=F)
-train.height.skew <- vars[height.skew.train,]
-test.height.skew <- vars[-height.skew.train,]
+height.skew.mf <- make.modframe('height.skew', vars, 'gam', target.vars, itx=target.itx)
 
-gam.height.skew <- gam(height.skew ~
-                s(elevation_10m, bs='tp') +
-                #s(folded_aspect_205, bs='cc') +
-                s(slope, bs='tp') +
-                s(tpi_1km, bs='tp') +
-                #s(twi_100m, bs='cc') +
-                s(heat_load, bs='tp') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(cwd, bs='cc') +
-                s(cwd, bs='cc') +
-                s(elevation_10m, by = tpi_1km, bs='tp') +
-                s(elevation_10m, by = swe, bs='tp') +
-                s(elevation_10m, by = delta_swe, bs='tp') +
-                s(elevation_10m, by = awc, bs='tp') +
-                geology,
-              data=train.height.skew,
-              family='gaussian')
+gam.height.skew <- gam(height.skew.mf$formula,
+                  data=height.skew.mf$data,
+                  method='REML',
+                  select=T,
+                  family='gamma',
+                  control=list(nthreads=nCores))
 
 sum.height.skew <- summary(gam.height.skew)
-sum.height.skew
+concurv <- concurvity(gam.height.skew)
 de.height.skew <- summary(gam.height.skew)$dev.expl
-gam.height.skew.pred <- predict(object=gam.height.skew,
-                       newdata=test.height.skew,
-                       se.fit=T)
-plot(gam.height.skew.pred$fit, test.height.skew$height.skew)
-trmse.gam.height.skew <- RMSE(gam.height.skew.pred$fit, test.height.skew$height.skew, na.rm=T)
-trmse.gam.height.skew
+
+concurv.height.skew.full <- concurvity(gam.height.skew, full=T)
+concurv.height.skew <- concurvity(gam.height.skew, full=F)$estimate
+corrplot(concurv.height.skew)
 
 ##################################
 # Density GAM
 ##################################
-sample.int(10000, 5)
-set.seed(6099)
-density.train <- createDataPartition(y=vars$density, p=0.75, list=F)
-train.density <- vars[density.train,]
-test.density <- vars[-density.train,]
+density.mf <- make.modframe('density', vars, 'gam', target.vars, itx=target.itx)
 
-gam.density <- gam(density ~
-                s(elevation_10m, bs='tp') +
-                #s(folded_aspect_205, bs='cc') +
-                s(slope, bs='tp') +
-                s(tpi_1km, bs='tp') +
-                #s(twi_100m, bs='cc') +
-                s(heat_load, bs='tp') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(awc, bs='tp') +
-                s(om, bs='tp') +
-                s(k, bs='tp') +
-                #s(ksat, bs='cc') +
-                s(td, bs='cc') +
-                s(swe, bs='cc') +
-                s(delta_swe, bs='cc') +
-                s(cwd, bs='cc') +
-                s(cwd, bs='cc') +
-                s(elevation_10m, by = tpi_1km, bs='tp') +
-                s(elevation_10m, by = swe, bs='tp') +
-                s(elevation_10m, by = delta_swe, bs='tp') +
-                s(elevation_10m, by = awc, bs='tp') +
-                geology,
-              data=train.density,
-              family='gaussian')
+gam.density <- gam(density.mf$formula,
+                  data=density.mf$data,
+                  method='REML',
+                  select=T,
+                  family='poisson',
+                  control=list(nthreads=nCores))
 
 sum.density <- summary(gam.density)
+concurv <- concurvity(gam.density)
 de.density <- summary(gam.density)$dev.expl
-gam.density.pred <- predict(object=gam.density,
-                       newdata=test.density,
-                       se.fit=T)
-plot(gam.density.pred$fit, test.density$density)
-trmse.gam.density <- RMSE(gam.density.pred$fit, test.density$density, na.rm=T)
-trmse.gam.density
 
+concurv.density.full <- concurvity(gam.density, full=T)
+concurv.density <- concurvity(gam.density, full=F)$estimate
+corrplot(concurv.density)
+
+##################################
+# ABLA density GAM
+##################################
+abla.density.mf <- make.modframe('abla.density', vars, 'gam', target.vars, itx=target.itx)
+
+gam.abla.density <- gam(abla.density.mf$formula,
+                  data=abla.density.mf$data,
+                  method='REML',
+                  select=T,
+                  family='poisson',
+                  control=list(nthreads=nCores))
+
+sum.abla.density <- summary(gam.abla.density)
+concurv <- concurvity(gam.abla.density)
+de.abla.density <- summary(gam.abla.density)$dev.expl
+
+concurv.abla.density.full <- concurvity(gam.abla.density, full=T)
+concurv.abla.density <- concurvity(gam.abla.density, full=F)$estimate
+corrplot(concurv.abla.density)
+
+##################################
+# PIEN density GAM
+##################################
+pien.density.mf <- make.modframe('pien.density', vars, 'gam', target.vars, itx=target.itx)
+
+gam.pien.density <- gam(pien.density.mf$formula,
+                  data=pien.density.mf$data,
+                  method='REML',
+                  select=T,
+                  family='poisson',
+                  control=list(nthreads=nCores))
+
+sum.pien.density <- summary(gam.pien.density)
+concurv <- concurvity(gam.pien.density)
+de.pien.density <- summary(gam.pien.density)$dev.expl
+
+concurv.pien.density.full <- concurvity(gam.pien.density, full=T)
+concurv.pien.density <- concurvity(gam.pien.density, full=F)$estimate
+corrplot(concurv.pien.density)
+
+##################################
+# PICO density GAM
+##################################
+pico.density.mf <- make.modframe('pico.density', vars, 'gam', target.vars, itx=target.itx)
+
+gam.pico.density <- gam(pico.density.mf$formula,
+                  data=pico.density.mf$data,
+                  method='REML',
+                  select=T,
+                  family='poisson',
+                  control=list(nthreads=nCores))
+
+sum.pico.density <- summary(gam.pico.density)
+concurv <- concurvity(gam.pico.density)
+de.pico.density <- summary(gam.pico.density)$dev.expl
+
+concurv.pico.density.full <- concurvity(gam.pico.density, full=T)
+concurv.pico.density <- concurvity(gam.pico.density, full=F)$estimate
+corrplot(concurv.pico.density)
 
 #####################
 # Aggregate objects
@@ -266,31 +228,34 @@ gam.objs <- list('Height 90p'=gam.height,
                  'Basal area'=gam.ba,
                  'QMD'=gam.diam,
                  'Height skew'=gam.height.skew,
-                 'Density'=gam.density)
+                 'Density'=gam.density,
+                 'ABLA_density'=gam.abla.density,
+                 'PIEN_density'=gam.pien.density,
+                 'PICO_density'=gam.pico.density)
 
-lapply(seq_along(gam.objs), function(x) saveRDS(x, file.path('models', paste(names(gbm.objs)[x], '_gam.rda'))))
+lapply(seq_along(gam.objs), function(x) saveRDS(x, file.path('models', paste0(names(gam.objs)[x], '_gam.rda'))))
 
 #############
 # Summaries
 #############
 
-# gbm.summaries <- list('Height 90p'=gam.height.sum,
-#                       'Basal area'=gam.ba.sum,
-#                       'QMD'=gam.diam.sum,
-#                       'Height skew'=gam.height.skew.sum,
-#                       'Density'=gam.density.sum)
-
 gam.pde <- c(de.height,
              de.ba,
              de.diam,
              de.height.skew,
-             de.density)
+             de.density,
+             de.abla.density,
+             de.pien.density,
+             de.pico.density)
 
-gam.trmse <- c(trmse.gam.height,
-               trmse.gam.ba,
-               trmse.gam.diam,
-               trmse.gam.height.skew,
-               trmse.gam.density)
+# gam.trmse <- c(trmse.gam.height,
+#                trmse.gam.ba,
+#                trmse.gam.diam,
+#                trmse.gam.height.skew,
+#                trmse.gam.density,
+#                trmse.abla.density,
+#                trmse.pien.density,
+#                trmse.pico.density)
 
 
 #############
@@ -298,11 +263,10 @@ gam.trmse <- c(trmse.gam.height,
 #############
 
 gam.perf.df <- as.data.frame(cbind('Response'=names(gam.objs),
-                                   'PDE'= gam.pde,
-                                   'Test error'=gam.trmse),
+                                   'PDE'= gam.pde),
                              check.names=F)
 
-write.csv(gam.perf.df, file.path(config$data$pro, 'gam_perf_df.csv'), row.names=F)
+write.csv(gam.perf.df, file.path(config$extdata$scratch, 'gam_perf_df.csv'), row.names=F)
 
 ##################################
 # Visualizations
@@ -321,12 +285,12 @@ my_colors <- c("SWE" = mypal(4)[3],
                "Slope" = mypal2(4)[3],
                'Geology' = mypal4(1),
                'TPI' = mypal2(4)[4],
-               'Soil K' = mypal3(4)[3])
+               'Soil Ksat' = mypal3(4)[3])
 
 # Density
 dens.long <- vars %>%
-  dplyr::select(c(density, delta_swe, swe, awc, elevation_10m)) %>%
-  pivot_longer(cols=delta_swe:elevation_10m)
+  dplyr::select(c(density, delta_swe, swe, awc, elevation)) %>%
+  pivot_longer(cols=delta_swe:elevation)
 
 pe.density <-  ggplot(dens.long, aes(x=value, y=density, color=name)) +
   geom_smooth(formula=y~s(x, bs="tp"),
@@ -339,24 +303,48 @@ pe.density <-  ggplot(dens.long, aes(x=value, y=density, color=name)) +
   jtools::theme_apa()
 
 # Height
-height.long <- vars %>%
-  dplyr::select(c(height, delta_swe, swe, awc, elevation_10m, td)) %>%
+height.long <- test.height %>%
+  dplyr::select(c(yhat, delta_swe, swe, awc, elevation, td)) %>%
   pivot_longer(cols=delta_swe:td)
 
-pe.height <-  ggplot(height.long, aes(x=value, y=height, color=name)) +
+pred.height.est <- plot.gam(gam.height, select=1)
+tmin <- pred.height.est[[1]]
+tmin.x <- tmin$x
+tmin.raw <- tmin$raw
+tmin.fit <- tmin$fit
+tmin.se <- tmin$se
+tmin.u95 <- tmin.fit+tmin.se
+tmin.l95 <- tmin.fit-tmin.se
+
+tmin.df <- data.frame(Tmin=tmin.x,
+                      #'RWI'=tmin.raw,
+                      Fit=tmin.fit,
+                      U95=tmin.u95,
+                      L95=tmin.l95)
+
+ggplot(tmin.df, aes(x=Tmin, y=Fit)) +
+  geom_ribbon(aes(ymin=L95, ymax=U95)) +
+  geom_line()
+
+pe.height <- ggplot(height.long, aes(x=value, y=yhat, color=name)) +
+  # geom_point() +
   geom_smooth(formula=y~s(x, bs="tp"),
               se=T) +
+  geom_rug() +
   scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation',
                                                  'SWE', 'Soil total depth')]),
                      labels=c('Soil AWC', '∆SWE', 'Elevation',
                               'SWE', 'Soil total depth')) +
+  scale_y_continuous(limits=c(0,25)) +
   labs(title='Height',
        x='Standardized values',
        y='Maximum height (m)') +
   jtools::theme_apa()
 
+pe.height
+
 diam.long <- vars %>%
-  dplyr::select(c(diam, delta_swe, swe, awc, elevation_10m, td)) %>%
+  dplyr::select(c(diam, delta_swe, swe, awc, elevation, td)) %>%
   pivot_longer(cols=delta_swe:td)
 
 pe.diam <-  ggplot(diam.long, aes(x=value, y=diam, color=name)) +
@@ -372,7 +360,7 @@ pe.diam <-  ggplot(diam.long, aes(x=value, y=diam, color=name)) +
   jtools::theme_apa()
 
 ba.long <- vars %>%
-  dplyr::select(c(ba, delta_swe, swe, awc, elevation_10m, k)) %>%
+  dplyr::select(c(ba, delta_swe, swe, awc, elevation, k)) %>%
   pivot_longer(cols=delta_swe:k)
 
 pe.ba <-  ggplot(ba.long, aes(x=value, y=ba, color=name)) +
@@ -386,7 +374,7 @@ pe.ba <-  ggplot(ba.long, aes(x=value, y=ba, color=name)) +
   jtools::theme_apa()
 
 height.skew.long <- vars %>%
-  dplyr::select(c(height.skew, delta_swe, swe, awc, tpi_1km, td)) %>%
+  dplyr::select(c(height.skew, delta_swe, swe, awc, tpi, td)) %>%
   pivot_longer(cols=delta_swe:td)
 
 pe.height.skew <-  ggplot(height.skew.long, aes(x=value, y=height.skew, color=name)) +
@@ -402,9 +390,63 @@ pe.height.skew <-  ggplot(height.skew.long, aes(x=value, y=height.skew, color=na
   jtools::theme_apa()
 
 
+# ABLA Density
+abla.dens.long <- vars %>%
+  dplyr::select(c(abla_density, delta_swe, swe, awc, om, elevation)) %>%
+  pivot_longer(cols=delta_swe:elevation)
+
+pe.abla.density <- ggplot(abla.dens.long, aes(x=value, y=abla_density, color=name)) +
+  geom_smooth(formula=y~s(x, bs="tp"),
+              se=T) +
+  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
+                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
+  labs(title='ABLA Density',
+       x='Standardized values',
+       y='Density (stems ha^-1^)') +
+  jtools::theme_apa()
+
+pe.abla.density
+
+pien.dens.long <- vars %>%
+  dplyr::select(c(pien_density, delta_swe, swe, awc, om, elevation)) %>%
+  pivot_longer(cols=delta_swe:elevation)
+
+pe.pien.density <-  ggplot(pien.dens.long, aes(x=value, y=pien_density, color=name)) +
+  geom_smooth(formula=y~s(x, bs="tp"),
+              se=T) +
+  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
+                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
+  labs(title='PIEN Density',
+       x='Standardized values',
+       y='Density (stems ha^-1^)') +
+  jtools::theme_apa()
+
+pe.pien.density
+
+pico.dens.long <- vars %>%
+  dplyr::select(c(pico_density, delta_swe, swe, awc, om, elevation)) %>%
+  pivot_longer(cols=delta_swe:elevation)
+
+pe.pico.density <-  ggplot(pico.dens.long, aes(x=value, y=pico_density, color=name)) +
+  geom_smooth(formula=y~s(x, bs="tp"),
+              se=T) +
+  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
+                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
+  labs(title='PICO Density',
+       x='Standardized values',
+       y='Density (stems ha^-1^)') +
+  jtools::theme_apa()
+
+pe.pico.density
+plot.gam(gam.pico.density, pages=1)
+
 gridExtra::grid.arrange(pe.density, pe.height, pe.diam,
                         pe.ba, pe.height.skew,
                         ncol=2, widths=c(1,1))
+
+gridExtra::grid.arrange(pe.abla.density, pe.pien.density, pe.pico.density,
+                        ncol=2, widths=c(1,1))
+
 
 # ggplot(subset(dens.long, !is.na(geology)), aes(x=geology, y=height)) +
 #   geom_boxplot() +
@@ -432,28 +474,28 @@ par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
 plot.gam(mod_gam2, scheme=1, ylim=c(-5,5))
 
 varnms <- c('Elevation',
-  'Folded Aspect',
-  'Slope',
-  'TPI',
-  'Heat Load',
-  'Elevation:Folded Aspect',
-  'Elevation:TPI',
-  'Elevation:SWE',
-  'Folded Aspect:TPI',
-  'Elevation:KJde',
-  'Elevation:Km',
-  'Elevation:Kmv',
-  'Elevation:Pm',
-  'Elevation:PPm',
-  'Elevation:Qd',
-  'Elevation:Ql',
-  'Elevation:Tmi',
-  'Elevation:Two',
-  'Soil AWC',
-  'Soil Percent OM',
-  'Soil k',
-  'Soil Total Depth',
-  'SWE')
+            'Folded Aspect',
+            'Slope',
+            'TPI',
+            'Heat Load',
+            'Elevation:Folded Aspect',
+            'Elevation:TPI',
+            'Elevation:SWE',
+            'Folded Aspect:TPI',
+            'Elevation:KJde',
+            'Elevation:Km',
+            'Elevation:Kmv',
+            'Elevation:Pm',
+            'Elevation:PPm',
+            'Elevation:Qd',
+            'Elevation:Ql',
+            'Elevation:Tmi',
+            'Elevation:Two',
+            'Soil AWC',
+            'Soil Percent OM',
+            'Soil k',
+            'Soil Total Depth',
+            'SWE')
 ?mar
 par(mfcol=c(12,4), mar=c(4,2,4,1), lwd=2)
 for(i in 19:22){

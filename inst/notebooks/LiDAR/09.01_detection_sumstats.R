@@ -1,4 +1,4 @@
-# Predict DBH on modeled trees
+# Pull detection summary statistics and figures
 
 ## ---------------------------------------------------------------------------------------------------
 # Load config
@@ -25,6 +25,9 @@ drive_auth(path=config$drivesa)
 # Ingest detected trees
 alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
 
+# Ingest match data
+ls.match <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
+
 # Ingest field data
 tmpfile <- drive_download(
   as_id(config$extdata$invid),
@@ -46,19 +49,58 @@ inv <- inv %>%
          Height_Avg_M/DBH_Avg_CM > 0.17,
          Height_Avg_M/DBH_1_CM < 10,
          !grepl('outside plot', Comments),
-         Status=='Live',
+         #Status=='Live',
          !is.na(inv$Latitude) | !is.na(inv$Longitude))
 
 # Remove unlikely detected trees
 alltrees <- alltrees[alltrees$H<=60,]
 
 ## ---------------------------------------------------------------------------------------------------
-## Summary stats on detected trees
+
+## Summary stats on inventory trees
+inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
+inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
+inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
+inv.p90.ht <- quantile(inv$Height_Avg_M, .95, na.rm=T)
+inv.sd.ht <- sd(inv$Height_Avg_M, na.rm=T)
+
+data.frame('QMD'=inv.qmd,
+           'SD DBH'=inv.sd.dbh,
+           'Median Height'=inv.median.ht,
+           'Percentile-90 Height'=inv.p90.ht,
+           'SD Height'=inv.sd.ht)
+
+## ---------------------------------------------------------------------------------------------------
+## Summary stats on detected trees in training
+
+ls.match.det <- ls.match %>%
+  filter(src==1) %>%
+  dplyr::select(Zpred) %>%
+  # mutate(DBH_est=exp(-0.1379 + 1.2082*log(Zpred))*exp(0.0105)) %>%
+  mutate(H=Zpred)
+
+ls.match.det$DBH_est <- exp(predict(m2,ls.match.det))*exp(summary(m2)$sigma^2/2)
+ls.qmd <- sqrt(mean(ls.match.det$DBH_est^2, na.rm=T))
+ls.sd.dbh <- sd(ls.match.det$DBH_est, na.rm=T)
+ls.median.ht <- median(ls.match.det$H, na.rm=T)
+ls.p90.ht <- quantile(ls.match.det$H, .95, na.rm=T)
+ls.sd.ht <- sd(ls.match.det$H, na.rm=T)
+
+data.frame('QMD'=ls.qmd,
+           'SD DBH'=ls.sd.dbh,
+           'Median Height'=ls.median.ht,
+           'Percentile-90 Height'=ls.p90.ht,
+           'SD Height'=ls.sd.ht)
+
+## ---------------------------------------------------------------------------------------------------
+## Summary stats on ALL detected trees
+
+ntrees <- nrow(alltrees)
 
 qmd <- sqrt(mean(alltrees$DBH_est^2, na.rm=T))
 sd.dbh <- sd(alltrees$DBH_est, na.rm=T)
 median.ht <- median(alltrees$H, na.rm=T)
-p90.ht <- quantile(alltrees$H, .9, na.rm=T)
+p90.ht <- quantile(alltrees$H, .95, na.rm=T)
 sd.ht <- sd(alltrees$H, na.rm=T)
 
 data.frame('QMD'=qmd,
@@ -67,17 +109,57 @@ data.frame('QMD'=qmd,
            'Percentile-90 Height'=p90.ht,
            'SD Height'=sd.ht)
 
-## ---------------------------------------------------------------------------------------------------
 
-## Summary stats on inventory trees
-inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
-inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
-inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
-inv.p90.ht <- quantile(inv$Height_Avg_M, .9, na.rm=T)
-inv.sd.ht <- sd(inv$Height_Avg_M, na.rm=T)
+## Corrections on ALL detected trees
 
-data.frame('QMD'=inv.qmd,
-           'SD DBH'=inv.sd.dbh,
-           'Median Height'=inv.median.ht,
-           'Percentile-90 Height'=inv.p90.ht,
-           'SD Height'=inv.sd.ht)
+alltrees.corx <- alltrees %>%
+  mutate(bin = cut(H, breaks=seq(0,max(H),1))) %>%
+  group_by(bin) %>%
+  summarise(n=n(),
+            freq=n()/nrow(.))
+
+lstrees.obs.corx <- ls.match %>%
+  filter(src==0) %>%
+  mutate(bin = cut(Zobs, breaks=seq(0,max(Zobs),1))) %>%
+  group_by(bin) %>%
+  summarise(n_obs=sum(!is.na(Zobs)),
+            f_obs=sum(!is.na(Zobs))/nrow(.))
+
+lstrees.det.corx <- ls.match %>%
+  filter(src==1) %>%
+  mutate(bin = cut(Zpred, breaks=seq(0,max(Zpred),1))) %>%
+  group_by(bin) %>%
+  summarise(n_det=sum(!is.na(Zpred)),
+            f_det=sum(!is.na(Zpred))/nrow(.))
+
+lstrees.corx <- full_join(lstrees.obs.corx, lstrees.det.corx, by='bin') %>%
+  mutate(pct_diff=f_obs-f_det,
+         pct_scale=1+pct_diff)
+
+lstrees.corx.l <- lstrees.corx %>%
+  pivot_longer(cols=c(f_obs, f_det))
+
+ggplot(lstrees.corx.l, aes(x=bin, y=value, group=name, fill=name)) +
+  geom_col(position='dodge')
+
+alltrees.corx <- alltrees.corx %>%
+  full_join(lstrees.corx, by='bin') %>%
+  mutate(n_corr=n*pct_scale,
+         f_corr=n_corr/23915758,
+         hbin=1:nrow(.))
+
+alltrees.corx.l <- alltrees.corx %>%
+  pivot_longer(cols=c(n, n_corr)) %>%
+  mutate(name=ifelse(name=='n', 'Pre-correction', 'Post-correction'))
+
+ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fill=name)) +
+  geom_col(width=.8, position=position_dodge(.8)) +
+  scale_fill_manual(values=c('#E31A1C', '#FD8D3C'), name=NULL) +
+  scale_x_continuous(limits=c(0,40)) +
+  labs(x='Height (m)', y='Number of detected tree crown objects') +
+  ggthemes::theme_calc(base_size=18) +
+  theme(legend.position = c(0.855, 0.94),
+        legend.box.background = element_rect(fill = "white", color = "black"))
+
+
+sum(alltrees.corx$n_corr, na.rm=T)

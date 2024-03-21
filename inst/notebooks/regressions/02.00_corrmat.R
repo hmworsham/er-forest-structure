@@ -6,7 +6,9 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'regr
 #############################
 # Correlation matrix
 #############################
-corvars <- vars[,(!names(vars) %in% c('density', 'height', 'height.skew', 'diam', 'ba', 'geology', 'twi_100m', 'folded_aspect_205', 'ksat'))]
+corvars <- vars[,!names(vars) %in% c('density', 'height', 'height.skew', 'diam', 'ba',
+                                     'abla_density', 'pien_density', 'pico_density',
+                                     'geology')]
 corvars <- na.omit(corvars)
 corrmat <- cor(corvars)
 par(mfcol=c(1,1))
@@ -38,6 +40,5 @@ corvars
 corvars %>%
   pivot_longer(cols=-cec) %>%
   ggplot() +
-  geom_histogram(aes(x=value)) +
-  facet_wrap(~name)
-
+  geom_histogram(aes(x=value), bins=18) +
+  facet_wrap(~name, scales='free')

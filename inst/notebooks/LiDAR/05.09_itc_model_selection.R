@@ -71,8 +71,8 @@ opt.mean <- opt.res %>%
             ) %>%
   mutate(ext.rt = round(npredtrees/nobstrees,2))
 
-names(opt.mean) <- c('N detected trees',
-                     'N reference trees',
+names(opt.mean) <- c('N reference trees',
+                     'N detected trees',
                      'Extraction rate',
                      'Match rate',
                      'Overall accuracy',
@@ -117,6 +117,7 @@ best.mean <- best.res %>%
                  'Watershed'))
 
 names(best.mean) <- c('Model', names(opt.mean))
+best.mean <- best.mean[c(5, 1:4, 6:8),]
 
 # Flextables
 opt.mean.ft <- flextable(opt.mean)

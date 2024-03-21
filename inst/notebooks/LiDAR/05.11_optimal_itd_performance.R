@@ -28,15 +28,14 @@ ls.trees <- lapply(opt.trees, st_read)
 # Ingest match data
 ls.match <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
 
-## Estimate diameter and compute some summary stats on matched trees
+## Compare detected and reference trees
 ## ---------------------------------------------------------------------------------------------------
-a <- 0.8849
-b <- 0.9102
-dbh_est <- nthroot(ls.match$Zpred/a, b)
+pred.med.ht <- median(ls.match$Zpred, na.rm=T)
+pred.sd.ht <- sd(ls.match$Zpred, na.rm=T)
+pred.p90.ht <- quantile(ls.match$Zpred, .9, na.rm=T)
 
-med.ht <- median(ls.match$Zpred, na.rm=T)
-p90.ht <- quantile(ls.match$Zpred, .9, na.rm=T)
-qmd <- sqrt(mean(dbh_est^2, na.rm=T))
+pred.med.ht
+pred.sd.ht
 
 ## Compare detected and reference trees by plot
 ## ---------------------------------------------------------------------------------------------------
@@ -82,23 +81,23 @@ ls.match.comp.medh <- bind_rows(ls.detect.med.l, ls.detect.match.med.l,
                           ls.ref.med.l, ls.refmatch.med.l) %>%
   pivot_wider(names_from=c(name))
 
-# Compare 90th pctl height by site
-ls.detect.90.l <- ls.match %>%
-  filter(src==1) %>%
-  group_by(site) %>%
-  summarise(`All detected` = quantile(Zpred, .9, na.rm=T))
-
-ls.match.comp.l.90 <- ls.match %>%
-  filter(src==0) %>%
-  group_by(site) %>%
-  summarise(`Matched detected` = quantile(Zpred[!is.na(pred)], .9, na.rm=T),
-            `All reference` = quantile(Zobs, .9, na.rm=T),
-            `Matched reference` = quantile(Zobs[!is.na(pred)], .9, na.rm=T)) %>%
-  left_join(ls.detect.med.l, by='site') %>%
-  pivot_longer(cols=c(`All detected`, `Matched detected`,
-                      `All reference`,`Matched reference`)) %>%
-  mutate(name=factor(name, levels=c('All detected', 'All reference',
-                                    'Matched detected', 'Matched reference')))
+# # Compare 90th pctl height by site
+# ls.detect.90.l <- ls.match %>%
+#   filter(src==1) %>%
+#   group_by(site) %>%
+#   summarise(`All detected` = quantile(Zpred, .9, na.rm=T))
+#
+# ls.match.comp.l.90 <- ls.match %>%
+#   filter(src==0) %>%
+#   group_by(site) %>%
+#   summarise(`Matched detected` = quantile(Zpred[!is.na(pred)], .9, na.rm=T),
+#             `All reference` = quantile(Zobs, .9, na.rm=T),
+#             `Matched reference` = quantile(Zobs[!is.na(pred)], .9, na.rm=T))
+#   left_join(ls.detect.med.l, by='site') %>%
+#   pivot_longer(cols=c(`All detected`, `Matched detected`,
+#                       `All reference`,`Matched reference`)) %>%
+#   mutate(name=factor(name, levels=c('All detected', 'All reference',
+#                                     'Matched detected', 'Matched reference')))
 
 # Compare QMD by site
 # TODO: 02-05-2024 - To make this happen, need to pull in field DBH for reference trees...
@@ -135,7 +134,7 @@ ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src))) +
                     guide = guide_legend()) +
   labs(x='Site', y='Median height (m)') +
   ggthemes::theme_calc(base_size=18) +
-  theme(legend.position = c(0.18, 0.85),
+  theme(legend.position = c(0.270, 0.855),
         legend.box.background = element_rect(fill = "white", color = "black"),
         axis.text.x = element_text(angle=60, hjust=1))
 
@@ -164,10 +163,10 @@ ls.match.l <- ls.match %>%
              names_to='source',
              values_to='treeID') %>%
   arrange(pair_id) %>%
-  mutate(src = case_when(source=='pred' ~ 'Matched detected',
-                         T ~ 'Matched reference')) %>%
-  mutate(across(Zobs:Yobs, ~ ifelse(src=='Matched detected', NA, .)),
-         across(Zpred:Ypred, ~ ifelse(src=='Matched reference', NA, .)),
+  mutate(src = case_when(source=='pred' ~ 'Matched LiDAR-detected trees',
+                         T ~ 'Matched field-observed trees')) %>%
+  mutate(across(Zobs:Yobs, ~ ifelse(src=='Matched LiDAR-detected trees', NA, .)),
+         across(Zpred:Ypred, ~ ifelse(src=='Matched field-observed trees', NA, .)),
          Z = coalesce(Zobs, Zpred),
          X = coalesce(Xobs, Xpred),
          Y = coalesce(Yobs, Ypred))
@@ -179,7 +178,7 @@ df.matched.plt.l <- ls.match.l %>%
 # Reformat ALL detected
 ls.detect.l <- ls.match %>%
   filter(src==1)  %>%
-  mutate(src='All detected',
+  mutate(src='All LiDAR-detected trees',
          Z=Zpred,
          X=Xpred,
          Y=Ypred) %>%
@@ -189,7 +188,7 @@ ls.detect.l <- ls.match %>%
 # Reformat ALL observed
 ls.ref.l <- ls.match %>%
   filter(src==0) %>%
-  mutate(src='All reference',
+  mutate(src='All field-observed trees',
          Z=Zobs,
          X=Xobs,
          Y=Yobs) %>%
@@ -220,7 +219,7 @@ skill.density
 
 
 ##########################
-# VERSION 1: XYZ DENSITY
+# VERSION 2: XYZ DENSITY
 #########################
 
 df.matched.plt.l.z <- df.matched.plt.l %>%
@@ -236,13 +235,13 @@ skill.density.2 <- ggplot(df.matched.plt.l.z, aes(x=value, group=src, color=fact
   stat_density(linewidth=1, geom='line', position='identity',
                aes(x=value, group=src, color=factor(src)), data=ls.ref.l.z) +
   stat_density(linewidth=1, geom='line', position='identity') +
-  scale_color_manual(values=kdens.colors, name='Data source') +
+  scale_color_manual(values=kdens.colors, name=NULL) +
   #scale_y_continuous(labels = \(x) format(x, digits=1, scientific = TRUE)) +
   #scale_fill_manual(values=kdens.colors, name='Data source') +
-  #labs(x='Dimension value', y='Kernel density') +
+  labs(x='Height (m)', y='Frequency of occurrence (kernel density)') +
   #facet_wrap(~dim, nrow=3, scales='free') +
   ggthemes::theme_calc(base_size=18) +
-  theme(legend.position = c(0.9,0.9),
+  theme(legend.position = c(0.742,0.895),
         legend.box.background = element_rect(fill = "white", color = "black"),
   )
 
@@ -351,10 +350,10 @@ uc2.match.map <- uc2.base.map +
   ggthemes::theme_calc(base_size=18) +
   theme(axis.text = element_blank(),
         axis.title = element_blank(),
-        legend.key.size=unit(.4, 'cm'),
+        legend.key.size=unit(.2, 'cm'),
         legend.title = element_text(size=14),
         legend.text = element_text(size=12),
-        legend.position=c(0.095, 0.14),
+        legend.position=c(0.096, 0.13),
         legend.box.background = element_rect(fill = "white", color = "black"),
         legend.background=element_blank(),
         legend.spacing.y = unit(0.1,"cm"))

@@ -50,13 +50,13 @@ sp.codes <- sp.codes %>%
   mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
   dplyr::select(-c(Genus:Common))
 
-# Ingest las
-infiles <- list.files(config$extdata$las_dec, full.names=T)
-lascat <- readLAScatalog(infiles)
+# Ingest CHM
+chm.masked <- rast(file.path(config$extdata$scratch, 'chm_full_extent', 'chm_smooth_masked.tif'))
 
 ## ---------------------------------------------------------------------------------------------------
 ## Assign species to tree objects using height-dependent buffer for trees > 90th percentile height
 
+# Filter to 90th percentile height
 stem.sf <- stem.sf %>%
   mutate(Crown_Radius=0.082*H + 0.5) %>%
   filter(H >= quantile(H, 0.9))
@@ -72,45 +72,84 @@ data.table::fwrite(stems.spp.sf,
                    file.path(config$extdata$scratch, 'stems_species.csv'))
 
 ## ---------------------------------------------------------------------------------------------------
-## SCRATCH
-
 ## Crown segmentation approach
 
-# Cast tree crown objects as sf
-# stem.sf.crp <- st_crop(stem.sf, ext(chm.smooth))
-# stem.sf.crp <- stem.sf[st_as_sfc(st_bbox(chm.smooth)),]
-# st_crs(stem.sf.crp) <- st_crs(chm.smooth)
-# stem.sf.crp$treeID <- 1:nrow(stem.sf.crp)
-# plot(stem.sf.crp, add=T)
-#
-# full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'))
-# ext(full.mask) <- ext(chm.smooth)
-# full.mask <- alignfun(full.mask, chm.smooth)
-#
-# chm.masked <- mask(chm.smooth, full.mask)
-#
-# crowns_poly <- mcws(stem.sf, chm.masked, minHeight=quantile(stem.sf$H, .8), format='polygons')
-#
-# st_write(crowns_poly)
-#
-# plot(crowns_poly, col=NA, add=T)
-#
-# stem.seg <- st_join(st_as_sf(crowns_poly), stem.sf.crp, by=c('treeID'))
-#
-# # Filter only top trees
-# stem.filt.e <- stem.seg %>%
-#   filter(H >= quantile(H, 0.8)) %>%
-#   ungroup() %>%
-#   mutate(Crown_Area=st_area(.))
-#
-# plot(stem.filt.e, col=NA, add=T)
-#
-# # Shrink crowns
-# stem.filt.e <- st_buffer(stem.filt.e, -0.2*sqrt(stem.filt.e$Crown_Area))
-#
-# # Filter only top trees
-# stem.filt.e <- stem.seg %>%
-#   group_by(Site_Name) %>%
-#   filter(Zpred >= quantile(Zpred, 0.9)) %>%
-#   ungroup() %>%
-#   mutate(Crown_Area=st_area(.))
+# Ingest trees
+treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
+
+segtrees <- function(treefile, chmraster, spraster, spcodes) {
+  t1 <- st_read(treefile, quiet=T)
+  t1$treeID <- 1:nrow(t1)
+  chm1 <- tryCatch({
+    crop(chmraster, ext(t1))},
+    error=function(e) {NULL}
+    )
+
+  if(is.null(chm1)) {return(crowns <- NULL)}
+
+  if(sum(!is.na(minmax(chm1)))>0) {
+    crowns <- mcws(t1, chm1, minHeight=min(t1$Z)-1,
+                   format='polygon', IDfield='treeID')
+
+    crowns <- crowns %>%
+      left_join(data.frame(t1), by='treeID') %>%
+      filter(Z>=quantile(Z, 0.9)) %>%
+      mutate(Crown_Area=st_area(.),
+             X=st_coordinates(geometry.y)[,1],
+             Y=st_coordinates(geometry.y)[,2]) %>%
+      dplyr::select(-geometry.y)
+
+    crowns <- crowns %>%
+      st_buffer(-0.2*sqrt(crowns$Crown_Area))
+
+    stems.spp <- tryCatch({
+      exactextractr::exact_extract(spraster, crowns, 'mode')},
+      error=function(e) {NULL})
+
+    if(!is.null(stems.spp)) {
+      crowns <- cbind(crowns, 'Pixel_Code'=stems.spp)
+      crowns <- left_join(crowns, spcodes, by='Pixel_Code')
+    } else {return(NULL)}
+
+    crowns <- crowns %>%
+      data.frame() %>%
+      dplyr::select(-c(id_1, Class, geometry.x))
+
+    data.table::fwrite(crowns,
+                       file.path(config$extdata$scratch, 'trees_species_100m_csv', paste0(crowns$id[1], '_species.csv')),       )
+
+  } else {crowns <- NULL}
+
+  return(crowns)
+}
+
+# Segment crowns and predict species
+mclapply(treefiles, segtrees, chm.masked, sp.class, sp.codes,
+                 mc.cores=getOption('mc.cores', nCores)
+                 )
+
+# Ingest tree species csvs
+trees.spp.fn <- list.files(file.path(config$extdata$scratch, 'trees_species_100m_csv'), full.names=T)
+trees.spp <- mclapply(trees.spp.fn, read.csv, mc.cores=getOption('mc.cores', nCores))
+trees.spp <- data.table::rbindlist(trees.spp, idcol='file')
+trees.spp <- trees.spp %>%
+  dplyr::select(-c(file))
+
+# Read full mask
+full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'))
+full.mask.poly <- st_as_sf(as.polygons(full.mask))
+full.mask.poly <- st_cast(full.mask.poly, 'POLYGON')
+full.mask.area <- as.numeric(st_area(full.mask.poly))
+full.mask.poly <- full.mask.poly[full.mask.area>=1000,]
+
+# Subset detected trees to unmasked zones
+alltrees.df <- data.frame(trees.spp)
+trees_geos <- geos::geos_read_xy(alltrees.df[c("X", "Y")])
+full.mask.geos <- geos::as_geos_geometry(full.mask.poly)
+wk::wk_crs(full.mask.geos) <- NULL
+trees_tree <- geos::geos_strtree(trees_geos)
+keys <- geos::geos_contains_matrix(full.mask.geos, trees_tree)
+trees_conif <- alltrees.df[unlist(keys),]
+
+# Write masked trees as csv
+data.table::fwrite(trees.spp, file.path(config$extdata$scratch, 'trees_species_masked_5m.csv'), append=F)
