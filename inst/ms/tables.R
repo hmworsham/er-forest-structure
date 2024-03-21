@@ -112,19 +112,25 @@ tbl5 <- data.frame(cbind('ID'=ls.id, 'Parameter'=ls.param, 'Description'=ls.desc
                    check.names=F)
 
 ##########
-# Table 6
+# Table 7
 ##########
 gbm.perf.df <- read.csv(file.path(config$data$pro, 'gbm_perf_df.csv'),
                         check.names=F)
 gam.perf.df <- read.csv(file.path(config$data$pro, 'gam_perf_df.csv'),
                                   check.names=F)
 
-tbl6 <- gbm.perf.df %>%
+tbl7 <- gbm.perf.df %>%
   left_join(gam.perf.df, by='Response') %>%
   rename(`GBM CV error`='CV error',
          `GBM test error`='Test error.x',
          `GAM % TDE`='PDE',
          `GAM test error`='Test error.y'
          ) %>%
-  mutate(across(`GBM CV error`:`GAM test error`, \(x) round(x,2)))
+  mutate(across(`GBM CV error`:`GAM test error`, \(x) round(x,2))) %>%
+  dplyr::select(-c(`GBM test error`, `GAM test error`))
+
+##########
+# Table 6
+##########
+
 

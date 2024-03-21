@@ -1,0 +1,20 @@
+# Dropped sentences
+
+Forest stand structure can be thought of as an ensemble of emergent properties of ecosystem development manifest on a landscape. Studying such an ensemble at an arbitrary point in time carries inherent limitations, notably, in collapsing the legacies of past change, including disturbance history and individual life histories. Nevertheless, we start from the position that undertaking this sort of analysis is valuable (a) on its own as a contribution to the broader field of ecological gradient analysis, and (b) for improving understanding forest dynamics under novel climate forcings and anthropogenic land-use modification, in so far as it establishes a baseline against which to evaluate future change or provides a benchmark for mechanistic modeling of future scenarios.
+
+Forest structure and composition emerge from complex "interactions between a spatially and temporally variable abiotic environment and adaptive biotic agents (e.g., trees)."
+
+Complex interactions between adaptive biotic agents and a spatiotemporally variable environment give rise to emergent properties of forests, such as structural and compositional diversity. 
+
+Few studies directly address microclimatic heterogeneity in high-elevation complex terrain (). Fewer still account for state-variable interactions ().
+
+Patterns of forest structure are necessarily scale-specific and depend on different covariates at different spatial scales (Wiens 1989). 
+
+ @fricker_more_2019 found that climatic water deficit (CWD) and mean annual precipitation (MAP) explained the majority of variance in the distribution of maximum tree heights along an elevational gradient in the Sierra Nevada. 
+
+ Given the low timber value, long fire return intervals, and lack of recent management in this domain, this analysis may offer more insight into natural factors driving stand structure in a temperate conifer forest than previous efforts. 
+
+
+
+
+While prior studies have found strong associations between forest structure and abiotic factors even in the presence of major harvest and disturbance events (@urban_forest_2000, @lydersen_topographic_2012, Collins et al. 2015, Stephens et al. 2015, @kane_water_2015), 

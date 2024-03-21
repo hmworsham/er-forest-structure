@@ -2,6 +2,11 @@
 
 ## Analysis
 - Variable and model selection in GAM/GBM
+	1. Run with all possible variables
+	2. Run with double penalty on all possible variables
+	3. Run with no penalty on uncorrelated variables (drop)
+	4. Run with double penalty on uncorrelated variables (drop)
+	5. Run with shrinkage on uncorrelated variables (drop)
 - Species analysis
 - Export all results to eastriver Drive
 - Export all data to ESS DIVE
@@ -9,15 +14,11 @@
 ## Tables, Figures, Numbers, Equations
 - FIG: Partial effects plots for ALL significant variables in GAM
 - FIG: Partial dependence plots for significant variables in GBM
-- NUM: Median and s.d. density at inventory sites
-- NUM: Mean basal area at inventory sites
-- FIG: Comparison of PC density, original NEON vs discretized waveform
-- NUM: Elevation maximum density, height, etc.
+- NUM: sd of 95P height and QMD in full domain
+- NUM: Elevation, maximum density, height, etc.
 - NUM: TWI values 
 - CAP: Update Fig. 7 caption
-- FIG: Figure with detected trees and CHM underlay
-- FIG: Map with missing flightpath and gap-filled showing density discrepancy
-- FIG: Re-create structure maps without gap-fill
+- TAB: Table 8: significant geology variables
 
 ## Draft 4 Revisions
 
@@ -34,6 +35,7 @@
 - You might want to include the GEDI mission somewhere (https://gedi.umd.edu/). This study could be an important benchmark for this global mapping project. 
 	
 ### Methods
+- Some notes on topography, soil types, geology types, with percentages
 - Describe variable/model selection in GAM/GBM
 - Mention variables dropped from models for multicollinearity!! (TWI, etc.)
 - A sentence on what deviance explained means in GAM:
@@ -47,6 +49,11 @@
 ### Conclusions
 - LARA (in abstract): In conclusion, return to this point--"Quantifying the drivers of fine-scale heterogeneity... is an essential foundation for understanding how these systems will respond to synoptic environmental change..."--but say what you think your results reaaly say about each of these things. How do your results suggest these forests might change given plausible climate change? Can differences in height/density/BA be reliably detected using these methods and the error in your estimates? What does your analysis say about where in the watershed there may be key conservation values or management opportunities (e.g. for species, carbon, water, etc.). [In short, provide more detail on this important argument you briefly raise in abstract]
 
+
+### Maybes
+- FIG: Comparison of PC density, original NEON vs discretized waveform
+- FIG: Map with missing flightpath and gap-filled showing density discrepancy
+- TAB: make a table with AIC and/or REML values for each model selection approach (assuming one of the gam selection approaches actually works)
 
 
 # DONE
@@ -76,6 +83,10 @@
 
 ## Tables, Figures, Numbers, Equations
 - EQ: Write allometric equation and coefficients for methods
+- NUM: Median and s.d. density at inventory sites
+- NUM: Mean basal area at inventory sites
+- FIG: Figure with detected trees and CHM underlay
+- FIG: Re-create structure maps without gap-fill
 
 ## Draft 3 completed tasks
 X TAB: Make table of abiotic explanatory variables: Name, Category, Units, Source
