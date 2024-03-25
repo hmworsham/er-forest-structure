@@ -111,7 +111,7 @@ pd.slice <- function(v, mod) {
     df <- df[!names(df)==v]
     names(df)[1] <- v
     pred.v <- predict(mod, df, se.fit=T)
-    slice.v <- data.frame(x=seq(-4.99,5,0.01),
+    slice.v <- data.frame(sup=seq(-4.99,5,0.01),
                           fit=pred.v$fit,
                           u95=pred.v$fit+pred.v$se.fit,
                           l95=pred.v$fit-pred.v$se.fit)
@@ -143,40 +143,41 @@ pd.plot <- function(sdf, plot.vars) {
                  names_to='var',
                  values_to='u95') %>%
     mutate(var=str_replace_all(var, '.u95', '')) %>%
-    dplyr::select(c(v,var, u95)) %>%
-    left_join(varnames, by=c('var'='varnames'))
+    dplyr::select(c(v,var, u95))
 
   ll <- slices.df %>%
     pivot_longer(cols=contains('l95'),
                  names_to='var',
                  values_to='l95') %>%
     mutate(var=str_replace_all(var, '.l95', '')) %>%
-    dplyr::select(c(v,var, l95)) %>%
-    left_join(varnames, by=c('var'='varnames'))
+    dplyr::select(c(v,var, l95))
 
   slices.df.l <- reduce(list(fl,ul,ll), left_join, by=c('v', 'var'))
   slices.df.l <- slices.df.l %>% filter(var %in% plot.vars)
 
-  # ggplot(slices.df.l) +
-  #   geom_line(aes(x=v, y=fit, color=label)) +
-  #   geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=0.25) +
-  #   geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=0.25) +
-  #   scale_color_manual(limits=factor(fl$label), values=fl$pdcolors)
   slices.df.l
 }
 
-pd.plot(slices.df, target.vars)
+dxy <- pd.plot(slices.df, target.vars)
 
-plot.dfs <- lapply(gams, \(x) {
-  slices <- lapply(target.vars, pd.slice, x)
+plot.dfs <- lapply(1:3, \(i) {
+  slices <- lapply(target.vars, pd.slice, gams[[i]])
   slices <- slices[!unlist(lapply(slices, is.null))]
-  slices.df <- reduce(slices, dplyr::left_join, by='v')
-  plot.df <- pd.plot(slices.df, target.vars)
-  plot.df
+  slices
+  #slices.df <- reduce(slices, dplyr::left_join, by='v')
+  #pv <- gbm.summaries.5[gbm.summaries.5$Model==names(gams)[i],]$var
+  #plot.df <- pd.plot(slices.df, pv)
+  #plot.df
   })
 
+pdplot.df <- bind_rows(plot.dfs, .id='Model')
 
-
+ggplot(pdplot.df) +
+  geom_line(aes(x=v, y=fit, color=label)) +
+  geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=0.25) +
+  geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=0.25) +
+  #scale_color_manual(limits=fl$label, values=fl$pdcolors) +
+  facet_wrap(~Model)
 
 # Density
 dens.long <- vars %>%
