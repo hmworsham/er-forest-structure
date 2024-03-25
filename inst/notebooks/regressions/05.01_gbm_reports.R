@@ -192,17 +192,17 @@ p2 <- ggplot(gbm.summaries.cat, aes(x=Model, y=rel.inf, fill=interaction(categor
         legend.position='left')
 
 p2
+
 gridExtra::grid.arrange(p2, p1, ncol=2, widths=c(6,5))
 
-# Construct univariate partial dependence plots
-plot(gbms[[1]]$finalModel, i.var = 3, n.trees = 2000)
+#############
+# SCRATCH
+#############
+
+# Univariate partial dependence plots
+plot(gbms[[7]]$finalModel, i.var = 1:3, n.trees = 2000)
 plot(gbm1, i.var = 2, n.trees = 2000)
 plot(gbm1, i.var = 3, n.trees = best.iter)  # can use index or name
-
-
-####
-# SCRATCH
-####
 
 # Color handling
 

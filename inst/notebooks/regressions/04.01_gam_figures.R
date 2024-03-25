@@ -20,7 +20,20 @@ nCores <- as.integer(availableCores()-6)
 gams.rda <- list.files('models', pattern='gam', full.names=T)
 
 gams <- lapply(gams.rda, readRDS)
-names(gams) <- tools::file_path_sans_ext(basename(gams.rda))
+gam.names <- names(gams) <- tools::file_path_sans_ext(basename(gams.rda))
+
+gam.names.new <- data.frame('o'=gam.names,
+                            'n'=c('Fir density',
+                                  'Basal area',
+                                  'Total density',
+                                  'QMD',
+                                  'Height 95P',
+                                  'Height skew',
+                                  'Pine density',
+                                  'Spruce density'))
+gam.names.new
+x1 <- match(names(gams), gam.names.new$o)
+names(gams) <- gam.names.new$n[x1]
 
 #############
 # Summaries
@@ -34,10 +47,11 @@ gam.pde <- lapply(gams, \(x) return(summary(x)$dev.expl))
 #############
 
 gam.perf.df <- data.frame(cbind('Response'=names(gams),
-                                   'PDE'= unlist(gam.pde)),
-                             check.names=F)
+                                'PDE'= unlist(gam.pde)),
+                          check.names=F)
 
-write.csv(gam.perf.df, file.path(config$extdata$scratch, 'gam_performance', 'gam_perf_df.csv'), row.names=F)
+write.csv(gam.perf.df, file.path(config$extdata$scratch, 'gam_performance', 'gam_perf_df.csv'),
+          row.names=F)
 
 ###################
 # Residual checks
@@ -63,23 +77,24 @@ lapply(1:8, \(i) {
 ##################################
 
 # Pull variable names
-varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'))
+varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
+                     row.names=1)
 
-# Specify color palettes
-mypal <- colorRampPalette(brewer.pal(6, "PuBu")[3:6])
-mypal2 <- colorRampPalette(brewer.pal(8, "BuGn")[3:8])
-mypal3 <- colorRampPalette(brewer.pal(6, "YlOrRd")[3:6])
-mypal4 <- colorRampPalette(brewer.pal(6, "Greys")[5])
-
-my_colors <- c("SWE" = mypal(4)[3],
-               "∆SWE" = mypal(4)[4],
-               "Soil AWC" = mypal3(4)[2],
-               "Elevation" = mypal2(4)[1],
-               "Soil total depth" = mypal3(4)[4],
-               "Slope" = mypal2(4)[3],
-               'Geology' = mypal4(1),
-               'TPI' = mypal2(4)[4],
-               'Soil Ksat' = mypal3(4)[3])
+# # Specify color palettes
+# mypal <- colorRampPalette(brewer.pal(6, "PuBu")[3:6])
+# mypal2 <- colorRampPalette(brewer.pal(8, "BuGn")[3:8])
+# mypal3 <- colorRampPalette(brewer.pal(6, "YlOrRd")[3:6])
+# mypal4 <- colorRampPalette(brewer.pal(6, "Greys")[5])
+#
+# my_colors <- c("SWE" = mypal(4)[3],
+#                "∆SWE" = mypal(4)[4],
+#                "Soil AWC" = mypal3(4)[2],
+#                "Elevation" = mypal2(4)[1],
+#                "Soil total depth" = mypal3(4)[4],
+#                "Slope" = mypal2(4)[3],
+#                'Geology' = mypal4(1),
+#                'TPI' = mypal2(4)[4],
+#                'Soil Ksat' = mypal3(4)[3])
 
 pd.slice <- function(v, mod) {
   if(!v=='geology') {
@@ -120,34 +135,48 @@ pd.plot <- function(sdf, plot.vars) {
                  names_to='var',
                  values_to='fit') %>%
     mutate(var=str_replace_all(var, '.fit', '')) %>%
-    dplyr::select(c(v,var,fit))
+    dplyr::select(c(v,var,fit)) %>%
+    left_join(varnames, by=c('var'='varnames'))
 
   ul <- slices.df %>%
     pivot_longer(cols=contains('u95'),
                  names_to='var',
                  values_to='u95') %>%
     mutate(var=str_replace_all(var, '.u95', '')) %>%
-    dplyr::select(c(v,var, u95))
+    dplyr::select(c(v,var, u95)) %>%
+    left_join(varnames, by=c('var'='varnames'))
 
   ll <- slices.df %>%
     pivot_longer(cols=contains('l95'),
                  names_to='var',
                  values_to='l95') %>%
     mutate(var=str_replace_all(var, '.l95', '')) %>%
-    dplyr::select(c(v,var, l95))
+    dplyr::select(c(v,var, l95)) %>%
+    left_join(varnames, by=c('var'='varnames'))
 
   slices.df.l <- reduce(list(fl,ul,ll), left_join, by=c('v', 'var'))
   slices.df.l <- slices.df.l %>% filter(var %in% plot.vars)
 
-  ggplot(slices.df.l) +
-    #geom_ribbon(aes(x=x, ymax=u95, ymin=l95, group=var, fill=var), alpha=0.2) +
-    geom_line(aes(x=v, y=fit, color=var)) +
-    geom_line(aes(x=v, y=u95, color=var), linetype=3, linewidth=0.25) +
-    geom_line(aes(x=v, y=l95, color=var), linetype=3, linewidth=0.25)
-
+  # ggplot(slices.df.l) +
+  #   geom_line(aes(x=v, y=fit, color=label)) +
+  #   geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=0.25) +
+  #   geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=0.25) +
+  #   scale_color_manual(limits=factor(fl$label), values=fl$pdcolors)
+  slices.df.l
 }
 
 pd.plot(slices.df, target.vars)
+
+plot.dfs <- lapply(gams, \(x) {
+  slices <- lapply(target.vars, pd.slice, x)
+  slices <- slices[!unlist(lapply(slices, is.null))]
+  slices.df <- reduce(slices, dplyr::left_join, by='v')
+  plot.df <- pd.plot(slices.df, target.vars)
+  plot.df
+  })
+
+
+
 
 # Density
 dens.long <- vars %>%
