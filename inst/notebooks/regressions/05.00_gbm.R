@@ -304,10 +304,9 @@ saveRDS(gbm.pico.density, file.path('models', 'pico_density_gbm.rda'))
 ####################
 # Read saved models
 ####################
-
-gbms <- lapply(list.files(file.path('.', 'models'), pattern='rda', full.names=T), readRDS)
-gbm.names <- str_replace_all(list.files(file.path('.', 'models'), pattern='_gbm.rda'),
-                             '_gbm.rda', '')
+gbms.rda <- list.files('models', pattern='gbm', full.names=T)
+gbms <- lapply(gbms.rda, readRDS)
+gbm.names <- names(gbms) <- tools::file_path_sans_ext(basename(gbms.rda))
 
 #############
 # Summaries
@@ -347,21 +346,29 @@ gbm.trainerr <- unlist(lapply(gbms, \(x) {
 }))
 
 # Test error
+gbm.testerr <- unlist(lapply(gbms, \(x) {
+  testerr <- sqrt(min(x$finalModel$valid.error, na.rm=T))
+  testerr
+}))
+
+# Cross-validation error
 gbm.cverr <- unlist(lapply(gbms, \(x) {
-  cverr <- sqrt(min(x$finalModel$valid.error, na.rm=T))
-  cverr
+  gbmres <- x$results
+  gbmres <- gbmres[order(as.numeric(row.names(gbmres))),]
+  gbmres <- gbmres[which.min(gbmres$RMSE),]
+  gbmres$RMSE
 }))
 
 ##########
 # Table
 ##########
 
-gbm.perf.df <- as.data.frame(cbind('Response'=gbm.names,
+gbm.perf.df <- data.frame(cbind('Response'=gbm.names,
                                    'Train error'=gbm.trainerr,
                                    'CV error'= gbm.cverr),
                              check.names=F)
 
-write.csv(gbm.perf.df, file.path(config$data$pro, 'gbm_perf_df.csv'), row.names=F)
+write.csv(gbm.perf.df, file.path(config$extdata$scratch, 'gbm_performance', 'gbm_perf_df.csv'), row.names=F)
 
 ##########
 # Plots
@@ -390,22 +397,20 @@ varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'))
 #                               T ~ 'Geology')) %>%
 #   left_join(gbm.var.labs, by='var')
 
-gbm.sums %>%
-
-gbm.summaries.10 <- gbm.summaries %>%
+gbm.summaries.5 <- gbm.sums %>%
   group_by(Model) %>%
   top_n(5, wt=rel.inf) %>%
   mutate(ranking=rank(rel.inf))
 
-gbm.summaries %>%
+gbm.sums %>%
   group_by(Model) %>%
   summarise(n=n())
 
-gbm.summaries.10 %>%
+gbm.summaries.5 %>%
   group_by(Model) %>%
   summarise(sum=sum(rel.inf))
 
-gbm.summaries.bottom <- gbm.summaries %>%
+gbm.summaries.bottom <- gbm.sums %>%
   group_by(Model) %>%
   top_n(-8, wt=rel.inf) %>%
   summarise(sum=sum(rel.inf))
@@ -438,11 +443,11 @@ my_colors <- c("SWE" = mypal(4)[3],
                "Slope" = mypal2(6)[4],
                'Geology' = mypal4(1))
 
-p1 <- ggplot(gbm.summaries, aes(x=reorder_within(Variable, rel.inf, Model), y=rel.inf), fill='grey20') +
+p1 <- ggplot(gbm.sums, aes(x=reorder_within(var, rel.inf, Model), y=rel.inf), fill=var) +
   geom_col() +
   scale_x_reordered() +
   coord_flip() +
-  #scale_fill_manual(values=gbm.colors, guide='none') +
+  scale_fill_manual(values=gbm.colors, guide='none') +
   #scale_fill_manual(values = c(mypal(4), mypal2(6), mypal3(4), mypal4(1))) +
   labs(x='Predictor variable', y='Relative influence') +
   facet_wrap(~Model, scales='free_y') +
