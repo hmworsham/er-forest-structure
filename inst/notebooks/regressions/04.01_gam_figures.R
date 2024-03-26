@@ -130,6 +130,7 @@ ggplot(slices.df) +
   geom_line(aes(x=v, y=elevation.l95))
 
 pd.plot <- function(sdf, plot.vars) {
+
   fl <- sdf %>%
     pivot_longer(cols=contains('fit'),
                  names_to='var',
@@ -138,14 +139,14 @@ pd.plot <- function(sdf, plot.vars) {
     dplyr::select(c(v,var,fit)) %>%
     left_join(varnames, by=c('var'='varnames'))
 
-  ul <- slices.df %>%
+  ul <- sdf %>%
     pivot_longer(cols=contains('u95'),
                  names_to='var',
                  values_to='u95') %>%
     mutate(var=str_replace_all(var, '.u95', '')) %>%
     dplyr::select(c(v,var, u95))
 
-  ll <- slices.df %>%
+  ll <- sdf %>%
     pivot_longer(cols=contains('l95'),
                  names_to='var',
                  values_to='l95') %>%
@@ -158,26 +159,65 @@ pd.plot <- function(sdf, plot.vars) {
   slices.df.l
 }
 
-dxy <- pd.plot(slices.df, target.vars)
-
-plot.dfs <- lapply(1:3, \(i) {
+plot.dfs <- lapply(seq_along(gams), \(i) {
   slices <- lapply(target.vars, pd.slice, gams[[i]])
   slices <- slices[!unlist(lapply(slices, is.null))]
-  slices
-  #slices.df <- reduce(slices, dplyr::left_join, by='v')
-  #pv <- gbm.summaries.5[gbm.summaries.5$Model==names(gams)[i],]$var
-  #plot.df <- pd.plot(slices.df, pv)
-  #plot.df
+  slices.df <- reduce(slices, dplyr::left_join, by='v')
+  pv <- gbm.summaries.5[gbm.summaries.5$Model==names(gams)[i],]$var
+  plot.df <- pd.plot(slices.df, pv)
+  plot.df
   })
 
-pdplot.df <- bind_rows(plot.dfs, .id='Model')
+names(plot.dfs) <- gam.names.new$n[x1]
+
+pdplot.df <- bind_rows(plot.dfs, .id='Model') %>%
+  mutate(Model=factor(Model, levels=c('Basal area',
+                                      'Height 95P',
+                                      'Height skew',
+                                      'QMD',
+                                      'Total density',
+                                      'Fir density',
+                                      'Spruce density',
+                                      'Pine density')),
+         category=factor(category, levels=c('Climate', 'Topography',
+                                            'Soil', 'Geology')),
+         label = factor(label, levels=c('AET', 'CWD', 'SWE', '∆SWE',
+                                        'Curvature', 'Elevation', 'Heat load',
+                                        'TPI', 'TWI',
+                                        'AWC', 'CEC', 'Organic matter',
+                                        'Silt content','ksat', 'pH',
+                                        'Geology')),
+         var=factor(var)
+         ) %>%
+  arrange(category,label)
 
 ggplot(pdplot.df) +
-  geom_line(aes(x=v, y=fit, color=label)) +
-  geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=0.25) +
-  geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=0.25) +
-  #scale_color_manual(limits=fl$label, values=fl$pdcolors) +
-  facet_wrap(~Model)
+  geom_line(aes(x=v, y=fit, color=interaction(category, label, sep=': ')), linewidth=1) +
+  geom_line(aes(x=v, y=u95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+  geom_line(aes(x=v, y=l95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+  scale_color_manual(limits=interaction(pdplot.df$category, pdplot.df$label, sep=': '),
+                     values=pdplot.df$pdcolors,
+                     name=NULL) +
+  facet_wrap(~Model, scales='free_y',
+             #strip.position = "left",
+             # labeller = as_labeller(c(`Basal area`=expression('Basal area (m^2^ m^-2^)'),
+             #                          `Height 95P`='Height 95P (m)',
+             #                          `Height skew`='Height skew',
+             #                          QMD='QMD (cm)',
+             #                          `Total density`='Total density (stems ha^-1^)',
+             #                          `Fir density`='Fir density (stems ha^-1^)',
+             #                          `Spruce density`='Spruce density (stems ha^-1^)',
+             #                          `Pine density`='Pine density (stems ha^-1^)'))
+             )  +
+  ggthemes::theme_calc(base_size=18,
+                       base_family='Arial') +
+  # theme(strip.background = element_blank(),
+  #       strip.placement = "outside",
+  #       panel.border = element_blank()) +
+  labs(x='Centered values of explanatory variables',
+         y=NULL) +
+  theme(legend.position='left',
+        legend.text=element_text(size=12))
 
 # Density
 dens.long <- vars %>%
