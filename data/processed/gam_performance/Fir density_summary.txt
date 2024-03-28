@@ -1,0 +1,88 @@
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+abla_density ~ s(heat_load, bs = "tp") + s(elevation, bs = "tp") + 
+    s(twi, bs = "tp") + s(tpi, bs = "tp") + s(curvature, bs = "tp") + 
+    s(awc, bs = "tp") + s(cec, bs = "tp") + s(silt, bs = "tp") + 
+    s(ksat, bs = "tp") + s(ph, bs = "tp") + s(om, bs = "tp") + 
+    s(swe, bs = "tp") + s(delta_swe, bs = "tp") + s(cwd, bs = "tp") + 
+    s(aet, bs = "tp") + geology + ti(elevation, heat_load, bs = "tp") + 
+    ti(elevation, tpi, bs = "tp") + ti(elevation, swe, bs = "tp") + 
+    ti(elevation, delta_swe, bs = "tp") + ti(elevation, cwd, 
+    bs = "tp") + ti(elevation, aet, bs = "tp") + ti(tpi, swe, 
+    bs = "tp") + ti(tpi, delta_swe, bs = "tp") + ti(tpi, cwd, 
+    bs = "tp") + ti(tpi, aet, bs = "tp") + ti(awc, swe, bs = "tp") + 
+    ti(awc, delta_swe, bs = "tp") + ti(awc, aet, bs = "tp") + 
+    ti(awc, cwd, bs = "tp") + ti(heat_load, swe, bs = "tp") + 
+    ti(heat_load, delta_swe, bs = "tp") + ti(heat_load, awc, 
+    bs = "tp") + ti(heat_load, aet, bs = "tp") + ti(heat_load, 
+    cwd, bs = "tp") + ti(x, y, bs = "tp")
+
+Parametric coefficients:
+                                                    Estimate Std. Error t value
+(Intercept)                                          20.2484     0.8234  24.591
+geologyGlacial Drift                                 -6.7737     1.0329  -6.558
+geologyGothic Formation (Sand/Shale)                 -4.7989     4.0340  -1.190
+geologyLandslide Deposits                            -5.8079     2.2478  -2.584
+geologyMancos Shale                                  -3.1150     0.7929  -3.929
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)   2.7517     0.9631   2.857
+geologyMesa Verde Formation (Sand/Silt/Coal)         -5.9118     0.8638  -6.844
+geologyMiddle-Tertiary Granodioritic Laccoliths      -3.3758     0.8077  -4.179
+geologyWasatch Formation (Claystone-Shale)           -4.8449     1.1886  -4.076
+                                                    Pr(>|t|)    
+(Intercept)                                          < 2e-16 ***
+geologyGlacial Drift                                5.67e-11 ***
+geologyGothic Formation (Sand/Shale)                 0.23422    
+geologyLandslide Deposits                            0.00978 ** 
+geologyMancos Shale                                 8.59e-05 ***
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  0.00428 ** 
+geologyMesa Verde Formation (Sand/Silt/Coal)        8.05e-12 ***
+geologyMiddle-Tertiary Granodioritic Laccoliths     2.94e-05 ***
+geologyWasatch Formation (Claystone-Shale)          4.61e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+                              edf Ref.df      F  p-value    
+s(heat_load)             4.316631      9  7.013  < 2e-16 ***
+s(elevation)             4.514561      9 10.299  < 2e-16 ***
+s(twi)                   0.989908      9  7.772  < 2e-16 ***
+s(tpi)                   2.109074      9  0.770 0.012769 *  
+s(curvature)             3.344884      9  3.497 5.71e-07 ***
+s(awc)                   0.023144      9  0.002 0.363767    
+s(cec)                   5.922180      9  4.127  < 2e-16 ***
+s(silt)                  0.006665      9  0.000 0.678046    
+s(ksat)                  0.004427      9  0.000 0.861967    
+s(ph)                    0.707620      9  0.111 0.195519    
+s(om)                    5.936920      9  5.171  < 2e-16 ***
+s(swe)                   5.985826      9 10.243  < 2e-16 ***
+s(delta_swe)             0.996094      9 12.606  < 2e-16 ***
+s(cwd)                   0.844592      9  0.594 0.006248 ** 
+s(aet)                   0.003797      9  0.000 0.557666    
+ti(elevation,heat_load)  9.335813     16  5.464  < 2e-16 ***
+ti(elevation,tpi)        3.745903     16  0.869 0.000352 ***
+ti(elevation,swe)        1.092412     16  0.164 0.058956 .  
+ti(elevation,delta_swe)  8.216179     16  4.116  < 2e-16 ***
+ti(elevation,cwd)       11.193028     16  4.056  < 2e-16 ***
+ti(elevation,aet)        6.717262     16  1.375 0.000154 ***
+ti(tpi,swe)              7.075450     16  1.647 3.26e-05 ***
+ti(tpi,delta_swe)        4.114350     16  1.798 1.73e-06 ***
+ti(tpi,cwd)              7.441535     16  2.117  < 2e-16 ***
+ti(tpi,aet)              2.799293     16  2.263  < 2e-16 ***
+ti(awc,swe)              3.067992     16  0.761 0.000348 ***
+ti(awc,delta_swe)        3.836581     16  0.508 0.021211 *  
+ti(awc,aet)              0.027993     16  0.002 0.354447    
+ti(awc,cwd)              4.078545     16  0.759 0.003442 ** 
+ti(heat_load,swe)        2.328427     16  0.596 0.001762 ** 
+ti(heat_load,delta_swe)  8.136614     16  2.432  < 2e-16 ***
+ti(heat_load,awc)        8.298368     16  3.480  < 2e-16 ***
+ti(heat_load,aet)        2.223664     16  2.851  < 2e-16 ***
+ti(heat_load,cwd)        2.046999     16  0.563 0.003054 ** 
+ti(x,y)                 12.187688     16 13.668  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.212   Deviance explained = 22.2%
+-REML =  51883  Scale est. = 171.07    n = 12953

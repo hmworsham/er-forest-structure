@@ -1,0 +1,73 @@
+,Variable,Model,Estimate,SE,t,Pt,Sig
+(Intercept)...1,,Fir density,20.24835603,0.823395597,24.59128528,1.63E-130,***
+geologyGlacial Drift...2,,Fir density,-6.77371328,1.032932155,-6.55775236,5.67E-11,***
+geologyGothic Formation (Sand/Shale)...3,,Fir density,-4.79892424,4.033995114,-1.189620737,0.234217557,
+geologyLandslide Deposits...4,,Fir density,-5.807897554,2.247797005,-2.58381764,0.009782321,***
+geologyMancos Shale...5,,Fir density,-3.114996761,0.792894297,-3.928640641,8.59E-05,***
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...6,,Fir density,2.751663763,0.96313351,2.856990993,0.004283671,***
+geologyMesa Verde Formation (Sand/Silt/Coal)...7,,Fir density,-5.911796661,0.863788791,-6.844030306,8.05E-12,***
+geologyMiddle-Tertiary Granodioritic Laccoliths...8,,Fir density,-3.37575202,0.80770389,-4.179442566,2.94E-05,***
+geologyWasatch Formation (Claystone-Shale)...9,,Fir density,-4.844913885,1.188648065,-4.075986851,4.61E-05,***
+(Intercept)...10,,Basal area,37.68810903,1.252996236,30.07838967,7.49E-194,***
+geologyGlacial Drift...11,,Basal area,-0.47930535,1.348687627,-0.355386481,0.722304345,
+geologyGothic Formation (Sand/Shale)...12,,Basal area,-4.631313576,4.294295052,-1.078480524,0.280834189,
+geologyLandslide Deposits...13,,Basal area,9.953234959,3.000893916,3.316756686,0.000912538,***
+geologyMancos Shale...14,,Basal area,-3.745519565,1.016549707,-3.684541484,0.000229803,***
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...15,,Basal area,1.176887018,1.174551142,1.001988739,0.316362844,
+geologyMesa Verde Formation (Sand/Silt/Coal)...16,,Basal area,-4.169826365,1.174905478,-3.549073899,0.000387598,***
+geologyMiddle-Tertiary Granodioritic Laccoliths...17,,Basal area,-5.789123416,1.077547857,-5.372497728,7.86E-08,***
+geologyWasatch Formation (Claystone-Shale)...18,,Basal area,-5.557767627,1.623790093,-3.422713103,0.000621409,***
+(Intercept)...19,,Total density,1227.13652,25.04818943,48.99102683,0,***
+geologyGlacial Drift...20,,Total density,-132.7326534,26.65528621,-4.979599631,6.43E-07,***
+geologyGothic Formation (Sand/Shale)...21,,Total density,-241.2477834,85.17249437,-2.832461174,0.004624376,***
+geologyLandslide Deposits...22,,Total density,-101.9804436,59.29083099,-1.720003615,0.085449405,
+geologyMancos Shale...23,,Total density,-147.4013243,20.11214665,-7.328970239,2.42E-13,***
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...24,,Total density,44.90273868,23.3078792,1.926504693,0.054057507,
+geologyMesa Verde Formation (Sand/Silt/Coal)...25,,Total density,-77.59308372,23.18469284,-3.34673762,0.000819401,***
+geologyMiddle-Tertiary Granodioritic Laccoliths...26,,Total density,-84.32329665,21.29785528,-3.959238878,7.55E-05,***
+geologyWasatch Formation (Claystone-Shale)...27,,Total density,-77.6227121,32.1551015,-2.414009239,0.015788225,
+(Intercept)...28,,QMD,16.15337171,0.28848729,55.99335662,0,***
+geologyGlacial Drift...29,,QMD,0.545599948,0.315815499,1.727590789,0.084079216,
+geologyGothic Formation (Sand/Shale)...30,,QMD,-1.852335764,1.003879915,-1.845176635,0.065028692,
+geologyLandslide Deposits...31,,QMD,3.115442394,0.703946686,4.42567947,9.67E-06,***
+geologyMancos Shale...32,,QMD,-0.420136692,0.238380802,-1.762460264,0.078008976,
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...33,,QMD,0.125171224,0.27472253,0.455627808,0.648663283,
+geologyMesa Verde Formation (Sand/Silt/Coal)...34,,QMD,-0.340362131,0.275301722,-1.236324017,0.2163547,
+geologyMiddle-Tertiary Granodioritic Laccoliths...35,,QMD,-1.0809036,0.252627925,-4.278638638,1.89E-05,***
+geologyWasatch Formation (Claystone-Shale)...36,,QMD,-0.862869929,0.379670915,-2.272678512,0.023057603,
+(Intercept)...37,,Height 95P,18.72041421,0.283004248,66.14888059,0,***
+geologyGlacial Drift...38,,Height 95P,1.220832822,0.312192143,3.910517448,9.24E-05,***
+geologyGothic Formation (Sand/Shale)...39,,Height 95P,-2.311839915,0.995052148,-2.323335434,0.020172508,
+geologyLandslide Deposits...40,,Height 95P,3.653431354,0.694986824,5.256835418,1.48E-07,***
+geologyMancos Shale...41,,Height 95P,-0.236446562,0.235803306,-1.002727934,0.316005975,
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...42,,Height 95P,0.007864812,0.271917404,0.028923533,0.976925906,
+geologyMesa Verde Formation (Sand/Silt/Coal)...43,,Height 95P,-0.111323043,0.271663368,-0.409783048,0.681970105,
+geologyMiddle-Tertiary Granodioritic Laccoliths...44,,Height 95P,-0.660013959,0.249623631,-2.644036371,0.008199672,***
+geologyWasatch Formation (Claystone-Shale)...45,,Height 95P,-0.621493455,0.375288181,-1.656043239,0.097730942,
+(Intercept)...46,,Height skew,1.222439109,0.041843698,29.21441411,2.99E-183,***
+geologyGlacial Drift...47,,Height skew,-0.108248143,0.048110574,-2.249986506,0.024462123,
+geologyGothic Formation (Sand/Shale)...48,,Height skew,0.052595576,0.155488485,0.338260263,0.735171108,
+geologyLandslide Deposits...49,,Height skew,-0.411987638,0.107459993,-3.833869967,0.000126583,***
+geologyMancos Shale...50,,Height skew,-0.03452109,0.036553155,-0.94440794,0.344974212,
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...51,,Height skew,-0.073954798,0.042512454,-1.739603107,0.081946244,
+geologyMesa Verde Formation (Sand/Silt/Coal)...52,,Height skew,-0.135549475,0.042065391,-3.222351469,0.001273748,***
+geologyMiddle-Tertiary Granodioritic Laccoliths...53,,Height skew,0.045041475,0.038811425,1.160521022,0.245852507,
+geologyWasatch Formation (Claystone-Shale)...54,,Height skew,-0.037491211,0.057770263,-0.648970761,0.516365757,
+(Intercept)...55,,Pine density,22.20009291,2.749027346,8.075617343,7.67E-16,***
+geologyGlacial Drift...56,,Pine density,-9.615715018,3.199528544,-3.005353722,0.002660736,***
+geologyGothic Formation (Sand/Shale)...57,,Pine density,-21.85807653,17.7427613,-1.231943335,0.218005534,
+geologyLandslide Deposits...58,,Pine density,-0.254412808,7.746526682,-0.032842178,0.973801242,
+geologyMancos Shale...59,,Pine density,-5.396946893,2.662684353,-2.026881965,0.042706739,
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...60,,Pine density,4.62420104,2.911025774,1.588512572,0.112208987,
+geologyMesa Verde Formation (Sand/Silt/Coal)...61,,Pine density,1.778704864,2.873136946,0.619081129,0.535880092,
+geologyMiddle-Tertiary Granodioritic Laccoliths...62,,Pine density,2.192603956,2.706359036,0.810167434,0.417867433,
+geologyWasatch Formation (Claystone-Shale)...63,,Pine density,-0.22689238,3.696197172,-0.061385356,0.951053809,
+(Intercept)...64,,Spruce density,81.58301282,2.645702274,30.83605197,8.86E-203,***
+geologyGlacial Drift...65,,Spruce density,0.257070623,3.016537581,0.085220428,0.932087235,
+geologyGothic Formation (Sand/Shale)...66,,Spruce density,-29.09587583,10.65607112,-2.730450604,0.006331822,***
+geologyLandslide Deposits...67,,Spruce density,1.82257478,6.639958293,0.274485878,0.783714859,
+geologyMancos Shale...68,,Spruce density,-7.773021775,2.311220602,-3.363167397,0.000772374,***
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)...69,,Spruce density,-7.466233104,2.782406866,-2.683372154,0.007296007,***
+geologyMesa Verde Formation (Sand/Silt/Coal)...70,,Spruce density,-8.19097833,2.576055391,-3.179659241,0.001477341,***
+geologyMiddle-Tertiary Granodioritic Laccoliths...71,,Spruce density,-8.067739377,2.334076778,-3.456501282,0.000548682,***
+geologyWasatch Formation (Claystone-Shale)...72,,Spruce density,-10.00098823,3.373584208,-2.964499361,0.003036304,***

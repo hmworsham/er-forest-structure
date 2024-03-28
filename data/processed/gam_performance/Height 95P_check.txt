@@ -1,0 +1,50 @@
+
+Method: REML   Optimizer: outer newton
+full convergence after 21 iterations.
+Gradient range [-0.01139064,0.008680309]
+(score 51949.54 & scale 18.55167).
+eigenvalue range [-0.002946487,8921.557].
+Model rank =  464 / 464 
+
+Basis dimension (k) checking results. Low p-value (k-index<1) may
+indicate that k is too low, especially if edf is close to k'.
+
+                           k'   edf k-index p-value    
+s(heat_load)             9.00  7.47    1.03   0.985    
+s(elevation)             9.00  6.70    0.97   0.015 *  
+s(twi)                   9.00  5.67    1.00   0.590    
+s(tpi)                   9.00  5.30    1.00   0.655    
+s(curvature)             9.00  3.22    1.01   0.645    
+s(awc)                   9.00  7.58    0.97   0.020 *  
+s(cec)                   9.00  8.01    1.00   0.390    
+s(silt)                  9.00  7.71    0.98   0.055 .  
+s(ksat)                  9.00  6.08    0.98   0.160    
+s(ph)                    9.00  7.46    0.97   0.030 *  
+s(om)                    9.00  6.56    0.97   0.020 *  
+s(swe)                   9.00  7.27    1.01   0.720    
+s(delta_swe)             9.00  7.28    0.98   0.070 .  
+s(cwd)                   9.00  5.63    1.03   1.000    
+s(aet)                   9.00  7.31    1.01   0.850    
+ti(elevation,heat_load) 16.00  6.01    1.01   0.825    
+ti(elevation,tpi)       16.00  8.49    0.98   0.040 *  
+ti(elevation,swe)       16.00 13.37    1.00   0.480    
+ti(elevation,delta_swe) 16.00  9.94    0.96  <2e-16 ***
+ti(elevation,cwd)       16.00 12.80    0.97   0.005 ** 
+ti(elevation,aet)       16.00  7.24    0.98   0.060 .  
+ti(tpi,swe)             16.00 10.22    1.01   0.885    
+ti(tpi,delta_swe)       16.00  6.67    0.98   0.035 *  
+ti(tpi,cwd)             16.00 10.37    0.99   0.230    
+ti(tpi,aet)             16.00  7.54    0.96  <2e-16 ***
+ti(awc,swe)             16.00  6.65    0.98   0.040 *  
+ti(awc,delta_swe)       16.00  9.61    0.96  <2e-16 ***
+ti(awc,aet)             16.00  8.85    0.94  <2e-16 ***
+ti(awc,cwd)             16.00 10.44    0.96   0.005 ** 
+ti(heat_load,swe)       16.00 10.71    0.98   0.095 .  
+ti(heat_load,delta_swe) 16.00 11.96    0.98   0.125    
+ti(heat_load,awc)       16.00 11.10    0.96  <2e-16 ***
+ti(heat_load,aet)       16.00 10.87    0.98   0.035 *  
+ti(heat_load,cwd)       16.00  9.27    1.00   0.525    
+ti(x,y)                 16.00 13.67    0.63  <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+NULL

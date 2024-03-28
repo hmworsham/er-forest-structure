@@ -1,0 +1,192 @@
+$`Fir density`
+$`Fir density`$p.table
+                                                     Estimate Std. Error   t value
+(Intercept)                                         20.248356  0.8233956 24.591285
+geologyGlacial Drift                                -6.773713  1.0329322 -6.557752
+geologyGothic Formation (Sand/Shale)                -4.798924  4.0339951 -1.189621
+geologyLandslide Deposits                           -5.807898  2.2477970 -2.583818
+geologyMancos Shale                                 -3.114997  0.7928943 -3.928641
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  2.751664  0.9631335  2.856991
+geologyMesa Verde Formation (Sand/Silt/Coal)        -5.911797  0.8637888 -6.844030
+geologyMiddle-Tertiary Granodioritic Laccoliths     -3.375752  0.8077039 -4.179443
+geologyWasatch Formation (Claystone-Shale)          -4.844914  1.1886481 -4.075987
+                                                         Pr(>|t|)
+(Intercept)                                         1.630290e-130
+geologyGlacial Drift                                 5.672344e-11
+geologyGothic Formation (Sand/Shale)                 2.342176e-01
+geologyLandslide Deposits                            9.782321e-03
+geologyMancos Shale                                  8.587608e-05
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  4.283671e-03
+geologyMesa Verde Formation (Sand/Silt/Coal)         8.050389e-12
+geologyMiddle-Tertiary Granodioritic Laccoliths      2.941662e-05
+geologyWasatch Formation (Claystone-Shale)           4.609635e-05
+
+
+$`Basal area`
+$`Basal area`$p.table
+                                                      Estimate Std. Error
+(Intercept)                                         37.6881090   1.252996
+geologyGlacial Drift                                -0.4793054   1.348688
+geologyGothic Formation (Sand/Shale)                -4.6313136   4.294295
+geologyLandslide Deposits                            9.9532350   3.000894
+geologyMancos Shale                                 -3.7455196   1.016550
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  1.1768870   1.174551
+geologyMesa Verde Formation (Sand/Silt/Coal)        -4.1698264   1.174905
+geologyMiddle-Tertiary Granodioritic Laccoliths     -5.7891234   1.077548
+geologyWasatch Formation (Claystone-Shale)          -5.5577676   1.623790
+                                                       t value      Pr(>|t|)
+(Intercept)                                         30.0783897 7.485831e-194
+geologyGlacial Drift                                -0.3553865  7.223043e-01
+geologyGothic Formation (Sand/Shale)                -1.0784805  2.808342e-01
+geologyLandslide Deposits                            3.3167567  9.125378e-04
+geologyMancos Shale                                 -3.6845415  2.298034e-04
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  1.0019887  3.163628e-01
+geologyMesa Verde Formation (Sand/Silt/Coal)        -3.5490739  3.875984e-04
+geologyMiddle-Tertiary Granodioritic Laccoliths     -5.3724977  7.864299e-08
+geologyWasatch Formation (Claystone-Shale)          -3.4227131  6.214094e-04
+
+
+$`Total density`
+$`Total density`$p.table
+                                                      Estimate Std. Error   t value
+(Intercept)                                         1227.13652   25.04819 48.991027
+geologyGlacial Drift                                -132.73265   26.65529 -4.979600
+geologyGothic Formation (Sand/Shale)                -241.24778   85.17249 -2.832461
+geologyLandslide Deposits                           -101.98044   59.29083 -1.720004
+geologyMancos Shale                                 -147.40132   20.11215 -7.328970
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)   44.90274   23.30788  1.926505
+geologyMesa Verde Formation (Sand/Silt/Coal)         -77.59308   23.18469 -3.346738
+geologyMiddle-Tertiary Granodioritic Laccoliths      -84.32330   21.29786 -3.959239
+geologyWasatch Formation (Claystone-Shale)           -77.62271   32.15510 -2.414009
+                                                        Pr(>|t|)
+(Intercept)                                         0.000000e+00
+geologyGlacial Drift                                6.432033e-07
+geologyGothic Formation (Sand/Shale)                4.624376e-03
+geologyLandslide Deposits                           8.544941e-02
+geologyMancos Shale                                 2.419997e-13
+geologyMaroon Formation (Red Sand/Mud/Conglomerate) 5.405751e-02
+geologyMesa Verde Formation (Sand/Silt/Coal)        8.194015e-04
+geologyMiddle-Tertiary Granodioritic Laccoliths     7.548533e-05
+geologyWasatch Formation (Claystone-Shale)          1.578823e-02
+
+
+$QMD
+$QMD$p.table
+                                                      Estimate Std. Error
+(Intercept)                                         16.1533717  0.2884873
+geologyGlacial Drift                                 0.5455999  0.3158155
+geologyGothic Formation (Sand/Shale)                -1.8523358  1.0038799
+geologyLandslide Deposits                            3.1154424  0.7039467
+geologyMancos Shale                                 -0.4201367  0.2383808
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  0.1251712  0.2747225
+geologyMesa Verde Formation (Sand/Silt/Coal)        -0.3403621  0.2753017
+geologyMiddle-Tertiary Granodioritic Laccoliths     -1.0809036  0.2526279
+geologyWasatch Formation (Claystone-Shale)          -0.8628699  0.3796709
+                                                       t value     Pr(>|t|)
+(Intercept)                                         55.9933566 0.000000e+00
+geologyGlacial Drift                                 1.7275908 8.407922e-02
+geologyGothic Formation (Sand/Shale)                -1.8451766 6.502869e-02
+geologyLandslide Deposits                            4.4256795 9.671884e-06
+geologyMancos Shale                                 -1.7624603 7.800898e-02
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  0.4556278 6.486633e-01
+geologyMesa Verde Formation (Sand/Silt/Coal)        -1.2363240 2.163547e-01
+geologyMiddle-Tertiary Granodioritic Laccoliths     -4.2786386 1.890362e-05
+geologyWasatch Formation (Claystone-Shale)          -2.2726785 2.305760e-02
+
+
+$`Height 95P`
+$`Height 95P`$p.table
+                                                        Estimate Std. Error
+(Intercept)                                         18.720414213  0.2830042
+geologyGlacial Drift                                 1.220832822  0.3121921
+geologyGothic Formation (Sand/Shale)                -2.311839915  0.9950521
+geologyLandslide Deposits                            3.653431354  0.6949868
+geologyMancos Shale                                 -0.236446562  0.2358033
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  0.007864812  0.2719174
+geologyMesa Verde Formation (Sand/Silt/Coal)        -0.111323043  0.2716634
+geologyMiddle-Tertiary Granodioritic Laccoliths     -0.660013959  0.2496236
+geologyWasatch Formation (Claystone-Shale)          -0.621493455  0.3752882
+                                                        t value     Pr(>|t|)
+(Intercept)                                         66.14888059 0.000000e+00
+geologyGlacial Drift                                 3.91051745 9.244517e-05
+geologyGothic Formation (Sand/Shale)                -2.32333543 2.017251e-02
+geologyLandslide Deposits                            5.25683542 1.482718e-07
+geologyMancos Shale                                 -1.00272793 3.160060e-01
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  0.02892353 9.769259e-01
+geologyMesa Verde Formation (Sand/Silt/Coal)        -0.40978305 6.819701e-01
+geologyMiddle-Tertiary Granodioritic Laccoliths     -2.64403637 8.199672e-03
+geologyWasatch Formation (Claystone-Shale)          -1.65604324 9.773094e-02
+
+
+$`Height skew`
+$`Height skew`$p.table
+                                                       Estimate Std. Error
+(Intercept)                                          1.22243911 0.04184370
+geologyGlacial Drift                                -0.10824814 0.04811057
+geologyGothic Formation (Sand/Shale)                 0.05259558 0.15548848
+geologyLandslide Deposits                           -0.41198764 0.10745999
+geologyMancos Shale                                 -0.03452109 0.03655316
+geologyMaroon Formation (Red Sand/Mud/Conglomerate) -0.07395480 0.04251245
+geologyMesa Verde Formation (Sand/Silt/Coal)        -0.13554947 0.04206539
+geologyMiddle-Tertiary Granodioritic Laccoliths      0.04504147 0.03881143
+geologyWasatch Formation (Claystone-Shale)          -0.03749121 0.05777026
+                                                       t value      Pr(>|t|)
+(Intercept)                                         29.2144141 2.987678e-183
+geologyGlacial Drift                                -2.2499865  2.446212e-02
+geologyGothic Formation (Sand/Shale)                 0.3382603  7.351711e-01
+geologyLandslide Deposits                           -3.8338700  1.265827e-04
+geologyMancos Shale                                 -0.9444079  3.449742e-01
+geologyMaroon Formation (Red Sand/Mud/Conglomerate) -1.7396031  8.194624e-02
+geologyMesa Verde Formation (Sand/Silt/Coal)        -3.2223515  1.273748e-03
+geologyMiddle-Tertiary Granodioritic Laccoliths      1.1605210  2.458525e-01
+geologyWasatch Formation (Claystone-Shale)          -0.6489708  5.163658e-01
+
+
+$`Pine density`
+$`Pine density`$p.table
+                                                       Estimate Std. Error
+(Intercept)                                          22.2000929   2.749027
+geologyGlacial Drift                                 -9.6157150   3.199529
+geologyGothic Formation (Sand/Shale)                -21.8580765  17.742761
+geologyLandslide Deposits                            -0.2544128   7.746527
+geologyMancos Shale                                  -5.3969469   2.662684
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)   4.6242010   2.911026
+geologyMesa Verde Formation (Sand/Silt/Coal)          1.7787049   2.873137
+geologyMiddle-Tertiary Granodioritic Laccoliths       2.1926040   2.706359
+geologyWasatch Formation (Claystone-Shale)           -0.2268924   3.696197
+                                                        t value     Pr(>|t|)
+(Intercept)                                          8.07561734 7.666754e-16
+geologyGlacial Drift                                -3.00535372 2.660736e-03
+geologyGothic Formation (Sand/Shale)                -1.23194334 2.180055e-01
+geologyLandslide Deposits                           -0.03284218 9.738012e-01
+geologyMancos Shale                                 -2.02688196 4.270674e-02
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  1.58851257 1.122090e-01
+geologyMesa Verde Formation (Sand/Silt/Coal)         0.61908113 5.358801e-01
+geologyMiddle-Tertiary Granodioritic Laccoliths      0.81016743 4.178674e-01
+geologyWasatch Formation (Claystone-Shale)          -0.06138536 9.510538e-01
+
+
+$`Spruce density`
+$`Spruce density`$p.table
+                                                       Estimate Std. Error
+(Intercept)                                          81.5830128   2.645702
+geologyGlacial Drift                                  0.2570706   3.016538
+geologyGothic Formation (Sand/Shale)                -29.0958758  10.656071
+geologyLandslide Deposits                             1.8225748   6.639958
+geologyMancos Shale                                  -7.7730218   2.311221
+geologyMaroon Formation (Red Sand/Mud/Conglomerate)  -7.4662331   2.782407
+geologyMesa Verde Formation (Sand/Silt/Coal)         -8.1909783   2.576055
+geologyMiddle-Tertiary Granodioritic Laccoliths      -8.0677394   2.334077
+geologyWasatch Formation (Claystone-Shale)          -10.0009882   3.373584
+                                                        t value      Pr(>|t|)
+(Intercept)                                         30.83605197 8.856486e-203
+geologyGlacial Drift                                 0.08522043  9.320872e-01
+geologyGothic Formation (Sand/Shale)                -2.73045060  6.331822e-03
+geologyLandslide Deposits                            0.27448588  7.837149e-01
+geologyMancos Shale                                 -3.36316740  7.723741e-04
+geologyMaroon Formation (Red Sand/Mud/Conglomerate) -2.68337215  7.296007e-03
+geologyMesa Verde Formation (Sand/Silt/Coal)        -3.17965924  1.477341e-03
+geologyMiddle-Tertiary Granodioritic Laccoliths     -3.45650128  5.486818e-04
+geologyWasatch Formation (Claystone-Shale)          -2.96449936  3.036304e-03
+
+
