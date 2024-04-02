@@ -10,11 +10,22 @@ Few studies directly address microclimatic heterogeneity in high-elevation compl
 
 Patterns of forest structure are necessarily scale-specific and depend on different covariates at different spatial scales (Wiens 1989). 
 
- @fricker_more_2019 found that climatic water deficit (CWD) and mean annual precipitation (MAP) explained the majority of variance in the distribution of maximum tree heights along an elevational gradient in the Sierra Nevada. 
+@fricker_more_2019 found that climatic water deficit (CWD) and mean annual precipitation (MAP) explained the majority of variance in the distribution of maximum tree heights along an elevational gradient in the Sierra Nevada. 
 
- Given the low timber value, long fire return intervals, and lack of recent management in this domain, this analysis may offer more insight into natural factors driving stand structure in a temperate conifer forest than previous efforts. 
-
-
+Given the low timber value, long fire return intervals, and lack of recent management in this domain, this analysis may offer more insight into natural factors driving stand structure in a temperate conifer forest than previous efforts. 
 
 
-While prior studies have found strong associations between forest structure and abiotic factors even in the presence of major harvest and disturbance events (@urban_forest_2000, @lydersen_topographic_2012, Collins et al. 2015, Stephens et al. 2015, @kane_water_2015), 
+
+
+While prior studies have found strong associations between forest structure and abiotic factors even in the presence of major harvest and disturbance events (@urban_forest_2000, @lydersen_topographic_2012, Collins et al. 2015, Stephens et al. 2015, @kane_water_2015)... 
+
+
+Inferential modeling revealed three distinct patterns of relationship. (1) Density, BA, and the skewness of height were most strongly associated with snow input factors (SWE and ∆SWE), followed by topography (elevation, heat load, curvature) and AET. 
+(2) Maximum height and QMD were most strongly associated with elevation, followed by snow input, and then heat load. 
+(3) Species-resolved density departed from all of these trends.
+
+
+
+
+Available water content based on soil composition and structure had the greatest leverage on height and BA (Fig. 7). The response in these factors was bimodal, with maxima around 0.10 and 0.18, which were approximately the mean and two standard deviations above the mean. Density, in contrast, increased monotonically with AWC but the relationship was also nonlinear. The total depth of soil showed inverse relationships with height skew (negative) versus with height, QMD, and BA (positive), but the splines were tightly kinked along the support. Soil saturated hydraulic conductivity and percent organic matter had less interpretable effects in the GAM, with high estimated degrees of freedom on the splines and large amplitudes at low values but little meaningful trend. Together they accounted for less than 10% of relative influence in any of the GBMs.
+
