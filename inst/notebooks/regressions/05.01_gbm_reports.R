@@ -38,6 +38,12 @@ varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
 # Summaries
 #############
 
+# Best models in tuning
+gbm.best <- bind_rows(sapply(gbms, '[', 'bestTune', simplify=T), .id='Response') %>%
+  mutate(Response=str_replace_all(Response, '.bestTune', ''))
+names(gbm.best) <- c('Response', 'N trees', 'Interaction depth',
+                     'Shrinkage', 'Min obs. in node')
+
 # Relative influence data
 gbm.sums <- lapply(gbms, \(x) {
   m.sum <- summary(x$finalModel,
@@ -125,10 +131,35 @@ gbm.summaries.5 %>%
   group_by(Model) %>%
   summarise(sum=sum(rel.inf))
 
+# Cumu RI of least important explainers
 gbm.sums %>%
   group_by(Model) %>%
-  top_n(-8, wt=rel.inf) %>%
+  top_n(-11, wt=rel.inf) %>%
   summarise(sum=sum(rel.inf))
+
+# What were the 3 least important explainers?
+print(gbm.sums %>%
+  group_by(Model) %>%
+  top_n(-3, wt=rel.inf),
+  n=30)
+
+# Cumu RI of soil explainers
+gbm.sums %>%
+  filter(category=='Soil') %>%
+  group_by(Model) %>%
+  summarise(sum=sum(rel.inf))
+
+# Max RI of geology
+gbm.sums %>%
+  filter(category=='Geology') %>%
+  group_by(Model) %>%
+  summarise(sum=sum(rel.inf))
+
+# Max RI of 11 least important explainers
+gbm.sums %>%
+  group_by(Model) %>%
+  top_n(-11, wt=rel.inf) %>%
+  summarise(maxri=max(rel.inf))
 
 ######################
 # Plots
