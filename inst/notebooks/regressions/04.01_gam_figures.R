@@ -35,12 +35,25 @@ gam.names.new
 x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
+# Ingest variable names
+varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
+                     row.names=1)
+
+# Ingest unscaled variables
+vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
+
 #############
 # Summaries
 #############
 
 gam.sum <- lapply(gams, summary)
 gam.pde <- lapply(gams, \(x) return(summary(x)$dev.expl))
+
+# lapply(1:8, \(i) {
+#   sink(file.path(config$data$pro, 'gam_performance', paste0(names(gams)[[i]], '_summary.txt')))
+#   print(gam.sum[[i]])
+#   sink()
+#   })
 
 #############
 # Table
@@ -50,127 +63,55 @@ gam.perf.df <- data.frame(cbind('Response'=names(gams),
                                 'PDE'= unlist(gam.pde)),
                           check.names=F)
 
-write.csv(gam.perf.df, file.path(config$extdata$scratch, 'gam_performance', 'gam_perf_df.csv'),
-          row.names=F)
+# write.csv(gam.perf.df, file.path(config$extdata$scratch, 'gam_performance', 'gam_perf_df.csv'),
+#           row.names=F)
 
 ###################
 # Residual checks
 ##################
 
 # Write gam.check output
-lapply(1:8, \(i) {
-  sink(file.path(config$extdata$scratch, paste0(names(gams)[[i]], '.txt')))
-  print(gam.check(gams[[i]]))
-  sink()
-})
+# lapply(1:8, \(i) {
+#   sink(file.path(config$data$pro, 'gam_performance', paste0(names(gams)[[i]], '_check.txt')))
+#   print(gam.check(gams[[i]]))
+#   sink()
+# })
 
 # Write residual plots
-lapply(1:8, \(i) {
-  png(file.path(config$extdata$scratch, 'gam_performance', paste0(names(gams)[[i]], '_check.png')))
-  par(mfrow=c(2,2), mar=rep(2.5,4))
-  gam.check(gams[[i]])
-  dev.off()
-})
+# lapply(1:8, \(i) {
+#   png(file.path(config$data$pro, 'gam_performance', paste0(names(gams)[[i]], '_residplots.png')))
+#   par(mfrow=c(2,2), mar=rep(2.5,4))
+#   gam.check(gams[[i]])
+#   dev.off()
+# })
 
 ##################################
 # Visualizations
 ##################################
 
-# Pull variable names
-varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
-                     row.names=1)
-
-# # Specify color palettes
-# mypal <- colorRampPalette(brewer.pal(6, "PuBu")[3:6])
-# mypal2 <- colorRampPalette(brewer.pal(8, "BuGn")[3:8])
-# mypal3 <- colorRampPalette(brewer.pal(6, "YlOrRd")[3:6])
-# mypal4 <- colorRampPalette(brewer.pal(6, "Greys")[5])
-#
-# my_colors <- c("SWE" = mypal(4)[3],
-#                "∆SWE" = mypal(4)[4],
-#                "Soil AWC" = mypal3(4)[2],
-#                "Elevation" = mypal2(4)[1],
-#                "Soil total depth" = mypal3(4)[4],
-#                "Slope" = mypal2(4)[3],
-#                'Geology' = mypal4(1),
-#                'TPI' = mypal2(4)[4],
-#                'Soil Ksat' = mypal3(4)[3])
-
-pd.slice <- function(v, mod) {
-  if(!v=='geology') {
-    data <- model.frame(mod)
-    data <- data[-1]
-    meds <- apply(data, 2, \(x) median(as.numeric(x), na.rm=T))
-    r.max <- max(data[v], na.rm=T)
-    r.min <- min(data[v], na.rm=T)
-    geol.mode <- modal(data['geology'], na.rm=T)
-    df <- data.frame(pseq=seq(-4.99,5,0.01))
-    df <- cbind(df, t(data.frame(meds)))
-    df$geology <- geol.mode
-    df[(df$pseq<r.min | df$pseq>r.max),] <- NA
-    df <- df[!names(df)==v]
-    names(df)[1] <- v
-    pred.v <- predict(mod, df, se.fit=T)
-    slice.v <- data.frame(sup=seq(-4.99,5,0.01),
-                          fit=pred.v$fit,
-                          u95=pred.v$fit+pred.v$se.fit,
-                          l95=pred.v$fit-pred.v$se.fit)
-    names(slice.v) <- c('v', paste0(v,'.fit'), paste0(v, '.u95'), paste0(v, '.l95'))
-    slice.v
-  }
-}
-
-slices <- lapply(target.vars, pd.slice, gams[[3]])
+# Slice the model frame for one response to estimate partial effects
+# of each variable, holding all other variables constant at
+# median (for continuous) or mode (for factors)
+slices <- lapply(target.vars, pe.slice, gams[[3]])
 slices <- slices[!unlist(lapply(slices, is.null))]
 slices.df <- reduce(slices, dplyr::left_join, by='v')
 
-ggplot(slices.df) +
-  geom_line(aes(x=v, y=elevation.fit)) +
-  geom_line(aes(x=v, y=elevation.u95)) +
-  geom_line(aes(x=v, y=elevation.l95))
-
-pd.plot <- function(sdf, plot.vars) {
-
-  fl <- sdf %>%
-    pivot_longer(cols=contains('fit'),
-                 names_to='var',
-                 values_to='fit') %>%
-    mutate(var=str_replace_all(var, '.fit', '')) %>%
-    dplyr::select(c(v,var,fit)) %>%
-    left_join(varnames, by=c('var'='varnames'))
-
-  ul <- sdf %>%
-    pivot_longer(cols=contains('u95'),
-                 names_to='var',
-                 values_to='u95') %>%
-    mutate(var=str_replace_all(var, '.u95', '')) %>%
-    dplyr::select(c(v,var, u95))
-
-  ll <- sdf %>%
-    pivot_longer(cols=contains('l95'),
-                 names_to='var',
-                 values_to='l95') %>%
-    mutate(var=str_replace_all(var, '.l95', '')) %>%
-    dplyr::select(c(v,var, l95))
-
-  slices.df.l <- reduce(list(fl,ul,ll), left_join, by=c('v', 'var'))
-  slices.df.l <- slices.df.l %>% filter(var %in% plot.vars)
-
-  slices.df.l
-}
-
-plot.dfs <- lapply(seq_along(gams), \(i) {
-  slices <- lapply(target.vars, pd.slice, gams[[i]])
+# Slice model frames for all GAMs and collapse to one dataframe
+pe.dfs <- lapply(seq_along(gams), \(i) {
+  slices <- lapply(target.vars, pe.slice, gams[[i]])
   slices <- slices[!unlist(lapply(slices, is.null))]
   slices.df <- reduce(slices, dplyr::left_join, by='v')
   pv <- gbm.summaries.5[gbm.summaries.5$Model==names(gams)[i],]$var
-  plot.df <- pd.plot(slices.df, pv)
-  plot.df
+  pe.df <- pe.pivot(slices.df, pv)
+  #pe.df <- pe.pivot(slices.df, target.vars)
+  pe.df
   })
 
-names(plot.dfs) <- gam.names.new$n[x1]
+# Assign model names to list members from GAM names
+names(pe.dfs) <- gam.names.new$n[x1]
 
-pdplot.df <- bind_rows(plot.dfs, .id='Model') %>%
+# Coerce some variables to factor for specific order
+peplot.df <- bind_rows(pe.dfs, .id='Model') %>%
   mutate(Model=factor(Model, levels=c('Basal area',
                                       'Height 95P',
                                       'Height skew',
@@ -180,230 +121,338 @@ pdplot.df <- bind_rows(plot.dfs, .id='Model') %>%
                                       'Spruce density',
                                       'Pine density')),
          category=factor(category, levels=c('Climate', 'Topography',
-                                            'Soil', 'Geology')),
+                                            'Soil', 'Geology', 'Spatial')),
          label = factor(label, levels=c('AET', 'CWD', 'SWE', '∆SWE',
                                         'Curvature', 'Elevation', 'Heat load',
                                         'TPI', 'TWI',
                                         'AWC', 'CEC', 'Organic matter',
                                         'Silt content','ksat', 'pH',
-                                        'Geology')),
+                                        'Geology', 'X', 'Y')),
          var=factor(var)
-         ) %>%
+  ) %>%
   arrange(category,label)
 
-ggplot(pdplot.df) +
-  geom_line(aes(x=v, y=fit, color=interaction(category, label, sep=': ')), linewidth=1) +
-  geom_line(aes(x=v, y=u95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
-  geom_line(aes(x=v, y=l95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
-  scale_color_manual(limits=interaction(pdplot.df$category, pdplot.df$label, sep=': '),
-                     values=pdplot.df$pdcolors,
-                     name=NULL) +
-  facet_wrap(~Model, scales='free_y',
-             #strip.position = "left",
-             # labeller = as_labeller(c(`Basal area`=expression('Basal area (m^2^ m^-2^)'),
-             #                          `Height 95P`='Height 95P (m)',
-             #                          `Height skew`='Height skew',
-             #                          QMD='QMD (cm)',
-             #                          `Total density`='Total density (stems ha^-1^)',
-             #                          `Fir density`='Fir density (stems ha^-1^)',
-             #                          `Spruce density`='Spruce density (stems ha^-1^)',
-             #                          `Pine density`='Pine density (stems ha^-1^)'))
-             )  +
-  ggthemes::theme_calc(base_size=18,
-                       base_family='Arial') +
-  # theme(strip.background = element_blank(),
-  #       strip.placement = "outside",
-  #       panel.border = element_blank()) +
-  labs(x='Centered values of explanatory variables',
+peplot.dfs <- peplot.df %>%
+  mutate(Set=case_when(Model %in% c('Fir density', 'Spruce density', 'Pine density') ~ 'Species',
+                       T ~ 'Full')) %>%
+  group_split(Model)
+
+lblr <- c(`Basal area`=bquote('Basal area ('*m^2~m^-2*')'),
+           `Height 95P`='Height 95P (m)',
+           `Height skew`='Height skew',
+           QMD='QMD (cm)',
+           `Total density`=bquote('Total density (stems'~ha^-1*')'),
+           `Fir density`=bquote('Fir density (stems'~ha^-1*')'),
+           `Spruce density`=bquote('Spruce density (stems'~ha^-1*')'),
+           `Pine density`=bquote('Pine density (stems'~ha^-1*')'))
+
+# Plot PE for full-forest structure variables by model
+peplots <- lapply(peplot.dfs, \(p) {
+  #lblr <- lblr[names(lblr) %in% unique(p$Model)]
+  ggplot(p) +
+    geom_line(aes(x=v, y=fit, color=label), linewidth=4) +
+    geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=2) +
+    geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=2) +
+    # geom_text(
+    #   aes(label=Model), hjust=0.5, vjust=3.5,
+    #   x=min(p$v) + diff(range(p$v))/2,
+    #   y=Inf, color='black', fontface='bold',
+    # ) +
+    scale_color_manual(limits=p$label,
+                       values=p$pdcolors,
+                       name=NULL) +
+    scale_y_continuous(limits=c(0,max(p$fit)),
+                       #labels=scientific
+                       ) +
+    coord_cartesian(clip='off') +
+    # facet_wrap(~Model, scales='free_y',
+    #            strip.position = 'left',
+    #            labeller=as_labeller(\(x) {x=lblr[names(lblr)==x]; x},
+    #                                 default=identity))  +
+    ggthemes::theme_calc(base_size=48,
+                         base_family='Arial') +
+    labs(#x='Centered values of explanatory variables',
+         x=NULL,
+         y=lblr[names(lblr)==p$Model[1]][[1]],
+         # y=NULL,
+         title=p$Model[[1]]
+    ) +
+    theme(legend.position='none',
+          legend.text=element_text(size=30),
+          strip.background = element_blank(),
+          strip.placement = "outside",
+          aspect.ratio=1,
+          #panel.grid = element_blank()
+          plot.background=element_rect(fill=NA, color=NA, linewidth=4),
+          panel.background=element_rect(fill=NA, color=NA, linewidth=4),
+          #plot.margin = margin(-, 50, -50, 50, "pt")
+          )
+})
+
+
+
+library(patchwork)
+(peplots[[1]]) +
+    (plot_spacer() /
+    peplots[[2]]) +
+  plot_layout(heights=c(4,4))
+
+
+peplots[[1]]+peplots[[2]]+plot_layout(design=layout,
+                                      guides='collect')+
+  plot_annotation(tag_levels = 'A',
+                  tag_prefix='(',
+                  tag_suffix=')')
+
+layout=c(area(t=1, l=1, b=16, r=4),
+         area(t=18, l=1, b=28, r=4))
+
+pp <- peplots[[1]]+peplots[[2]]+peplots[[3]]+peplots[[4]]+ peplots[[5]] /
+  peplots[[6]]|peplots[[7]]|peplots[[8]] +
+  plot_layout(design=layout) +
+  plot_annotation(tag_levels = 'A',
+                  tag_prefix='(',tag_suffix=')')
+
+pp[[7]] <- pp[[7]] + xlab('Centered values')
+
+pp
+
+pp /
+  (peplots[[6]]|peplots[[7]]|peplots[[8]]) +
+  plot_layout(design=layout)
+
+theme_border <-
+  ggthemes::theme_calc() +
+  theme(plot.background = element_rect(fill = NA, colour = 'black', linewidth = 3))
+
+wrap_elements(full=peplots[[1]]+peplots[[2]]+peplots[[3]]+peplots[[4]]+peplots[[5]] +
+                plot_annotation(theme=theme_border)) /
+  wrap_elements(full=peplots[[6]]+peplots[[7]]+peplots[[8]] +
+                  plot_annotation(theme=theme_border)) +
+  plot_annotation(tag_levels = 'A',
+                  tag_prefix='(',
+                  tag_suffix=')') +
+  plot_layout(design=layout)
+
+# Run plots faceted by variable for each model
+for(i in unique(peplot.df$Model)) {
+
+  png(file.path(config$data$pro, 'peplots', paste0(i, '_pdp2.png')),
+      width=1200, height=900)
+
+  gx <- ggplot(peplot.df[peplot.df$Model==i,]) +
+    geom_line(aes(x=v, y=fit, color=interaction(category, label, sep=': ')), linewidth=1) +
+    geom_line(aes(x=v, y=u95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+    geom_line(aes(x=v, y=l95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+    scale_color_manual(limits=interaction(peplot.df$category, peplot.df$label, sep=': '),
+                       values=peplot.df$pdcolors,
+                       name=i) +
+    facet_wrap(~label, scales='fixed') +
+    ggthemes::theme_calc(base_size=18,
+                         base_family='Arial') +
+    labs(x='Centered values of explanatory variables',
          y=NULL) +
-  theme(legend.position='left',
-        legend.text=element_text(size=12))
+    theme(legend.position='left',
+          #legend.text=element_text(size=12)
+          )
 
-# Density
-dens.long <- vars %>%
-  dplyr::select(c(density, delta_swe, swe, awc, elevation)) %>%
-  pivot_longer(cols=delta_swe:elevation)
+  print(gx)
+  dev.off()
+}
 
-pe.density <-  ggplot(dens.long, aes(x=value, y=density, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'SWE')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'SWE')) +
-  labs(title='Density',
-       x='Standardized values',
-       y='Density (stems ha^-1^)') +
-  jtools::theme_apa()
+###############
+# Geology
+###############
 
-# Height
-height.long <- test.height %>%
-  dplyr::select(c(yhat, delta_swe, swe, awc, elevation, td)) %>%
-  pivot_longer(cols=delta_swe:td)
+geol.tbl <- lapply(gam.sum, \(x) {
+  gdf <- data.frame(x$p.table) %>%
+    rownames_to_column(., 'var') %>%
+    mutate(var=str_replace_all(var, 'geology', ''))
+  gdf
+  })
 
-pred.height.est <- plot.gam(gam.height, select=1)
-tmin <- pred.height.est[[1]]
-tmin.x <- tmin$x
-tmin.raw <- tmin$raw
-tmin.fit <- tmin$fit
-tmin.se <- tmin$se
-tmin.u95 <- tmin.fit+tmin.se
-tmin.l95 <- tmin.fit-tmin.se
+geol.tbl <- bind_rows(geol.tbl, .id='Model')
 
-tmin.df <- data.frame(Tmin=tmin.x,
-                      #'RWI'=tmin.raw,
-                      Fit=tmin.fit,
-                      U95=tmin.u95,
-                      L95=tmin.l95)
+geol.ref <- data.frame('geol.idx'=1:9,
+                       'geol.name'=c('Dakota Sandstone',
+                                     'Mancos Shale',
+                                     'Mesa Verde Formation (Sand/Silt/Coal)',
+                                     'Gothic Formation (Sand/Shale)',
+                                     'Maroon Formation (Red Sand/Mud/Conglomerate)',
+                                     'Glacial Drift',
+                                     'Landslide Deposits',
+                                     'Middle-Tertiary Granodioritic Laccoliths',
+                                     'Wasatch Formation (Claystone-Shale)'),
+                       'geol.code'=c('KJde',
+                                     'Km',
+                                     'Kmv',
+                                     'Pm',
+                                     'PPm',
+                                     'Qd',
+                                     'Ql',
+                                     'Tmi',
+                                     'Two'))
 
-ggplot(tmin.df, aes(x=Tmin, y=Fit)) +
-  geom_ribbon(aes(ymin=L95, ymax=U95)) +
-  geom_line()
+geol.tbl <- left_join(geol.tbl, geol.ref, by=c('var'='geol.name'))
 
-pe.height <- ggplot(height.long, aes(x=value, y=yhat, color=name)) +
-  # geom_point() +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  geom_rug() +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation',
-                                                 'SWE', 'Soil total depth')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation',
-                              'SWE', 'Soil total depth')) +
-  scale_y_continuous(limits=c(0,25)) +
-  labs(title='Height',
-       x='Standardized values',
-       y='Maximum height (m)') +
-  jtools::theme_apa()
+geol.tbl.sig <- geol.tbl %>%
+  filter(!var=='(Intercept)' &
+           Pr...t.. < 0.01) %>%
+  mutate(ub=Estimate+Std..Error,
+         lb=Estimate-Std..Error,
+         Model=factor(Model, levels=c('Basal area',
+                                             'Height 95P',
+                                             'Height skew',
+                                             'QMD',
+                                             'Total density',
+                                             'Fir density',
+                                             'Spruce density',
+                                             'Pine density')))
 
-pe.height
-
-diam.long <- vars %>%
-  dplyr::select(c(diam, delta_swe, swe, awc, elevation, td)) %>%
-  pivot_longer(cols=delta_swe:td)
-
-pe.diam <-  ggplot(diam.long, aes(x=value, y=diam, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation',
-                                                 'SWE', 'Soil total depth')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation',
-                              'SWE', 'Soil total depth')) +
-  labs(title='QMD',
-       x='Standardized values',
-       y='QMD (cm)') +
-  jtools::theme_apa()
-
-ba.long <- vars %>%
-  dplyr::select(c(ba, delta_swe, swe, awc, elevation, k)) %>%
-  pivot_longer(cols=delta_swe:k)
-
-pe.ba <-  ggplot(ba.long, aes(x=value, y=ba, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'Soil K', 'SWE')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'Soil K', 'SWE')) +
-  labs(title='BA',
-       x='Standardized values',
-       y='BA (m^2^ha^-1^)') +
-  jtools::theme_apa()
-
-height.skew.long <- vars %>%
-  dplyr::select(c(height.skew, delta_swe, swe, awc, tpi, td)) %>%
-  pivot_longer(cols=delta_swe:td)
-
-pe.height.skew <-  ggplot(height.skew.long, aes(x=value, y=height.skew, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'SWE',
-                                                 'Soil total depth', 'TPI')]),
-                     labels=c('Soil AWC', '∆SWE',
-                              'SWE', 'Soil total depth', 'TPI')) +
-  labs(title='Height skew',
-       x='Standardized values',
-       y='Skewness of height') +
-  jtools::theme_apa()
+ggplot(geol.tbl.sig, aes(x=geol.code)) +
+  geom_boxplot(aes(
+                   lower=Estimate-Std..Error,
+                   upper=Estimate+Std..Error,
+                   middle=Estimate,
+                   ymin=Estimate-2*Std..Error,
+                   ymax=Estimate+2*Std..Error),
+               stat='identity',
+               width=0.6,
+               position = position_dodge(preserve = "single")) +
+  geom_hline(yintercept=0) +
+  facet_wrap(~Model, scales='free') +
+  labs(y='Anomaly from mean',
+       x='Geological unit code') +
+  ggthemes::theme_calc(base_size=18)
 
 
-# ABLA Density
-abla.dens.long <- vars %>%
-  dplyr::select(c(abla_density, delta_swe, swe, awc, om, elevation)) %>%
-  pivot_longer(cols=delta_swe:elevation)
+###############
+# Interactions
+###############
 
-pe.abla.density <- ggplot(abla.dens.long, aes(x=value, y=abla_density, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
-  labs(title='ABLA Density',
-       x='Standardized values',
-       y='Density (stems ha^-1^)') +
-  jtools::theme_apa()
+## One response ##
 
-pe.abla.density
+# Slice the model frame for one response to estimate partial effects
+# of each variable interaction, holding all other variables constant at
+# median (for continuous) or mode (for factors)
+itxs <- strsplit(target.itx, ', ')
+itx.slices <- lapply(itxs, pe.slice.itx, gams[[3]])
+itx.slices <- itx.slices[!unlist(lapply(itx.slices, is.null))]
+itx.slices.df <- Reduce(cbind, itx.slices) %>%
+  select(-c(v1,v2))
+itx.slices.df <- cbind(expand.grid(v1=seq(-4.9,5,0.1),
+                                   v2=seq(-4.9,5,0.1)),
+                       itx.slices.df)
 
-pien.dens.long <- vars %>%
-  dplyr::select(c(pien_density, delta_swe, swe, awc, om, elevation)) %>%
-  pivot_longer(cols=delta_swe:elevation)
+# Pivot for variable comparison
+itx.plot.df <- pe.pivot.itx(itx.slices.df, itxs)
 
-pe.pien.density <-  ggplot(pien.dens.long, aes(x=value, y=pien_density, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
-  labs(title='PIEN Density',
-       x='Standardized values',
-       y='Density (stems ha^-1^)') +
-  jtools::theme_apa()
+# Plot
+ggplot(itx.plot.df, aes(x=v1, y=v2, z=fit)) +
+  geom_raster(aes(fill=fit)) +
+  geom_contour(color='white', bins=20, alpha=0.25) +
+  geom_contour(aes(x=v1, y=v2, z=u95), color='white', bins=20, alpha=0.25) +
+  scale_fill_viridis(option='G', na.value=NA) +
+  facet_wrap(~var, scales='free') +
+  ggthemes::theme_calc(base_size=18)
 
-pe.pien.density
+## All responses ##
 
-pico.dens.long <- vars %>%
-  dplyr::select(c(pico_density, delta_swe, swe, awc, om, elevation)) %>%
-  pivot_longer(cols=delta_swe:elevation)
+# Slice model frames for all GAMs and collapse to one dataframe
+pe.itx.dfs <- lapply(seq_along(gams), \(i) {
+  itxs <- strsplit(target.itx, ', ')
+  slices <- lapply(itxs, pe.slice.itx, gams[[i]])
+  slices <- slices[!unlist(lapply(slices, is.null))]
+  slices.df <- Reduce(cbind, slices) %>%
+    select(-c(v1,v2))
+  slices.df <- cbind(expand.grid(v1=seq(-4.9,5,0.1),
+                                 v2=seq(-4.9,5,0.1)),
+                     slices.df)
+  pe.df <- pe.pivot.itx(slices.df, target.vars)
+  pe.df
+})
 
-pe.pico.density <-  ggplot(pico.dens.long, aes(x=value, y=pico_density, color=name)) +
-  geom_smooth(formula=y~s(x, bs="tp"),
-              se=T) +
-  scale_color_manual(values = unname(my_colors[c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')]),
-                     labels=c('Soil AWC', '∆SWE', 'Elevation', 'OM', 'SWE')) +
-  labs(title='PICO Density',
-       x='Standardized values',
-       y='Density (stems ha^-1^)') +
-  jtools::theme_apa()
+# Assign model names to list members from GAM names
+names(pe.itx.dfs) <- gam.names.new$n[x1]
 
-pe.pico.density
-plot.gam(gam.pico.density, pages=1)
+# Coerce some variables to factor for specific order
+peplot.itx.df <- bind_rows(pe.itx.dfs, .id='Model') %>%
+  mutate(Model=factor(Model, levels=c('Basal area',
+                                      'Height 95P',
+                                      'Height skew',
+                                      'QMD',
+                                      'Total density',
+                                      'Fir density',
+                                      'Spruce density',
+                                      'Pine density')),
+         var=factor(var),
+         l1=str_split(var, '-')[[1]][1],
+         l2=str_split(var, '-')[[1]][2]
+  ) %>%
+  arrange(Model, var) %>%
+  drop_na()
 
-gridExtra::grid.arrange(pe.density, pe.height, pe.diam,
-                        pe.ba, pe.height.skew,
-                        ncol=2, widths=c(1,1))
+for(i in unique(peplot.itx.df$Model)) {
 
-gridExtra::grid.arrange(pe.abla.density, pe.pien.density, pe.pico.density,
-                        ncol=2, widths=c(1,1))
+  png(file.path(config$data$pro, 'itx_peplots', paste0(i, '_itx_peplot.png')),
+      width=1200, height=900)
 
+  gx <- ggplot(peplot.itx.df[peplot.itx.df$Model==i,],
+               aes(x=v1, y=v2, z=fit)) +
+    geom_raster(aes(fill=fit)) +
+    geom_contour(color='white', bins=20, alpha=0.25) +
+    scale_fill_viridis(option='C', na.value=NA, name=i, direction=1) +
+    facet_wrap(~var, scales='free') +
+    ggthemes::theme_calc(base_size=18)
 
-# ggplot(subset(dens.long, !is.na(geology)), aes(x=geology, y=height)) +
-#   geom_boxplot() +
-#   ggthemes::theme_calc()
-#
-# vars %>%
-#   group_by(geology) %>%
-#   summarise(n=n())
+  print(gx)
 
+  dev.off()
+}
 
-vis.gam(mod_gam1,
-        view=c('swe','folded_aspect_205'),
+peplot.itx.sub <- peplot.itx.df %>%
+  group_by(Model, var) %>%
+  summarise(rng=diff(range(fit, na.rm=T))) %>%
+  arrange(Model, rng) %>%
+  top_n(3) %>%
+  left_join(peplot.itx.df, by=c('Model', 'var')) %>%
+  ungroup() %>%
+  filter(!Model %in% c('Fir density', 'Pine density', 'Spruce density')) %>%
+  group_split(Model, var)
+
+peplots <- lapply(peplot.itx.sub, \(i) {
+  g <- ggplot(i, aes(x=v1, y=v2, z=fit)) +
+  geom_raster(aes(fill=fit)) +
+  geom_contour(color='white', bins=20, alpha=0.25) +
+  scale_fill_viridis(option='C', na.value=NA, direction=1,
+                     name=i$Model[1]) +
+  labs(x=i$l1[1], y=i$l2[1]) +
+  #facet_wrap(~var, ncol=5, scales='free') +
+  ggthemes::theme_calc(base_size=18)
+  g
+  })
+
+patchwork::wrap_plots(peplots, nrow=3, ncol=5, byrow=F)
+
+ ###############
+# Scratch
+###############
+
+vis.gam(gams[[7]],
+        view=unlist(strsplit(target.itx[20], ', ')),
         type='response',
         plot.type='persp',
-        phi=10,
-        theta=24,
+        too.far=1.5,
+        phi=24,
+        theta=60,
         border=NA,
         color='heat',
-        zlab='stem density')
+        zlab='stem density'
+        )
 
-
-
-names(mod_gam2$coefficients)
+names(gams[[7]]$coefficients)
 par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
-plot.gam(mod_gam2, scheme=1, ylim=c(-5,5))
+plot.gam(gams[[7]], scheme=1, ylim=c(-5,5))
 
 varnms <- c('Elevation',
             'Folded Aspect',
@@ -428,10 +477,10 @@ varnms <- c('Elevation',
             'Soil k',
             'Soil Total Depth',
             'SWE')
-?mar
-par(mfcol=c(12,4), mar=c(4,2,4,1), lwd=2)
+
+par(mfcol=c(3,4), mar=c(2,2,2,1), lwd=2)
 for(i in 19:22){
-  plot.gam(mod_gam2,
+  plot.gam(gams[[2]],
            scheme=1,
            ylim=c(-5,5),
            select=i,
@@ -442,22 +491,7 @@ for(i in 19:22){
            cex.main=2.5)
 }
 
-ggplot(vars, aes(x=density, y=elevation, color=geology)) +
-  geom_point() +
-  geom_abline()
-
-visreg(gam.ba)
-
-termplot(gam.ba)
-
-AIC(mod_lm)
-AIC(mod_gam2)
-
-summary(mod_lm)$sp.criterion
-summary(mod_gam2)$sp.criterion
-gam.height$var.summary
-
-inter.density <- visreg2d(gam.density, xvar='delta_swe', yvar='elevation_10m', plot.type='gg') +
+inter.density <- visreg2d(gams[[3]], xvar='delta_swe', yvar='elevation', plot.type='gg') +
   scale_fill_viridis(name='stems ha^-1^', limits=c(100, 2500)) +
   ggtitle('Density') +
   xlab('∆SWE') +
@@ -502,11 +536,3 @@ g <- c(inter.density, inter.height, inter.ba, inter.diam, inter.height.skew)
 gridExtra::grid.arrange(inter.density, inter.height, inter.ba,
                         inter.diam, inter.height.skew,
                         ncol=3, widths=c(1,1,1))
-
-mod_gam2$coefficients
-par(mfcol=c(1,3), mar=c(2,2,4,2))
-vis.gam(mod_gam2, view=c('elevation','swe'), type='response', plot.type='persp', phi=20, theta=48, border=NA, color='topo', zlab='90th pctl height', contour.col='black', main='Density v Elevation v TPI', xlab='Standardized elevation', ylab='standardized TPI', cex.lab=2, cex.main=2.5)
-
-summary(mod_gam2)
-summary(mod_lm)$r.sq
-summary(mod_gam1)$r.sq
