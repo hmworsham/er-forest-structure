@@ -1,3 +1,9 @@
+# Generate tables for East River forest structure manuscript
+
+# Ingest and source data
+source(file.path('inst', 'notebooks', 'regressions', '05.01_gbm_reports.R'))
+
+
 ##########
 # Table 1
 ##########
@@ -112,6 +118,11 @@ tbl5 <- data.frame(cbind('ID'=ls.id, 'Parameter'=ls.param, 'Description'=ls.desc
                    check.names=F)
 
 ##########
+# Table 6
+##########
+
+
+##########
 # Table 7
 ##########
 gbm.perf.df <- read.csv(file.path(config$data$pro, 'gbm_perf_df.csv'),
@@ -121,16 +132,34 @@ gam.perf.df <- read.csv(file.path(config$data$pro, 'gam_perf_df.csv'),
 
 tbl7 <- gbm.perf.df %>%
   left_join(gam.perf.df, by='Response') %>%
-  rename(`GBM CV error`='CV error',
-         `GBM test error`='Test error.x',
-         `GAM % TDE`='PDE',
-         `GAM test error`='Test error.y'
+  rename(`GBM training error`='Train error',
+         `GBM CV error`='CV error',
+         `GAM PDE`='PDE'
          ) %>%
-  mutate(across(`GBM CV error`:`GAM test error`, \(x) round(x,2))) %>%
-  dplyr::select(-c(`GBM test error`, `GAM test error`))
+  mutate(across(`GBM training error`:`GAM PDE`, \(x) round(x,2)),
+         Response= factor(Response, levels=c('Basal area',
+                         'Height 95P',
+                         'Height skew',
+                         'QMD',
+                         'Total density',
+                         'Fir density',
+                         'Spruce density',
+                         'Pine density'))) %>%
+  arrange(Response)
 
-##########
-# Table 6
-##########
 
+############
+# Table S2
+############
 
+tbls1 <- gbm.best %>%
+  mutate(Response=factor(Response,
+                         levels=c('Basal area',
+                                  'Height 95P',
+                                  'Height skew',
+                                  'QMD',
+                                  'Total density',
+                                  'Fir density',
+                                  'Spruce density',
+                                  'Pine density'))) %>%
+  arrange(Response)
