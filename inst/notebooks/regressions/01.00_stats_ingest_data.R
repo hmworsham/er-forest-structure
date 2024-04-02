@@ -222,8 +222,16 @@ vars <- data.frame(vars, xy)
 vars <- vars[vars$density>100,]
 vars <- vars[!is.na(vars$density),]
 
+# NaN to NA
+vars <- vars %>%
+  mutate_all(~ifelse(is.nan(.), NA, .))
+
 # Hang on to the unscaled variable values
 vars.unscaled <- vars
+
+# write.csv(vars.unscaled,
+#           file.path(config$data$pro, 'all_variables_unscaled.csv'),
+#           row.names=F)
 
 #############################
 # Rescale variables
@@ -237,13 +245,6 @@ noscale <- c('geology', 'density', 'height',
 vars.tmp <- vars[!names(vars) %in% noscale]
 vars.tmp <- data.frame(scale(vars.tmp))
 vars <- cbind(vars[names(vars) %in% noscale], vars.tmp)
-
-###############################
-# NaN to NA
-###############################
-
-vars <- vars %>%
-  mutate_all(~ifelse(is.nan(.), NA, .))
 
 ###############################
 # Deal with geology / factors
