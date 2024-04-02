@@ -8,8 +8,11 @@
 	4. Run with double penalty on uncorrelated variables (drop)
 	5. Run with shrinkage on uncorrelated variables (drop)
 - Species analysis
+- Regrid trees to 100 m and write out
+- Regrid trees to 500 m and write out
 - Export all results to eastriver Drive
 - Export all data to ESS DIVE
+
 
 ## Tables, Figures, Numbers, Equations
 - FIG: Partial effects plots for ALL significant variables in GAM
@@ -55,6 +58,8 @@
 - FIG: Map with missing flightpath and gap-filled showing density discrepancy
 - TAB: make a table with AIC and/or REML values for each model selection approach (assuming one of the gam selection approaches actually works)
 
+
+---
 
 # DONE
 
