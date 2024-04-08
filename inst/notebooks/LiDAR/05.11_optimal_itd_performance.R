@@ -363,6 +363,7 @@ uc2.match.map <- uc2.base.map +
         legend.background=element_blank(),
         legend.spacing.y = unit(0.1,"cm"))
 
+
 saveRDS(uc2.match.map, 'map')
 
 
