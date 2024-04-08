@@ -38,6 +38,7 @@ names(gams) <- gam.names.new$n[x1]
 # Ingest variable names
 varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
                      row.names=1)
+varnames[varnames$label=='\xc6SWE', 'label'] <- '\u0394SWE'
 
 # Ingest unscaled variables
 vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
@@ -122,12 +123,19 @@ peplot.df <- bind_rows(pe.dfs, .id='Model') %>%
                                       'Pine density')),
          category=factor(category, levels=c('Climate', 'Topography',
                                             'Soil', 'Geology', 'Spatial')),
-         label = factor(label, levels=c('AET', 'CWD', 'SWE', '∆SWE',
+         label = factor(label,
+                        levels=c('AET', 'CWD', 'SWE', '\u0394SWE',
                                         'Curvature', 'Elevation', 'Heat load',
                                         'TPI', 'TWI',
                                         'AWC', 'CEC', 'Organic matter',
                                         'Silt content','ksat', 'pH',
-                                        'Geology', 'X', 'Y')),
+                                        'Geology', 'X', 'Y'),
+                        labels=c('AET', 'CWD', 'SWE', '\u0394SWE',
+                                 'Curvature', 'Elevation', 'Heat load',
+                                 'TPI', 'TWI',
+                                 'AWC', 'CEC', expression(k['sat']),
+                                 'Organic matter', 'pH', 'Silt content',
+                                 'Geology', 'X', 'Y')),
          var=factor(var)
   ) %>%
   arrange(category,label)
@@ -148,91 +156,123 @@ lblr <- c(`Basal area`=bquote('Basal area ('*m^2~m^-2*')'),
 
 # Plot PE for full-forest structure variables by model
 peplots <- lapply(peplot.dfs, \(p) {
-  #lblr <- lblr[names(lblr) %in% unique(p$Model)]
   ggplot(p) +
-    geom_line(aes(x=v, y=fit, color=label), linewidth=4) +
-    geom_line(aes(x=v, y=u95, color=label), linetype=3, linewidth=2) +
-    geom_line(aes(x=v, y=l95, color=label), linetype=3, linewidth=2) +
-    # geom_text(
-    #   aes(label=Model), hjust=0.5, vjust=3.5,
-    #   x=min(p$v) + diff(range(p$v))/2,
-    #   y=Inf, color='black', fontface='bold',
-    # ) +
+    geom_line(aes(x=v, y=fit, color=label), linewidth=1) +
+    geom_line(aes(x=v, y=u95, color=label), linetype=2, linewidth=0.4) +
+    geom_line(aes(x=v, y=l95, color=label), linetype=2, linewidth=0.4) +
     scale_color_manual(limits=p$label,
                        values=p$pdcolors,
                        name=NULL) +
-    scale_y_continuous(limits=c(0,max(p$fit)),
-                       #labels=scientific
-                       ) +
+    scale_y_continuous(limits=c(0,max(p$fit))) +
     coord_cartesian(clip='off') +
-    # facet_wrap(~Model, scales='free_y',
-    #            strip.position = 'left',
-    #            labeller=as_labeller(\(x) {x=lblr[names(lblr)==x]; x},
-    #                                 default=identity))  +
-    ggthemes::theme_calc(base_size=48,
+    ggthemes::theme_calc(base_size=8,
                          base_family='Arial') +
-    labs(#x='Centered values of explanatory variables',
-         x=NULL,
+    labs(x=NULL,
          y=lblr[names(lblr)==p$Model[1]][[1]],
-         # y=NULL,
-         title=p$Model[[1]]
-    ) +
+         title=p$Model[[1]]) +
     theme(legend.position='none',
-          legend.text=element_text(size=30),
-          strip.background = element_blank(),
-          strip.placement = "outside",
           aspect.ratio=1,
-          #panel.grid = element_blank()
-          plot.background=element_rect(fill=NA, color=NA, linewidth=4),
-          panel.background=element_rect(fill=NA, color=NA, linewidth=4),
-          #plot.margin = margin(-, 50, -50, 50, "pt")
+          plot.background=element_rect(fill=NA, color=NA, linewidth=0),
+          plot.title=element_text(hjust=0.5)
           )
 })
 
+peplot_xaxis <- cowplot::get_plot_component(
+  ggplot() +
+    labs(x = 'Zero-centered values'), 'xlab-b')
 
+peplot.leg <- g_legend(
+  ggplot(peplot.df, aes(x=v, y=fit, color=label)) +
+    geom_line(linewidth=1.2) +
+    scale_color_manual(limits=peplot.df$label,
+                       values=peplot.df$pdcolors,
+                       name=NULL) +
+    ggthemes::theme_calc(base_size=8)
+  +
+  theme(legend.margin=margin(r=1, l=1, t=10, b=10),
+        legend.background = element_rect(fill=NA),
+        #legend.spacing.y = unit(0.001, 'npc'),
+        # legend.text=element_text(size=7),
+        legend.key.size = unit(0.025, 'npc'))
+)
 
+cairo_pdf('~/Desktop/Fig7.pdf', width=190/25.4, height=190/25.4, onefile=T,
+          family='Arial', bg='white')
+
+design = "
+ABC
+DEF
+GHI
+#J#
+"
 library(patchwork)
-(peplots[[1]]) +
-    (plot_spacer() /
-    peplots[[2]]) +
-  plot_layout(heights=c(4,4))
+pw <- list(peplot.leg, peplots[[1]], peplots[[2]],
+  peplots[[3]], peplots[[4]], peplots[[5]],
+  peplots[[6]], peplots[[7]], peplots[[8]],
+  peplot_xaxis) %>%
+  wrap_plots() +
+  patchwork::plot_layout(heights=c(20,20,20,1), design=design) +
+  plot_annotation(tag_levels = list(c('',
+                                      paste0('(', LETTERS[1:8], ')'),
+                                      ''))) &
+  theme(plot.tag = element_text(face = 'bold'))
+
+pw
+
+dev.off()
+
+library(gtable)
+
+pe.leg <- g_legend(peplots[[1]])
+
+cbindsize <- function(...) {cbind(..., size='first')}
+gpa <- do.call('cbindsize', lapply(peplots[1:3], \(x) {
+  x <- x+theme(legend.position='none')
+  x <- ggplotGrob(x)
+  x}))
+gpa$widths <- unit.pmax(gpa$widths)
+
+gpb <- do.call('cbindsize', lapply(peplots[4:5], \(x) {
+  x <- x+theme(legend.position='none')
+  x <- ggplotGrob(x)
+  x}))
+gpb.widths <- unit.pmax(gpa$widths)
+
+gpb = gtable_add_cols(gpb, sum(pe.leg$widths), 14)
+gpb = gtable_add_grob(gpb, pe.leg, t = 7, l = 15 + 1)
+gpb = gtable_add_cols(gpb, unit(6, "pt"), 14)
+
+pos = gpb$layout[grepl("panel", gpb$layout$name), c('t', 'l')]
+
+grid.newpage()
+
+cv1 <- viewport(x=0, y=0.33,
+                height=0.66,
+                width=1, just=c('left', 'bottom'),
+                name='c1')
+pushViewport(cv1)
+grid.rect()
+
+vv1 <- viewport(x=0, y=0.66,
+                height=0.33,
+                width=1, just=c('left', 'bottom'),
+                name='v1')
+pushViewport(vv1)
+# grid.rect()
+grid.draw(gpa)
+
+upViewport(1)
+vv2 <- viewport(x=0, y=0.33,
+                height=0.33,
+                width=1, just=c('left', 'bottom'),
+                name='c2')
+pushViewport(vv2)
+grid.rect()
+grid.draw(gpb)
 
 
-peplots[[1]]+peplots[[2]]+plot_layout(design=layout,
-                                      guides='collect')+
-  plot_annotation(tag_levels = 'A',
-                  tag_prefix='(',
-                  tag_suffix=')')
+dev.off()
 
-layout=c(area(t=1, l=1, b=16, r=4),
-         area(t=18, l=1, b=28, r=4))
-
-pp <- peplots[[1]]+peplots[[2]]+peplots[[3]]+peplots[[4]]+ peplots[[5]] /
-  peplots[[6]]|peplots[[7]]|peplots[[8]] +
-  plot_layout(design=layout) +
-  plot_annotation(tag_levels = 'A',
-                  tag_prefix='(',tag_suffix=')')
-
-pp[[7]] <- pp[[7]] + xlab('Centered values')
-
-pp
-
-pp /
-  (peplots[[6]]|peplots[[7]]|peplots[[8]]) +
-  plot_layout(design=layout)
-
-theme_border <-
-  ggthemes::theme_calc() +
-  theme(plot.background = element_rect(fill = NA, colour = 'black', linewidth = 3))
-
-wrap_elements(full=peplots[[1]]+peplots[[2]]+peplots[[3]]+peplots[[4]]+peplots[[5]] +
-                plot_annotation(theme=theme_border)) /
-  wrap_elements(full=peplots[[6]]+peplots[[7]]+peplots[[8]] +
-                  plot_annotation(theme=theme_border)) +
-  plot_annotation(tag_levels = 'A',
-                  tag_prefix='(',
-                  tag_suffix=')') +
-  plot_layout(design=layout)
 
 # Run plots faceted by variable for each model
 for(i in unique(peplot.df$Model)) {
@@ -536,3 +576,203 @@ g <- c(inter.density, inter.height, inter.ba, inter.diam, inter.height.skew)
 gridExtra::grid.arrange(inter.density, inter.height, inter.ba,
                         inter.diam, inter.height.skew,
                         ncol=3, widths=c(1,1,1))
+
+
+
+
+gam.grid <- function(...){
+
+  grid.newpage()
+
+  grid.maj <- c(0.6, 0.4)
+  grid.min <- c(1,0.66,0.33)
+
+  vps.maj <- lapply(1:2, \(i) {
+    vp <- viewport(x=0, y=1-cumsum(grid.maj)[i],
+                   height=grid.maj[i],
+                   width=1, just=c('left', 'bottom'),
+                   name=paste0('c', i))
+    vp
+  })
+
+  vps.min <- lapply(1:3, \(i) {
+    viewport(x=1-grid.min[i], y=0,
+             height=1,
+             width=0.33, just=c('left', 'bottom'),
+             name=paste0('p', i))
+  })
+
+  #return(vps.min)
+  for(i in vps.maj) {
+
+    pushViewport(i)
+    for (j in 1:3) {
+      pushViewport(vps.min[[j]])
+      print(peplots[[j]], newpage=F)
+      grid.text(paste0('(', LETTERS[j], ')'), x=0.2, y=0.2,
+                just=c('left', 'bottom'))
+      upViewport(1)
+    }
+    upViewport(1)
+
+  }
+
+}
+
+grid.newpage()
+
+vv1 <- viewport(x=0, y=0,
+                height=0.4,
+                width=1, just=c('left', 'bottom'),
+                name=paste0('c', i))
+
+pushViewport(vv1)
+grid.rect()
+candy <- circleGrob(r = 0.1, x = 0.5, y = 0.6)
+stick <- segmentsGrob(x0 = 0.5, x1 = 0.5, y0 = 0, y1 = 0.5)
+lollipop <- gTree(children = gList(candy, stick))
+grid.draw(lollipop)
+gg <- gam.grid()
+pushViewport(gg[[3]])
+upViewport(1)
+grid.rect()
+upViewport(1)
+grid.draw(plot(1:100, 1:100))
+
+grid.newpage()
+vp1 <- viewport(x=0, y=0.4,
+                height=0.6,
+                width=1, just=c('left', 'bottom'),
+                name='c1')
+pushViewport(vp1)
+pushViewport(viewport(
+  layout = grid.layout(2, 3,
+                       widths = unit(c(0.4, 0.4, 0.4), 'npc' ),
+                       heights = unit(c(0.45, 0.45, 0.45 ), 'npc' ),
+                       respect = matrix(rep(1,3),2,3))))
+
+
+# lapply(1:5, \(x) {print(peplots[[x]], vp=viewport(layout.pos.row=ifelse(x<=3,1,2),
+#                                                 layout.pos.col=ifelse(x<=3,x,x-3)))})
+
+print( peplots[[1]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
+print( peplots[[2]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 2 ))
+print( peplots[[3]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 3 ))
+print( peplots[[4]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ))
+print( peplots[[5]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 2 ))
+
+dev.off()
+
+upViewport(0)
+vp3 <- viewport( width = unit(0.2, 'npc') , x = 0.9 , y = 0.5)
+pushViewport(vp3)
+grid.draw(p1.leg)
+popViewport()
+
+grid.newpage()
+vp1 <- viewport(x=0, y=0.66,
+                height=0.33,
+                width=1, just=c('left', 'bottom'),
+                name='c1')
+pushViewport(vp1)
+grid.draw(cbind(ggplotGrob(peplots[[1]]), ggplotGrob(peplots[[2]]),
+                ggplotGrob(peplots[[3]]), size="last"))
+upViewport(1)
+vp2 <- viewport(x=0, y=0.33,
+                height=0.33,
+                width=1, just=c('left', 'bottom'),
+                name='c2')
+pushViewport(vp2)
+grid.draw(cbind(ggplotGrob(peplots[[4]]), ggplotGrob(peplots[[5]]),
+                ggplotGrob(peplots[[5]]),size="last"))
+
+upViewport(1)
+vp3 <- viewport(x=0, y=0,
+                height=0.33,
+                width=1, just=c('left', 'bottom'),
+                name='c3')
+pushViewport(vp3)
+grid.draw(cbind(ggplotGrob(peplots[[6]]), ggplotGrob(peplots[[7]]),
+                ggplotGrob(peplots[[8]]), size="last"))
+
+upViewport(1)
+vp4 <- viewport(x=0.66, y=0.33,
+                height=0.33,
+                width=0.33,
+                just=c('left', 'bottom'),
+                name='p6')
+pushViewport(vp4)
+grid.rect()
+
+dev.off()
+
+align_plots = function(...){
+  pl <- list(...)[[1]]
+  ## test that only passing plots
+  stopifnot(do.call(all, lapply(pl, inherits, "gg")))
+  gl <- lapply(pl, ggplotGrob)
+  bind2 <- function(x,y)
+    gtable:::rbind_gtable(x,y,"first") # bug with pmax
+
+  combined <- Reduce(bind2, gl[-1], gl[[1]])
+
+  wl <- lapply(gl, "[[", "widths") # now do the pmax manually
+  combined$widths <- do.call(grid::unit.pmax, wl)
+  grid::grid.newpage()
+  grid::grid.draw(combined)
+}
+
+align_plots(peplots[1:5])
+
+vp1 <- viewport(x = 0, y = 0.55,
+                height = 0.45, width = 0.33,
+                just = c("left", "bottom"),
+                name = "p1")
+pushViewport(vp1)
+grid.rect()
+print(peplots[[1]], newpage=F)
+upViewport(1)
+
+vp2 <- viewport(x = 0.33, y = 0.55,
+                height = 0.45, width = 0.33,
+                just = c("left", "bottom"),
+                name = "p1")
+
+pushViewport(vp2)
+grid.rect()
+print(peplots[[2]], newpage=F)
+upViewport(1)
+
+vp3 <- viewport(x = 1, y = 0.5,
+                height = 0.45, width = 0.33,
+                just = c("left", "bottom"),
+                name = "p1")
+
+pushViewport(vp1)
+grid.rect()
+print(peplots[[1]], newpage=F)
+
+upViewport(1)
+
+vp4 <- viewport(x = 1, y = 0.5,
+                height = 0.45, width = 0.33,
+                just = c("left", "bottom"),
+                name = "p1")
+
+pushViewport(vp1)
+grid.rect()
+print(peplots[[1]], newpage=F)
+
+upViewport(1)
+
+
+grid.newpage()
+grid.arrange(
+  grobs = peplots,
+  widths = rep(1,3),
+  layout_matrix = rbind(c(1, 1, 1),
+                        c(1, 1, NA),
+                        c(1, 1, 1))
+)
+
+library(gtable)
