@@ -39,6 +39,7 @@ default:
   - raster
   - tidyterra
   - RColorBrewer
+  - grid
   - viridis
   - lme4
   - gbm
