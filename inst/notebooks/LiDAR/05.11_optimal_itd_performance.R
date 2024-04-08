@@ -258,6 +258,9 @@ plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 
+# Ingest CHM
+er.chm <- rast(file.path(config$extdata$scratch, 'chm_full_extent', 'chm_smooth_masked.tif'))
+
 # Ingest NAIP base image
 tmpfile <- drive_download(
   as_id(config$extdata$naipid),
@@ -296,26 +299,28 @@ uc2.l <- uc2.pred %>%
 uc2.bnd <- plotsf[plotsf$PLOT_ID=='CC-UC2',]
 
 # Clip las to plot boundaries
-uc2.las <- clip_roi(lascat, st_buffer(uc2.bnd, 8, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 8))
+uc2.las <- clip_roi(lascat, st_buffer(uc2.bnd, 50, nQuadSegs = 2, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 10))
 st_crs(uc2.las) <- st_crs(uc2.bnd)
 plot(uc2.las)
 rglwidget()
 
 # Rasterize canooy
-uc2.chm.pitfree.05 <- rasterize_canopy(uc2.las, 0.5, p2r(subcircle=0.5, na.fill=knnidw()), pkg = "terra")
-#uc2.chm.pitfree.05 <- crop(uc2.chm.pitfree.05, st_buffer(uc2.bnd, 20, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
-plot(uc2.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')))
+uc2.chm.pitfree.05 <- rasterize_canopy(uc2.las, 0.5, p2r(subcircle=0.25, na.fill=knnidw()), pkg = "terra")
+plot(ext(uc2.chm.pitfree.05)+20)
+plot(uc2.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')), add=T)
 
 # Smooth canopy
-kernel <- matrix(1,3,3)
+kernel <- matrix(1,1,1)
 uc2.chm.smooth <- focal(uc2.chm.pitfree.05, w = kernel, fun = median, na.rm = TRUE)
-plot(uc2.chm.smooth, col=rev(brewer.pal(11,'Spectral')))
+uc2.chm.smooth <- mask(uc2.chm.smooth, st_buffer(uc2.bnd, 5, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
+plot(ext(uc2.chm.pitfree.05)+20)
+plot(uc2.chm.smooth, col=rev(brewer.pal(11,'Spectral')),add=T)
 
 # Coerce to df
-uc2.chm.df <- as.data.frame(uc2.chm.pitfree.05, xy=T)
+uc2.chm.df <- as.data.frame(uc2.chm.smooth, xy=T)
 
 # Clip naip to plot boundaries
-uc2.naip <- crop(naip, st_buffer(uc2.bnd, 10, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 10))
+uc2.naip <- crop(naip, st_buffer(uc2.bnd, 5, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
 uc2.naip.df <- as.data.frame(uc2.naip, xy=T)
 names(uc2.naip.df)[3:5] <- c('green', 'blue', 'red')
 
@@ -323,7 +328,7 @@ names(uc2.naip.df)[3:5] <- c('green', 'blue', 'red')
 nclr <- nrow(uc2.l)/2
 
 uc2.base.map <- ggplot() +
-  geom_raster(data=uc2.chm.df, aes(x=x, y=y, fill=Z)) +
+  geom_raster(data=uc2.chm.df, aes(x=x, y=y, fill=focal_median)) +
   scale_fill_gradient(low='#1A1A1A', high='#FFFFFF',
                       name='Canopy height (m)',
                       breaks=c(1, 10, 20))
@@ -343,11 +348,11 @@ uc2.match.map <- uc2.base.map +
   #                    na.value='#f1f1f1') +
   scale_color_manual(values=c('grey70', '#ff4040'), name='Matched') +
   scale_shape_manual(values=c(1,3), name='Data source') +
-  geom_sf(data=uc2.bnd, color='gold', fill=NA) +
-  ggspatial::annotation_scale(location='br') +
+  geom_sf(data=uc2.bnd, color='gold', linewidth=1, fill=NA) +
+  ggspatial::annotation_scale(location='br', style='ticks') +
   guides(size='none') +
   labs(x='Longitude', y='Latitude') +
-  ggthemes::theme_calc(base_size=18) +
+  ggthemes::theme_calc(base_size=8) +
   theme(axis.text = element_blank(),
         axis.title = element_blank(),
         legend.key.size=unit(.2, 'cm'),
@@ -358,80 +363,9 @@ uc2.match.map <- uc2.base.map +
         legend.background=element_blank(),
         legend.spacing.y = unit(0.1,"cm"))
 
-uc2.match.map
-
-# Define target site and subset matches to all predicted
-pvg1.match <- ls.match[ls.match$site=='SR-PVG1',]
-pvg1.pred <- pvg1.match[pvg1.match$src==1,]
-
-# Reformat matches
-pvg1.l <- pvg1.pred %>%
-  pivot_longer(cols=c(treeID, obs),
-               names_to='Source',
-               values_to='treeID') %>%
-  arrange(pair_id) %>%
-  mutate(Source=ifelse(Source=='treeID', 'Detected', 'Observed')) %>%
-  mutate(across(Zobs:Yobs, ~ ifelse(Source=='Detected', NA, .)),
-         across(Zpred:Ypred, ~ ifelse(Source=='Observed', NA, .)),
-         Z = coalesce(Zobs, Zpred),
-         X = coalesce(Xobs, Xpred),
-         Y = coalesce(Yobs, Ypred),
-         Zscale = Z^2)
-
-# Subset plot boundaries to target site
-pvg1.bnd <- plotsf[plotsf$PLOT_ID=='SR-PVG1',]
-
-# Clip las to plot boundaries
-pvg1.las <- clip_roi(lascat, st_buffer(pvg1.bnd, 8, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 8))
-st_crs(pvg1.las) <- st_crs(pvg1.bnd)
-
-# Rasterize canooy
-pvg1.chm.pitfree.05 <- rasterize_canopy(pvg1.las, 0.5, pitfree(subcircle=1), pkg = "terra")
-#pvg1.chm.pitfree.05 <- crop(pvg1.chm.pitfree.05, st_buffer(pvg1.bnd, 20, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
-plot(pvg1.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')))
-
-# Smooth canopy
-kernel <- matrix(1,3,3)
-pvg1.chm.smooth <- focal(pvg1.chm.pitfree.05, w = kernel, fun = median, na.rm = TRUE)
-pvg1.chm.smooth <- pvg1.chm.pitfree.05
-plot(pvg1.chm.smooth, col=rev(brewer.pal(11,'Spectral')))
-
-# Coerce to df
-pvg1.chm.df <- as.data.frame(pvg1.chm.pitfree.05, xy=T)
-
-# Clip naip to plot boundaries
-pvg1.naip <- crop(naip, st_buffer(pvg1.bnd, 10, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 10))
-pvg1.naip.df <- as.data.frame(pvg1.naip, xy=T)
-names(pvg1.naip.df)[3:5] <- c('green', 'blue', 'red')
-
-# Plot
-nclr <- nrow(pvg1.l)/2
-
-pvg1.match.map <- ggplot() +
-  geom_raster(data=pvg1.chm.df, aes(x=x, y=y, fill=Z)) +
-  scale_fill_gradient(low='#1A1A1A', high='#FFFFFF', name='Canopy height (m)')
-
-pvg1.match.map <- pvg1.match.map +
-  geom_point(data=pvg1.l, aes(x=X, y=Y, size=Zscale,
-                             shape=factor(Source),
-                             color=factor(pair_id)),
-             inherit.aes = F) +
-  geom_text(data=pvg1.l, aes(x=X, y=Y,
-                            size=36,
-                            color=factor(pair_id),
-                            label=factor(pair_id)),
-            position=position_jitter(width=1,height=1)) +
-  scale_color_manual(values=rainbow(nclr, s=0.75)[sample(1:nclr, nclr)],
-                     na.value='white') +
-  scale_shape_manual(values=c(1,3), name='Tree data source') +
-  geom_sf(data=pvg1.bnd, color='gold', fill=NA) +
-  guides(color='none', size='none') +
-  labs(x='Longitude', y='Latitude') +
-  ggthemes::theme_calc(base_size=18) +
-  theme(axis.text = element_text(size=10))
+saveRDS(uc2.match.map, 'map')
 
 
-gridExtra::grid.arrange(uc2.match.map, pvg1.match.map)
 
 # SCRATCH
 # base.map <- ggplot() +
@@ -443,3 +377,80 @@ gridExtra::grid.arrange(uc2.match.map, pvg1.match.map)
 #   coord_equal()
 #
 # base.map
+
+
+# Map SR-PVG1
+
+# # Define target site and subset matches to all predicted
+# pvg1.match <- ls.match[ls.match$site=='SR-PVG1',]
+# pvg1.pred <- pvg1.match[pvg1.match$src==1,]
+#
+# # Reformat matches
+# pvg1.l <- pvg1.pred %>%
+#   pivot_longer(cols=c(treeID, obs),
+#                names_to='Source',
+#                values_to='treeID') %>%
+#   arrange(pair_id) %>%
+#   mutate(Source=ifelse(Source=='treeID', 'Detected', 'Observed')) %>%
+#   mutate(across(Zobs:Yobs, ~ ifelse(Source=='Detected', NA, .)),
+#          across(Zpred:Ypred, ~ ifelse(Source=='Observed', NA, .)),
+#          Z = coalesce(Zobs, Zpred),
+#          X = coalesce(Xobs, Xpred),
+#          Y = coalesce(Yobs, Ypred),
+#          Zscale = Z^2)
+#
+# # Subset plot boundaries to target site
+# pvg1.bnd <- plotsf[plotsf$PLOT_ID=='SR-PVG1',]
+#
+# # Clip las to plot boundaries
+# pvg1.las <- clip_roi(lascat, st_buffer(pvg1.bnd, 8, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 8))
+# st_crs(pvg1.las) <- st_crs(pvg1.bnd)
+#
+# # Rasterize canooy
+# pvg1.chm.pitfree.05 <- rasterize_canopy(pvg1.las, 0.5, pitfree(subcircle=1), pkg = "terra")
+# #pvg1.chm.pitfree.05 <- crop(pvg1.chm.pitfree.05, st_buffer(pvg1.bnd, 20, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
+# plot(pvg1.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')))
+#
+# # Smooth canopy
+# kernel <- matrix(1,3,3)
+# pvg1.chm.smooth <- focal(pvg1.chm.pitfree.05, w = kernel, fun = median, na.rm = TRUE)
+# pvg1.chm.smooth <- pvg1.chm.pitfree.05
+# plot(pvg1.chm.smooth, col=rev(brewer.pal(11,'Spectral')))
+#
+# # Coerce to df
+# pvg1.chm.df <- as.data.frame(pvg1.chm.pitfree.05, xy=T)
+#
+# # Clip naip to plot boundaries
+# pvg1.naip <- crop(naip, st_buffer(pvg1.bnd, 10, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 10))
+# pvg1.naip.df <- as.data.frame(pvg1.naip, xy=T)
+# names(pvg1.naip.df)[3:5] <- c('green', 'blue', 'red')
+#
+# # Plot
+# nclr <- nrow(pvg1.l)/2
+#
+# pvg1.match.map <- ggplot() +
+#   geom_raster(data=pvg1.chm.df, aes(x=x, y=y, fill=Z)) +
+#   scale_fill_gradient(low='#1A1A1A', high='#FFFFFF', name='Canopy height (m)')
+#
+# pvg1.match.map <- pvg1.match.map +
+#   geom_point(data=pvg1.l, aes(x=X, y=Y, size=Zscale,
+#                               shape=factor(Source),
+#                               color=factor(pair_id)),
+#              inherit.aes = F) +
+#   geom_text(data=pvg1.l, aes(x=X, y=Y,
+#                              size=36,
+#                              color=factor(pair_id),
+#                              label=factor(pair_id)),
+#             position=position_jitter(width=1,height=1)) +
+#   scale_color_manual(values=rainbow(nclr, s=0.75)[sample(1:nclr, nclr)],
+#                      na.value='white') +
+#   scale_shape_manual(values=c(1,3), name='Tree data source') +
+#   geom_sf(data=pvg1.bnd, color='gold', fill=NA) +
+#   guides(color='none', size='none') +
+#   labs(x='Longitude', y='Latitude') +
+#   ggthemes::theme_calc(base_size=18) +
+#   theme(axis.text = element_text(size=10))
+#
+#
+# gridExtra::grid.arrange(uc2.match.map, pvg1.match.map)
+
