@@ -31,17 +31,60 @@ ext(naip.raster) <- ext(res.rasters[[1]])
 #####################################
 
 res.rasters <- res.rasters[c(5,2:4,1,6:8)]
-res.labs <- c(ba='BA', height='Height 95P',
-              height.skew='Height skew', diam='QMD', density='Density',
+res.labs <- c(ba='Basal area', height='Height 95P',
+              height.skew='Height skew', diam='QMD', density='Total density',
               abla_density='Fir density', pien_density='Spruce density',
               pico_density='Pine density')
 
-par(mfrow=c(3,3),
-    mar=c(1,1,1,1))
+lblr <- c(expression(paste('Basal area(m'^'2',' m'^'-2', ')')),
+          'Height 95P (m)',
+          'Height skew',
+          'QMD (cm)',
+          expression(paste('Total density (stems ha'^'-1', ')')),
+          expression(paste('Fir density (stems ha'^'-1', ')')),
+          expression(paste('Spruce density (stems ha'^'-1', ')')),
+          expression(paste('Pine density (stems ha'^'-1', ')')))
 
-virlet <- c(LETTERS[1:5], rep('G',3))
+virlet <- c(LETTERS[c(1,3:6)], rep('G',3))
 
-for(i in 1:8) {
+rast.plots <- lapply(1:8, \(i) {
+  gp <- ggplot() +
+    geom_spatraster(data=res.rasters[[i]]) +
+    scale_fill_viridis(direction=-1, option=virlet[i],
+                       na.value=NA, name=lblr[i], discrete=F,
+                       guide=guide_colorbar(title.position='right',
+                                            title.vjust=0.5)) +
+    labs(x = NULL, y = NULL) +
+    theme_void(base_size=8,
+               base_family='Arial') +
+    theme(legend.title = element_text(angle = -90),
+          legend.key.width = unit(0.01, 'npc'),
+          plot.margin=margin(unit(c(0,0,0,0), 'null')))
+  print(gp)
+})
+
+np <- print(ggplot() +
+  geom_spatraster_rgb(data=naip.raster) +
+  theme_void(base_size=8,
+             base_family='Arial'))
+
+cairo_pdf('~/Desktop/Fig4.pdf', width=190/25.4, height=190/25.4, onefile=T,
+          family='Arial', bg='white')
+
+design='
+ABC
+DEF
+GHI
+'
+
+wrap_plots(rast.plots) + np +
+  patchwork::plot_layout(heights=c(20,20,20), design=design) +
+  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:9], ')'))) &
+  theme(plot.tag = element_text(face = 'bold'))
+
+dev.off()
+
+   for(i in 1:8) {
   terra::plot(res.rasters[[i]], col=viridis(n=20, end=0.8, direction=-1, option=virlet[i]),
   asp=NA, axes=F, mar=c(2.1, 2.1, 3.5, 5.1), ext=ext(res.rasters[[i]]),
   cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
@@ -50,12 +93,14 @@ for(i in 1:8) {
   mtext(paste0('(', LETTERS[i], ')'), side=1, line=1)
 }
 
-plotRGB(naip.raster,
+nr <- plotRGB(naip.raster,
         main='True color',
         asp=NA, colNA='transparent', bgalpha=0,
         axes=F, mar=c(2.1,2.1,2.5,5.1),
         cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5)
 mtext('(I)', side=1, line=1)
+
+dev.off()
 
 ######################################
 # Plot histogram of forest structure
@@ -168,12 +213,14 @@ elv <- crop(elv, aop)
 elv <- mask(elv, aop)
 
 plot(ext(elv)+100, col='white', axes=F, border=NA)
-plot(elv, col=hypso.colors(48), axes=F, plg = list(title = 'Elevation (m.a.s.l)'))
-plot(aop, col=NA, border='black', lwd=2, add=T)
-plot(plotsf,add=T, col='black', lwd=2, pch=21, cex=1.5)
+plot(elv, col=gray.colors(100), axes=F, plg = list(title = 'Elevation (m.a.s.l)'))
+plot(aop['geometry'], col=NA, border='black', lwd=2, add=T)
+plot(plotsf['PLOT_ID'], add=T, col='black', lwd=2, pch=21, cex=1.5)
 sbar(d=10000, label=c(0,"km",10), xy=c(322000, 4295000), xpd=TRUE, scaleby=1000)
 legend(title='Elevation (m. a. s. l.)')
 north(xy=c(335000, 4295500), type=1, label="N", angle=0, head=0.1, xpd=TRUE)
+
+
 
 ####################################
 # Scratch
