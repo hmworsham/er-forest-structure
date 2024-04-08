@@ -4,11 +4,7 @@
 ## ---------------------------------------------------------------------------------------------------
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -344,8 +340,6 @@ uc2.match.map <- uc2.base.map +
             size=3,
             position=position_jitter(width=.75, height=.75)
             ) +
-  # scale_color_manual(values=rainbow(nclr, s=0.75)[sample(1:nclr, nclr)],
-  #                    na.value='#f1f1f1') +
   scale_color_manual(values=c('grey70', '#ff4040'), name='Matched') +
   scale_shape_manual(values=c(1,3), name='Data source') +
   geom_sf(data=uc2.bnd, color='gold', linewidth=1, fill=NA) +
@@ -363,9 +357,14 @@ uc2.match.map <- uc2.base.map +
         legend.background=element_blank(),
         legend.spacing.y = unit(0.1,"cm"))
 
-saveRDS(uc2.match.map, 'map')
+uc2.match.map <- readRDS(file.path(config$data$int, 'matchmap.Rda'))
 
+cairo_pdf('~/Desktop/Fig2.pdf', width=140/25.4, height=140/25.4, onefile=T,
+          family='Arial', bg='white')
 
+print(uc2.match.map)
+
+dev.off()
 
 # SCRATCH
 # base.map <- ggplot() +
