@@ -31,7 +31,7 @@ gam.names.new <- data.frame('o'=gam.names,
                                   'Height skew',
                                   'Pine density',
                                   'Spruce density'))
-gam.names.new
+
 x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
@@ -164,7 +164,6 @@ peplots <- lapply(peplot.dfs, \(p) {
                        values=p$pdcolors,
                        name=NULL) +
     scale_y_continuous(limits=c(0,max(p$fit))) +
-    coord_cartesian(clip='off') +
     ggthemes::theme_calc(base_size=8,
                          base_family='Arial') +
     labs(x=NULL,
@@ -205,7 +204,7 @@ DEF
 GHI
 #J#
 "
-library(patchwork)
+
 pw <- list(peplot.leg, peplots[[1]], peplots[[2]],
   peplots[[3]], peplots[[4]], peplots[[5]],
   peplots[[6]], peplots[[7]], peplots[[8]],
@@ -220,85 +219,6 @@ pw <- list(peplot.leg, peplots[[1]], peplots[[2]],
 pw
 
 dev.off()
-
-library(gtable)
-
-pe.leg <- g_legend(peplots[[1]])
-
-cbindsize <- function(...) {cbind(..., size='first')}
-gpa <- do.call('cbindsize', lapply(peplots[1:3], \(x) {
-  x <- x+theme(legend.position='none')
-  x <- ggplotGrob(x)
-  x}))
-gpa$widths <- unit.pmax(gpa$widths)
-
-gpb <- do.call('cbindsize', lapply(peplots[4:5], \(x) {
-  x <- x+theme(legend.position='none')
-  x <- ggplotGrob(x)
-  x}))
-gpb.widths <- unit.pmax(gpa$widths)
-
-gpb = gtable_add_cols(gpb, sum(pe.leg$widths), 14)
-gpb = gtable_add_grob(gpb, pe.leg, t = 7, l = 15 + 1)
-gpb = gtable_add_cols(gpb, unit(6, "pt"), 14)
-
-pos = gpb$layout[grepl("panel", gpb$layout$name), c('t', 'l')]
-
-grid.newpage()
-
-cv1 <- viewport(x=0, y=0.33,
-                height=0.66,
-                width=1, just=c('left', 'bottom'),
-                name='c1')
-pushViewport(cv1)
-grid.rect()
-
-vv1 <- viewport(x=0, y=0.66,
-                height=0.33,
-                width=1, just=c('left', 'bottom'),
-                name='v1')
-pushViewport(vv1)
-# grid.rect()
-grid.draw(gpa)
-
-upViewport(1)
-vv2 <- viewport(x=0, y=0.33,
-                height=0.33,
-                width=1, just=c('left', 'bottom'),
-                name='c2')
-pushViewport(vv2)
-grid.rect()
-grid.draw(gpb)
-
-
-dev.off()
-
-
-# Run plots faceted by variable for each model
-for(i in unique(peplot.df$Model)) {
-
-  png(file.path(config$data$pro, 'peplots', paste0(i, '_pdp2.png')),
-      width=1200, height=900)
-
-  gx <- ggplot(peplot.df[peplot.df$Model==i,]) +
-    geom_line(aes(x=v, y=fit, color=interaction(category, label, sep=': ')), linewidth=1) +
-    geom_line(aes(x=v, y=u95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
-    geom_line(aes(x=v, y=l95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
-    scale_color_manual(limits=interaction(peplot.df$category, peplot.df$label, sep=': '),
-                       values=peplot.df$pdcolors,
-                       name=i) +
-    facet_wrap(~label, scales='fixed') +
-    ggthemes::theme_calc(base_size=18,
-                         base_family='Arial') +
-    labs(x='Centered values of explanatory variables',
-         y=NULL) +
-    theme(legend.position='left',
-          #legend.text=element_text(size=12)
-          )
-
-  print(gx)
-  dev.off()
-}
 
 ###############
 # Geology
@@ -333,7 +253,12 @@ geol.ref <- data.frame('geol.idx'=1:9,
                                      'Tmi',
                                      'Two'))
 
-geol.tbl <- left_join(geol.tbl, geol.ref, by=c('var'='geol.name'))
+geol.ct <- left_join(vars, geol.ref, by=c('geology'='geol.idx')) %>%
+  group_by(geol.code) %>%
+  summarise(n=n())
+
+geol.tbl <- left_join(geol.tbl, geol.ref, by=c('var'='geol.name')) %>%
+  left_join(geol.ct, by='geol.code')
 
 geol.tbl.sig <- geol.tbl %>%
   filter(!var=='(Intercept)' &
@@ -347,9 +272,13 @@ geol.tbl.sig <- geol.tbl %>%
                                              'Total density',
                                              'Fir density',
                                              'Spruce density',
-                                             'Pine density')))
+                                             'Pine density')),
+         tag=as.numeric(Model))
 
-ggplot(geol.tbl.sig, aes(x=geol.code)) +
+geol.plt <- ggplot(geol.tbl.sig[!geol.tbl.sig$Model %in% c('Fir density',
+                                                           'Spruce density',
+                                                           'Pine density'),],
+                   aes(x=geol.code)) +
   geom_boxplot(aes(
                    lower=Estimate-Std..Error,
                    upper=Estimate+Std..Error,
@@ -357,14 +286,64 @@ ggplot(geol.tbl.sig, aes(x=geol.code)) +
                    ymin=Estimate-2*Std..Error,
                    ymax=Estimate+2*Std..Error),
                stat='identity',
-               width=0.6,
+               width=0.75,
                position = position_dodge(preserve = "single")) +
+  geom_text(aes(y=Estimate, label=n),
+            position=position_dodge(width=1),
+            size=1.2, vjust=-0.5) +
   geom_hline(yintercept=0) +
-  facet_wrap(~Model, scales='free') +
-  labs(y='Anomaly from mean',
+  facet_wrap(~Model, scales='free_y') +
+  tag_facets(tag_levels='1',
+             tag_prefix='(',
+             tag_suffix=')',
+             position='bl') +
+  labs(y='Anomaly from mean response',
        x='Geological unit code') +
-  ggthemes::theme_calc(base_size=18)
+  ggthemes::theme_calc(base_size=8)
 
+geol.spp.plt <- ggplot(geol.tbl.sig[geol.tbl.sig$Model %in% c('Fir density',
+                                                           'Spruce density',
+                                                           'Pine density'),],
+                   aes(x=geol.code)) +
+  geom_boxplot(aes(
+    lower=Estimate-Std..Error,
+    upper=Estimate+Std..Error,
+    middle=Estimate,
+    ymin=Estimate-2*Std..Error,
+    ymax=Estimate+2*Std..Error),
+    stat='identity',
+    width=0.75,
+    position = position_dodge(preserve = "single")) +
+  geom_text(aes(y=Estimate, label=n),
+            position=position_dodge(width=1),
+            size=1.2, vjust=-0.5) +
+  geom_hline(yintercept=0) +
+  coord_cartesian(clip='off') +
+  facet_wrap(~Model, scales='free_y') +
+  tag_facets(tag_levels='1',
+             tag_prefix='(',
+             tag_suffix=')',
+             position='bl') +
+  labs(y='Anomaly from mean response',
+       x='Geological unit code') +
+  ggthemes::theme_calc(base_size=8)
+
+cairo_pdf('~/Desktop/Fig8.pdf', width=140/25.4, height=140/25.4, onefile=T,
+          family='Arial', bg='white')
+
+design='
+AAA
+AAA
+BBB'
+
+wrap_plots(geol.plt, geol.spp.plt) +
+  plot_layout(design=design) +
+  plot_annotation(tag_levels = c('A', '1'),
+                  tag_prefix = '(',
+                  tag_suffix = ')') &
+  theme(plot.tag = element_text(face = 'bold'))
+
+dev.off()
 
 ###############
 # Interactions
@@ -426,8 +405,16 @@ peplot.itx.df <- bind_rows(pe.itx.dfs, .id='Model') %>%
                                       'Spruce density',
                                       'Pine density')),
          var=factor(var),
-         l1=str_split(var, '-')[[1]][1],
-         l2=str_split(var, '-')[[1]][2]
+         l1=str_split(var, '-', simplify=T)[,1],
+         l2=str_split(var, '-', simplify=T)[,2],
+         lab1=factor(l1, levels=c('awc', 'elevation', 'heat_load',
+                                  'tpi', 'x'),
+                     labels=c('AWC', 'Elevation', 'Heat load',
+                              'TPI', 'X')),
+         lab2=factor(l2, levels=c('aet', 'cwd', 'delta_swe', 'swe',
+                                  'heat_load', 'tpi', 'awc', 'y'),
+                     labels=c('AET', 'CWD', '\u0394SWE', 'SWE',
+                              'Heat load', 'TPI', 'AWC', 'Y'))
   ) %>%
   arrange(Model, var) %>%
   drop_na()
@@ -451,6 +438,7 @@ for(i in unique(peplot.itx.df$Model)) {
 }
 
 peplot.itx.sub <- peplot.itx.df %>%
+  filter(!var=='x-y') %>%
   group_by(Model, var) %>%
   summarise(rng=diff(range(fit, na.rm=T))) %>%
   arrange(Model, rng) %>%
@@ -460,319 +448,499 @@ peplot.itx.sub <- peplot.itx.df %>%
   filter(!Model %in% c('Fir density', 'Pine density', 'Spruce density')) %>%
   group_split(Model, var)
 
+
+exp.lblr <- c('awc'=bquote('AWC ('*cm~cm^-1*')'),
+              'elevation'='Elevation (m)',
+              'heat_load'='Heat load',
+              'tpi'='TPI',
+              'x'='X',
+              'aet'='AET (mm)',
+              'cwd'='CWD (mm)',
+              'delta_swe'=bquote('\u0394SWE (%'*d^-1*')'),
+              'swe'='SWE (m)',
+              'y'='Y'
+)
+
 peplots <- lapply(peplot.itx.sub, \(i) {
   g <- ggplot(i, aes(x=v1, y=v2, z=fit)) +
   geom_raster(aes(fill=fit)) +
   geom_contour(color='white', bins=20, alpha=0.25) +
-  scale_fill_viridis(option='C', na.value=NA, direction=1,
-                     name=i$Model[1]) +
-  labs(x=i$l1[1], y=i$l2[1]) +
-  #facet_wrap(~var, ncol=5, scales='free') +
-  ggthemes::theme_calc(base_size=18)
+  scale_fill_viridis(option='F', na.value=NA, direction=1,
+                     name=lblr[names(lblr)==i$Model[1]][[1]],
+                     guide=guide_colorbar(title.position='right',
+                                          title.vjust=0.5)) +
+  labs(title=paste(i$lab1, i$lab2, sep=':'),
+       x=exp.lblr[names(exp.lblr)==i$l1[1]][[1]],
+       y=exp.lblr[names(exp.lblr)==i$l2[1]][[1]]) +
+  ggthemes::theme_calc(base_size=8) +
+  theme(#aspect.ratio=1,
+        legend.title = element_text(angle = -90,
+                                    hjust = 0.5),
+        legend.key.width = unit(0.005, 'npc'),
+        legend.key.height = unit(0.03, 'npc'),
+        #legend.margin=margin(t=0, b=0, r=0 l=0.0002, 'npc'),
+        legend.text.align=1,
+        legend.text=element_text(size=6),
+        plot.margin=margin(l=0.025, b=0.01, unit='npc'),
+        plot.background=element_rect(fill=NA, color=NA, linewidth=0),
+        plot.title=element_text(face='bold',
+                                hjust=0.5))
   g
   })
 
-patchwork::wrap_plots(peplots, nrow=3, ncol=5, byrow=F)
+p <- wrap_plots(peplots, nrow=5, ncol=3, byrow=F)
 
- ###############
+cairo_pdf('~/Desktop/Fig10.pdf', width=190/25.4, height=220/25.4, onefile=T,
+          family='Arial', bg='white')
+
+p
+
+# grid.rect(x=unit(0, 'npc'), y=unit(0, 'npc'), width = 1, height = 0.2, gp = gpar(lwd = 1, col = "black", fill = NA),
+#            just=c('left', 'bottom'))
+grid.text(paste('(A)', levels(peplot.itx.df$Model)[1]), x=unit(0.015, 'npc'), y=unit(0.9, 'npc'), rot=90, just='center',
+          gp=gpar(fontface='bold'))
+# grid.rect(x=unit(0.2, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
+#           just=c('left', 'bottom'))
+grid.text(paste('(B)', levels(peplot.itx.df$Model)[2]), x=unit(0.015, 'npc'), y=unit(0.7, 'npc'), rot=90, just='center',
+          gp=gpar(fontface='bold'))
+# grid.rect(x=unit(0.4, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
+#           just=c('left', 'bottom'))
+grid.text(paste('(C)', levels(peplot.itx.df$Model)[3]), x=unit(0.015, 'npc'), y=unit(0.5, 'npc'), rot=90, just='center',
+          gp=gpar(fontface='bold'))
+# grid.rect(x=unit(0.6, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
+#           just=c('left', 'bottom'))
+grid.text(paste('(D)', levels(peplot.itx.df$Model)[4]), x=unit(0.015, 'npc'), y=unit(0.3, 'npc'), rot=90, just='center',
+          gp=gpar(fontface='bold'))
+# grid.rect(x=unit(0.8, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
+#           just=c('left', 'bottom'))
+grid.text(paste('(E)', levels(peplot.itx.df$Model)[5]), x=unit(0.015, 'npc'), y=unit(0.1, 'npc'), rot=90, just='center',
+          gp=gpar(fontface='bold'))
+
+dev.off()
+
+
+theme.border <- theme(plot.background = element_rect(fill = NA, colour = 'black', linewidth = 1))
+
+rls <- lapply(levels(peplot.itx.df$Model), \(x) {
+  x <- wrap_elements(panel = textGrob(x, rot=90))
+  x
+})
+
+(wrap_elements(rls[[1]] + peplots[[1]] + peplots[[2]] + peplots[[3]]
+              + plot_annotation(#theme=theme.border,
+                                #title=paste(levels(peplot.itx.df$Model)[1])
+                                # tag_levels='1',
+                                # tag_prefix='(',
+                                # tag_suffix=')'
+                                )) /
+  wrap_elements(rls[[2]] + peplots[[4]] + peplots[[5]] + peplots[[6]]
+                + plot_annotation(#theme=theme.border,
+                                  #title=paste(levels(peplot.itx.df$Model)[2])
+                                  # tag_levels='1',
+                                  # tag_prefix='(',
+                                  # tag_suffix=')'
+                                  )) /
+  wrap_elements(rls[[3]] + peplots[[7]] + peplots[[8]] + peplots[[9]]
+                + plot_annotation(#theme=theme.border,
+                                  #title=paste(levels(peplot.itx.df$Model)[3])
+                                  # tag_levels='1',
+                                  # tag_prefix='(',
+                                  # tag_suffix=')'
+                                  )) /
+  wrap_elements(rls[[4]] + peplots[[10]] + peplots[[11]] + peplots[[12]]
+                + plot_annotation(#theme=theme.border,
+                                  #title=paste(levels(peplot.itx.df$Model)[4])
+                                  # tag_levels='1',
+                                  # tag_prefix='(',
+                                  # tag_suffix=')'
+                  )) /
+  wrap_elements(rls[[5]] + peplots[[13]] + peplots[[14]] + peplots[[15]]
+                + plot_annotation(#theme=theme.border,
+                                  #title=paste(levels(peplot.itx.df$Model)[5])
+                                  # tag_levels='1',
+                                  # tag_prefix='(',
+                                  # tag_suffix=')'
+                  )))  #+ plot_annotation(tag_levels='A')
+
+dev.off()
+
+###############
 # Scratch
 ###############
 
-vis.gam(gams[[7]],
-        view=unlist(strsplit(target.itx[20], ', ')),
-        type='response',
-        plot.type='persp',
-        too.far=1.5,
-        phi=24,
-        theta=60,
-        border=NA,
-        color='heat',
-        zlab='stem density'
-        )
+# vis.gam(gams[[7]],
+#         view=unlist(strsplit(target.itx[20], ', ')),
+#         type='response',
+#         plot.type='persp',
+#         too.far=1.5,
+#         phi=24,
+#         theta=60,
+#         border=NA,
+#         color='heat',
+#         zlab='stem density'
+#         )
+#
+# names(gams[[7]]$coefficients)
+# par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
+# plot.gam(gams[[7]], scheme=1, ylim=c(-5,5))
+#
+# varnms <- c('Elevation',
+#             'Folded Aspect',
+#             'Slope',
+#             'TPI',
+#             'Heat Load',
+#             'Elevation:Folded Aspect',
+#             'Elevation:TPI',
+#             'Elevation:SWE',
+#             'Folded Aspect:TPI',
+#             'Elevation:KJde',
+#             'Elevation:Km',
+#             'Elevation:Kmv',
+#             'Elevation:Pm',
+#             'Elevation:PPm',
+#             'Elevation:Qd',
+#             'Elevation:Ql',
+#             'Elevation:Tmi',
+#             'Elevation:Two',
+#             'Soil AWC',
+#             'Soil Percent OM',
+#             'Soil k',
+#             'Soil Total Depth',
+#             'SWE')
+#
+# par(mfcol=c(3,4), mar=c(2,2,2,1), lwd=2)
+# for(i in 19:22){
+#   plot.gam(gams[[2]],
+#            scheme=1,
+#            ylim=c(-5,5),
+#            select=i,
+#            main=varnms[i],
+#            ylab='Stand density (stems/ha)',
+#            xlab=paste('Standardized', varnms[i]),
+#            cex.lab=2,
+#            cex.main=2.5)
+# }
+#
+# inter.density <- visreg2d(gams[[3]], xvar='delta_swe', yvar='elevation', plot.type='gg') +
+#   scale_fill_viridis(name='stems ha^-1^', limits=c(100, 2500)) +
+#   ggtitle('Density') +
+#   xlab('∆SWE') +
+#   ylab('Elevation') +
+#   theme_minimal(base_size = 16) +
+#   theme(legend.title=element_text(size=14), legend.position = 'right')
+#
+# inter.height <- visreg2d(gam.height, xvar='awc', yvar='elevation_10m', plot.type='gg') +
+#   scale_fill_viridis(name='m') +
+#   ggtitle('Height') +
+#   xlab('Soil AWC') +
+#   ylab('Elevation') +
+#   theme_minimal(base_size = 16) +
+#   theme(legend.title=element_text(size=14), legend.position = 'right')
+#
+# inter.diam <- visreg2d(gam.diam, xvar='awc', yvar='elevation_10m', plot.type='gg') +
+#   scale_fill_viridis(name = 'cm') +
+#   ggtitle('QMD') +
+#   xlab('Soil AWC') +
+#   ylab('Elevation') +
+#   theme_minimal(base_size = 16) +
+#   theme(legend.title=element_text(size=14), legend.position = 'right')
+#
+# inter.ba <- visreg2d(gam.ba, xvar='delta_swe', yvar='elevation_10m', plot.type='gg') +
+#   scale_fill_viridis(name = 'm^2^ m^-2^') +
+#   ggtitle('Height skew') +
+#   xlab('∆SWE') +
+#   ylab('Elevation') +
+#   theme_minimal(base_size = 16) +
+#   theme(legend.title=element_text(size=14), legend.position = 'right')
+#
+# inter.height.skew <- visreg2d(gam.height.skew, xvar='delta_swe', yvar='elevation_10m', plot.type='gg') +
+#   scale_fill_viridis(name='skewness') +
+#   ggtitle('Height skew') +
+#   xlab('∆SWE') +
+#   ylab('Elevation') +
+#   theme_minimal(base_size = 16) +
+#   theme(legend.title=element_text(size=14), legend.position = 'right')
+#
+# g <- c(inter.density, inter.height, inter.ba, inter.diam, inter.height.skew)
+#
+# gridExtra::grid.arrange(inter.density, inter.height, inter.ba,
+#                         inter.diam, inter.height.skew,
+#                         ncol=3, widths=c(1,1,1))
+#
+#
+#
+#
+# gam.grid <- function(...){
+#
+#   grid.newpage()
+#
+#   grid.maj <- c(0.6, 0.4)
+#   grid.min <- c(1,0.66,0.33)
+#
+#   vps.maj <- lapply(1:2, \(i) {
+#     vp <- viewport(x=0, y=1-cumsum(grid.maj)[i],
+#                    height=grid.maj[i],
+#                    width=1, just=c('left', 'bottom'),
+#                    name=paste0('c', i))
+#     vp
+#   })
+#
+#   vps.min <- lapply(1:3, \(i) {
+#     viewport(x=1-grid.min[i], y=0,
+#              height=1,
+#              width=0.33, just=c('left', 'bottom'),
+#              name=paste0('p', i))
+#   })
+#
+#   #return(vps.min)
+#   for(i in vps.maj) {
+#
+#     pushViewport(i)
+#     for (j in 1:3) {
+#       pushViewport(vps.min[[j]])
+#       print(peplots[[j]], newpage=F)
+#       grid.text(paste0('(', LETTERS[j], ')'), x=0.2, y=0.2,
+#                 just=c('left', 'bottom'))
+#       upViewport(1)
+#     }
+#     upViewport(1)
+#
+#   }
+#
+# }
+#
+# grid.newpage()
+#
+# vv1 <- viewport(x=0, y=0,
+#                 height=0.4,
+#                 width=1, just=c('left', 'bottom'),
+#                 name=paste0('c', i))
+#
+# pushViewport(vv1)
+# grid.rect()
+# candy <- circleGrob(r = 0.1, x = 0.5, y = 0.6)
+# stick <- segmentsGrob(x0 = 0.5, x1 = 0.5, y0 = 0, y1 = 0.5)
+# lollipop <- gTree(children = gList(candy, stick))
+# grid.draw(lollipop)
+# gg <- gam.grid()
+# pushViewport(gg[[3]])
+# upViewport(1)
+# grid.rect()
+# upViewport(1)
+# grid.draw(plot(1:100, 1:100))
+#
+# grid.newpage()
+# vp1 <- viewport(x=0, y=0.4,
+#                 height=0.6,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c1')
+# pushViewport(vp1)
+# pushViewport(viewport(
+#   layout = grid.layout(2, 3,
+#                        widths = unit(c(0.4, 0.4, 0.4), 'npc' ),
+#                        heights = unit(c(0.45, 0.45, 0.45 ), 'npc' ),
+#                        respect = matrix(rep(1,3),2,3))))
+#
+#
+# # lapply(1:5, \(x) {print(peplots[[x]], vp=viewport(layout.pos.row=ifelse(x<=3,1,2),
+# #                                                 layout.pos.col=ifelse(x<=3,x,x-3)))})
+#
+# print( peplots[[1]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
+# print( peplots[[2]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 2 ))
+# print( peplots[[3]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 3 ))
+# print( peplots[[4]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ))
+# print( peplots[[5]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 2 ))
+#
+# dev.off()
+#
+# upViewport(0)
+# vp3 <- viewport( width = unit(0.2, 'npc') , x = 0.9 , y = 0.5)
+# pushViewport(vp3)
+# grid.draw(p1.leg)
+# popViewport()
+#
+# grid.newpage()
+# vp1 <- viewport(x=0, y=0.66,
+#                 height=0.33,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c1')
+# pushViewport(vp1)
+# grid.draw(cbind(ggplotGrob(peplots[[1]]), ggplotGrob(peplots[[2]]),
+#                 ggplotGrob(peplots[[3]]), size="last"))
+# upViewport(1)
+# vp2 <- viewport(x=0, y=0.33,
+#                 height=0.33,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c2')
+# pushViewport(vp2)
+# grid.draw(cbind(ggplotGrob(peplots[[4]]), ggplotGrob(peplots[[5]]),
+#                 ggplotGrob(peplots[[5]]),size="last"))
+#
+# upViewport(1)
+# vp3 <- viewport(x=0, y=0,
+#                 height=0.33,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c3')
+# pushViewport(vp3)
+# grid.draw(cbind(ggplotGrob(peplots[[6]]), ggplotGrob(peplots[[7]]),
+#                 ggplotGrob(peplots[[8]]), size="last"))
+#
+# upViewport(1)
+# vp4 <- viewport(x=0.66, y=0.33,
+#                 height=0.33,
+#                 width=0.33,
+#                 just=c('left', 'bottom'),
+#                 name='p6')
+# pushViewport(vp4)
+# grid.rect()
+#
+# dev.off()
+#
+# align_plots = function(...){
+#   pl <- list(...)[[1]]
+#   ## test that only passing plots
+#   stopifnot(do.call(all, lapply(pl, inherits, "gg")))
+#   gl <- lapply(pl, ggplotGrob)
+#   bind2 <- function(x,y)
+#     gtable:::rbind_gtable(x,y,"first") # bug with pmax
+#
+#   combined <- Reduce(bind2, gl[-1], gl[[1]])
+#
+#   wl <- lapply(gl, "[[", "widths") # now do the pmax manually
+#   combined$widths <- do.call(grid::unit.pmax, wl)
+#   grid::grid.newpage()
+#   grid::grid.draw(combined)
+# }
+#
+# align_plots(peplots[1:5])
+#
+# vp1 <- viewport(x = 0, y = 0.55,
+#                 height = 0.45, width = 0.33,
+#                 just = c("left", "bottom"),
+#                 name = "p1")
+# pushViewport(vp1)
+# grid.rect()
+# print(peplots[[1]], newpage=F)
+# upViewport(1)
+#
+# vp2 <- viewport(x = 0.33, y = 0.55,
+#                 height = 0.45, width = 0.33,
+#                 just = c("left", "bottom"),
+#                 name = "p1")
+#
+# pushViewport(vp2)
+# grid.rect()
+# print(peplots[[2]], newpage=F)
+# upViewport(1)
+#
+# vp3 <- viewport(x = 1, y = 0.5,
+#                 height = 0.45, width = 0.33,
+#                 just = c("left", "bottom"),
+#                 name = "p1")
+#
+# pushViewport(vp1)
+# grid.rect()
+# print(peplots[[1]], newpage=F)
+#
+# upViewport(1)
+#
+# vp4 <- viewport(x = 1, y = 0.5,
+#                 height = 0.45, width = 0.33,
+#                 just = c("left", "bottom"),
+#                 name = "p1")
+#
+# pushViewport(vp1)
+# grid.rect()
+# print(peplots[[1]], newpage=F)
+#
+# upViewport(1)
+#
+#
+# grid.newpage()
+# grid.arrange(
+#   grobs = peplots,
+#   widths = rep(1,3),
+#   layout_matrix = rbind(c(1, 1, 1),
+#                         c(1, 1, NA),
+#                         c(1, 1, 1))
+# )
+#
+# library(gtable)
+#
+# pe.leg <- g_legend(peplots[[1]])
+#
+# cbindsize <- function(...) {cbind(..., size='first')}
+# gpa <- do.call('cbindsize', lapply(peplots[1:3], \(x) {
+#   x <- x+theme(legend.position='none')
+#   x <- ggplotGrob(x)
+#   x}))
+# gpa$widths <- unit.pmax(gpa$widths)
+#
+# gpb <- do.call('cbindsize', lapply(peplots[4:5], \(x) {
+#   x <- x+theme(legend.position='none')
+#   x <- ggplotGrob(x)
+#   x}))
+# gpb.widths <- unit.pmax(gpa$widths)
+#
+# gpb = gtable_add_cols(gpb, sum(pe.leg$widths), 14)
+# gpb = gtable_add_grob(gpb, pe.leg, t = 7, l = 15 + 1)
+# gpb = gtable_add_cols(gpb, unit(6, "pt"), 14)
+#
+# pos = gpb$layout[grepl("panel", gpb$layout$name), c('t', 'l')]
+#
+# grid.newpage()
+#
+# cv1 <- viewport(x=0, y=0.33,
+#                 height=0.66,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c1')
+# pushViewport(cv1)
+# grid.rect()
+#
+# vv1 <- viewport(x=0, y=0.66,
+#                 height=0.33,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='v1')
+# pushViewport(vv1)
+# # grid.rect()
+# grid.draw(gpa)
+#
+# upViewport(1)
+# vv2 <- viewport(x=0, y=0.33,
+#                 height=0.33,
+#                 width=1, just=c('left', 'bottom'),
+#                 name='c2')
+# pushViewport(vv2)
+# grid.rect()
+# grid.draw(gpb)
+#
+#
+# dev.off()
+#
+#
+# # Run plots faceted by variable for each model
+# for(i in unique(peplot.df$Model)) {
+#
+#   png(file.path(config$data$pro, 'peplots', paste0(i, '_pdp2.png')),
+#       width=1200, height=900)
+#
+#   gx <- ggplot(peplot.df[peplot.df$Model==i,]) +
+#     geom_line(aes(x=v, y=fit, color=interaction(category, label, sep=': ')), linewidth=1) +
+#     geom_line(aes(x=v, y=u95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+#     geom_line(aes(x=v, y=l95, color=interaction(category, label, sep=': ')), linetype=3, linewidth=0.5) +
+#     scale_color_manual(limits=interaction(peplot.df$category, peplot.df$label, sep=': '),
+#                        values=peplot.df$pdcolors,
+#                        name=i) +
+#     facet_wrap(~label, scales='fixed') +
+#     ggthemes::theme_calc(base_size=18,
+#                          base_family='Arial') +
+#     labs(x='Centered values of explanatory variables',
+#          y=NULL) +
+#     theme(legend.position='left',
+#           #legend.text=element_text(size=12)
+#     )
+#
+#   print(gx)
+#   dev.off()
+# }
 
-names(gams[[7]]$coefficients)
-par(mfcol=c(12,2), mar=c(rep(1,2), rep(1,2)))
-plot.gam(gams[[7]], scheme=1, ylim=c(-5,5))
-
-varnms <- c('Elevation',
-            'Folded Aspect',
-            'Slope',
-            'TPI',
-            'Heat Load',
-            'Elevation:Folded Aspect',
-            'Elevation:TPI',
-            'Elevation:SWE',
-            'Folded Aspect:TPI',
-            'Elevation:KJde',
-            'Elevation:Km',
-            'Elevation:Kmv',
-            'Elevation:Pm',
-            'Elevation:PPm',
-            'Elevation:Qd',
-            'Elevation:Ql',
-            'Elevation:Tmi',
-            'Elevation:Two',
-            'Soil AWC',
-            'Soil Percent OM',
-            'Soil k',
-            'Soil Total Depth',
-            'SWE')
-
-par(mfcol=c(3,4), mar=c(2,2,2,1), lwd=2)
-for(i in 19:22){
-  plot.gam(gams[[2]],
-           scheme=1,
-           ylim=c(-5,5),
-           select=i,
-           main=varnms[i],
-           ylab='Stand density (stems/ha)',
-           xlab=paste('Standardized', varnms[i]),
-           cex.lab=2,
-           cex.main=2.5)
-}
-
-inter.density <- visreg2d(gams[[3]], xvar='delta_swe', yvar='elevation', plot.type='gg') +
-  scale_fill_viridis(name='stems ha^-1^', limits=c(100, 2500)) +
-  ggtitle('Density') +
-  xlab('∆SWE') +
-  ylab('Elevation') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'right')
-
-inter.height <- visreg2d(gam.height, xvar='awc', yvar='elevation_10m', plot.type='gg') +
-  scale_fill_viridis(name='m') +
-  ggtitle('Height') +
-  xlab('Soil AWC') +
-  ylab('Elevation') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'right')
-
-inter.diam <- visreg2d(gam.diam, xvar='awc', yvar='elevation_10m', plot.type='gg') +
-  scale_fill_viridis(name = 'cm') +
-  ggtitle('QMD') +
-  xlab('Soil AWC') +
-  ylab('Elevation') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'right')
-
-inter.ba <- visreg2d(gam.ba, xvar='delta_swe', yvar='elevation_10m', plot.type='gg') +
-  scale_fill_viridis(name = 'm^2^ m^-2^') +
-  ggtitle('Height skew') +
-  xlab('∆SWE') +
-  ylab('Elevation') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'right')
-
-inter.height.skew <- visreg2d(gam.height.skew, xvar='delta_swe', yvar='elevation_10m', plot.type='gg') +
-  scale_fill_viridis(name='skewness') +
-  ggtitle('Height skew') +
-  xlab('∆SWE') +
-  ylab('Elevation') +
-  theme_minimal(base_size = 16) +
-  theme(legend.title=element_text(size=14), legend.position = 'right')
-
-g <- c(inter.density, inter.height, inter.ba, inter.diam, inter.height.skew)
-
-gridExtra::grid.arrange(inter.density, inter.height, inter.ba,
-                        inter.diam, inter.height.skew,
-                        ncol=3, widths=c(1,1,1))
-
-
-
-
-gam.grid <- function(...){
-
-  grid.newpage()
-
-  grid.maj <- c(0.6, 0.4)
-  grid.min <- c(1,0.66,0.33)
-
-  vps.maj <- lapply(1:2, \(i) {
-    vp <- viewport(x=0, y=1-cumsum(grid.maj)[i],
-                   height=grid.maj[i],
-                   width=1, just=c('left', 'bottom'),
-                   name=paste0('c', i))
-    vp
-  })
-
-  vps.min <- lapply(1:3, \(i) {
-    viewport(x=1-grid.min[i], y=0,
-             height=1,
-             width=0.33, just=c('left', 'bottom'),
-             name=paste0('p', i))
-  })
-
-  #return(vps.min)
-  for(i in vps.maj) {
-
-    pushViewport(i)
-    for (j in 1:3) {
-      pushViewport(vps.min[[j]])
-      print(peplots[[j]], newpage=F)
-      grid.text(paste0('(', LETTERS[j], ')'), x=0.2, y=0.2,
-                just=c('left', 'bottom'))
-      upViewport(1)
-    }
-    upViewport(1)
-
-  }
-
-}
-
-grid.newpage()
-
-vv1 <- viewport(x=0, y=0,
-                height=0.4,
-                width=1, just=c('left', 'bottom'),
-                name=paste0('c', i))
-
-pushViewport(vv1)
-grid.rect()
-candy <- circleGrob(r = 0.1, x = 0.5, y = 0.6)
-stick <- segmentsGrob(x0 = 0.5, x1 = 0.5, y0 = 0, y1 = 0.5)
-lollipop <- gTree(children = gList(candy, stick))
-grid.draw(lollipop)
-gg <- gam.grid()
-pushViewport(gg[[3]])
-upViewport(1)
-grid.rect()
-upViewport(1)
-grid.draw(plot(1:100, 1:100))
-
-grid.newpage()
-vp1 <- viewport(x=0, y=0.4,
-                height=0.6,
-                width=1, just=c('left', 'bottom'),
-                name='c1')
-pushViewport(vp1)
-pushViewport(viewport(
-  layout = grid.layout(2, 3,
-                       widths = unit(c(0.4, 0.4, 0.4), 'npc' ),
-                       heights = unit(c(0.45, 0.45, 0.45 ), 'npc' ),
-                       respect = matrix(rep(1,3),2,3))))
-
-
-# lapply(1:5, \(x) {print(peplots[[x]], vp=viewport(layout.pos.row=ifelse(x<=3,1,2),
-#                                                 layout.pos.col=ifelse(x<=3,x,x-3)))})
-
-print( peplots[[1]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1 , layout.pos.col = 1 ) )
-print( peplots[[2]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 2 ))
-print( peplots[[3]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 1, layout.pos.col = 3 ))
-print( peplots[[4]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 1 ))
-print( peplots[[5]] + theme(legend.position="none") , vp = viewport( layout.pos.row = 2, layout.pos.col = 2 ))
-
-dev.off()
-
-upViewport(0)
-vp3 <- viewport( width = unit(0.2, 'npc') , x = 0.9 , y = 0.5)
-pushViewport(vp3)
-grid.draw(p1.leg)
-popViewport()
-
-grid.newpage()
-vp1 <- viewport(x=0, y=0.66,
-                height=0.33,
-                width=1, just=c('left', 'bottom'),
-                name='c1')
-pushViewport(vp1)
-grid.draw(cbind(ggplotGrob(peplots[[1]]), ggplotGrob(peplots[[2]]),
-                ggplotGrob(peplots[[3]]), size="last"))
-upViewport(1)
-vp2 <- viewport(x=0, y=0.33,
-                height=0.33,
-                width=1, just=c('left', 'bottom'),
-                name='c2')
-pushViewport(vp2)
-grid.draw(cbind(ggplotGrob(peplots[[4]]), ggplotGrob(peplots[[5]]),
-                ggplotGrob(peplots[[5]]),size="last"))
-
-upViewport(1)
-vp3 <- viewport(x=0, y=0,
-                height=0.33,
-                width=1, just=c('left', 'bottom'),
-                name='c3')
-pushViewport(vp3)
-grid.draw(cbind(ggplotGrob(peplots[[6]]), ggplotGrob(peplots[[7]]),
-                ggplotGrob(peplots[[8]]), size="last"))
-
-upViewport(1)
-vp4 <- viewport(x=0.66, y=0.33,
-                height=0.33,
-                width=0.33,
-                just=c('left', 'bottom'),
-                name='p6')
-pushViewport(vp4)
-grid.rect()
-
-dev.off()
-
-align_plots = function(...){
-  pl <- list(...)[[1]]
-  ## test that only passing plots
-  stopifnot(do.call(all, lapply(pl, inherits, "gg")))
-  gl <- lapply(pl, ggplotGrob)
-  bind2 <- function(x,y)
-    gtable:::rbind_gtable(x,y,"first") # bug with pmax
-
-  combined <- Reduce(bind2, gl[-1], gl[[1]])
-
-  wl <- lapply(gl, "[[", "widths") # now do the pmax manually
-  combined$widths <- do.call(grid::unit.pmax, wl)
-  grid::grid.newpage()
-  grid::grid.draw(combined)
-}
-
-align_plots(peplots[1:5])
-
-vp1 <- viewport(x = 0, y = 0.55,
-                height = 0.45, width = 0.33,
-                just = c("left", "bottom"),
-                name = "p1")
-pushViewport(vp1)
-grid.rect()
-print(peplots[[1]], newpage=F)
-upViewport(1)
-
-vp2 <- viewport(x = 0.33, y = 0.55,
-                height = 0.45, width = 0.33,
-                just = c("left", "bottom"),
-                name = "p1")
-
-pushViewport(vp2)
-grid.rect()
-print(peplots[[2]], newpage=F)
-upViewport(1)
-
-vp3 <- viewport(x = 1, y = 0.5,
-                height = 0.45, width = 0.33,
-                just = c("left", "bottom"),
-                name = "p1")
-
-pushViewport(vp1)
-grid.rect()
-print(peplots[[1]], newpage=F)
-
-upViewport(1)
-
-vp4 <- viewport(x = 1, y = 0.5,
-                height = 0.45, width = 0.33,
-                just = c("left", "bottom"),
-                name = "p1")
-
-pushViewport(vp1)
-grid.rect()
-print(peplots[[1]], newpage=F)
-
-upViewport(1)
-
-
-grid.newpage()
-grid.arrange(
-  grobs = peplots,
-  widths = rep(1,3),
-  layout_matrix = rbind(c(1, 1, 1),
-                        c(1, 1, NA),
-                        c(1, 1, 1))
-)
-
-library(gtable)

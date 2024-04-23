@@ -19,7 +19,7 @@ options(googledrive_quiet=T)
 nCores <- as.integer(availableCores()-2)
 
 # Define directories
-ssurgodir <- drive_get(as_id('17rNzAu2V3Sdp9Wo-LFUd3UzYGma6FMrA'))
+# ssurgodir <- drive_get(as_id('17rNzAu2V3Sdp9Wo-LFUd3UzYGma6FMrA'))
 outdir <- file.path(config$extdata$scratch, 'SSURGO', 'processed')
 
 # Cleaning function
@@ -32,6 +32,7 @@ not_all_na <- function(x) any(!is.na(x)) #for data cleaning
 # Ingest AOP survey area polygon
 aop <- load.plot.sf(path=as_id(config$extdata$bndid),
                     pattern=config$extdata$bndpattern)
+aop <- st_buffer(aop, 5000)
 aop <- as_Spatial(aop)
 
 # Ingest area mask
@@ -44,10 +45,10 @@ full.mask <- classify(full.mask, rcl=matrix(c(1,NA, NA, 1), ncol=2))
 # reporting and analysis. The spatial component is typically viewed and analyzed
 # using a Geographic Information System (GIS).
 
-SSURGO.areas.er <- get_ssurgo(template=aop,
+SSURGO.areas.er <- FedData::get_ssurgo(template=aop,
                               label='CO_EastRiver',
-                              raw.dir=file.path(config$extdata$scratch, 'SSURGO', 'raw'),
-                              extraction.dir=file.path(config$extdata$scratch, 'SSURGO', 'extractions'))
+                              raw.dir=file.path(config$data$raw, 'SSURGO', 'raw'),
+                              extraction.dir=file.path(config$data$raw, 'SSURGO', 'extractions'))
 
 # This returns a list whose elements are:
 # 1. `spatial`: sf object containing map unit level information

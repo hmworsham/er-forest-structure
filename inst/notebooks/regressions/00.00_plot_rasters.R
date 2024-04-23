@@ -36,7 +36,7 @@ res.labs <- c(ba='Basal area', height='Height 95P',
               abla_density='Fir density', pien_density='Spruce density',
               pico_density='Pine density')
 
-lblr <- c(expression(paste('Basal area(m'^'2',' m'^'-2', ')')),
+lblr <- c(expression(paste('Basal area (m'^'2',' m'^'-2', ')')),
           'Height 95P (m)',
           'Height skew',
           'QMD (cm)',
@@ -54,21 +54,27 @@ rast.plots <- lapply(1:8, \(i) {
                        na.value=NA, name=lblr[i], discrete=F,
                        guide=guide_colorbar(title.position='right',
                                             title.vjust=0.5)) +
-    labs(x = NULL, y = NULL) +
+    labs(title=res.labs[[i]], x = NULL, y = NULL) +
     theme_void(base_size=8,
                base_family='Arial') +
-    theme(legend.title = element_text(angle = -90),
+    theme(legend.title = element_text(angle = -90,
+                                      hjust = 0.5),
           legend.key.width = unit(0.01, 'npc'),
-          plot.margin=margin(unit(c(0,0,0,0), 'null')))
+          plot.margin=margin(unit(c(0,0,0,0), 'null')),
+          plot.title=element_text(face='bold',
+                                  hjust=0.5))
   print(gp)
 })
 
 np <- print(ggplot() +
   geom_spatraster_rgb(data=naip.raster) +
   theme_void(base_size=8,
-             base_family='Arial'))
+             base_family='Arial')) +
+  labs(title='True color') +
+  theme(plot.title=element_text(face='bold',
+                                hjust=0.5))
 
-cairo_pdf('~/Desktop/Fig4.pdf', width=190/25.4, height=190/25.4, onefile=T,
+cairo_pdf('~/Desktop/Fig5.pdf', width=190/25.4, height=190/25.4, onefile=T,
           family='Arial', bg='white')
 
 design='
@@ -84,7 +90,9 @@ wrap_plots(rast.plots) + np +
 
 dev.off()
 
-   for(i in 1:8) {
+
+
+for(i in 1:8) {
   terra::plot(res.rasters[[i]], col=viridis(n=20, end=0.8, direction=-1, option=virlet[i]),
   asp=NA, axes=F, mar=c(2.1, 2.1, 3.5, 5.1), ext=ext(res.rasters[[i]]),
   cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
@@ -106,27 +114,55 @@ dev.off()
 # Plot histogram of forest structure
 ######################################
 
+
 par(mfrow=c(3,3),
     mar=c(5,3,3,4))
 
 res.x.labs <- c(ba=expression(paste('BA (m'^'2', ' m'^'-2', ')')),
                 height='Height (m)', height.skew='Height skew', diam='QMD (cm)',
-                density=expression(paste('Stand density (stems ha'^'-1',')')),
-                abla_density=expression(paste('Stand density (stems ha'^'-1',')')),
-                pien_density=expression(paste('Stand density (stems ha'^'-1',')')),
-                pico_density=expression(paste('Stand density (stems ha'^'-1',')')))
+                density=expression(paste('Total density (stems ha'^'-1',')')),
+                abla_density=expression(paste('Fir density (stems ha'^'-1',')')),
+                pien_density=expression(paste('Spruce density (stems ha'^'-1',')')),
+                pico_density=expression(paste('Pine density (stems ha'^'-1',')')))
 
-for(i in 1:8){
+str.hist <- lapply(1:8, \(i) {
   hist(res.rasters[[i]],
        c='grey50',
        breaks=20,
        border='white',
        main=(res.labs[i]),
-       sub=paste0('(', LETTERS[i], ')'),
+       #sub=paste0('(', LETTERS[i], ')'),
        xlab=res.x.labs[i],
        ylab='count',
        cex.lab=1.8, cex.axis=1.8, cex.main=2, cex.sub=1.8)
-}
+})
+
+str.hist <- lapply(1:8, \(i) {
+  res.df <- as.data.frame(values(res.rasters[[i]]))
+  names(res.df) <- c('v')
+  ggplot(res.df) +
+  geom_histogram(aes(x=v), bins=30, color='white', fill='grey40') +
+  labs(title=res.labs[[i]], x=res.x.labs[[i]], y='Count of pixels') +
+  ggthemes::theme_calc(base_size=8,
+             base_family='Arial') +
+  theme(aspect.ratio = 1,
+        plot.background=element_rect(fill=NA, color=NA, linewidth=0),
+        plot.title=element_text(face='bold',
+                                hjust=0.5),
+        #legend.key.width = unit(0.01, 'npc'),
+        #plot.margin=margin(unit(c(0,0,0,0), 'null')),
+  )
+})
+
+cairo_pdf('~/Desktop/Fig6.pdf', width=190/25.4, height=190/25.4, onefile=T,
+          family='Arial', bg='white')
+
+wrap_plots(str.hist) +
+  patchwork::plot_layout(heights=c(20,20,20), design=design) +
+  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:8], ')'))) &
+  theme(plot.tag = element_text(face = 'bold'))
+
+dev.off()
 
 ################################
 # Plot explainers from rasters

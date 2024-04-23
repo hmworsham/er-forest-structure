@@ -17,12 +17,24 @@ drive_auth(path=config$drivesa)
 ## ---------------------------------------------------------------------------------------------------
 
 # Ingest optimized segmented trees
-opt.trees <- list.files(file.path(config$extdata$itc, 'opt_trees'),
-                        pattern='shp', full.names=T)
-ls.trees <- lapply(opt.trees, st_read)
+opt.trees <- drive_ls(as_id('1aPYSoWdXJxX8L81ABSvCZuwi_CRzgd9U'))
+ls.trees <- unlist(lapply(1:nrow(opt.trees), \(x) {
+  tf <- drive_download(
+    as_id(opt.trees$id[x]),
+    path=file.path(tempdir(), opt.trees$name[x]),
+    overwrite=T)
+  tf$local_path
+}))
+
+ls.trees <- lapply(ls.trees[grepl('shp', ls.trees)], st_read)
 
 # Ingest match data
-ls.match <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
+ls.match <- drive_download(
+  as_id('1LCafch6gd2bYqYTT0eeW1o5QSHXv5O50'),
+  path=file.path(tempdir(), 'opt_matches.csv'),
+  overwrite = T)$local_path
+
+ls.match <- read.csv(ls.match)
 
 ## Compare detected and reference trees
 ## ---------------------------------------------------------------------------------------------------
@@ -117,29 +129,33 @@ ls.match.comp.medh <- bind_rows(ls.detect.med.l, ls.detect.match.med.l,
 #                                     'Matched detected', 'Matched reference')))
 
 # Plot: median height comparison barplot
-hcomp.colors <- c(brewer.pal(9, name='Blues')[c(4,8)],
+hcomp.colors <- c(brewer.pal(9, name='Blues')[c(6,8)],
                   brewer.pal(9, name='Greens')[c(4,8)])
 
-ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src))) +
+hcomp.plt <- ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src))) +
   geom_col(position=position_dodge(width=0.75), width=0.75) +
   geom_errorbar(aes(x=site, ymin=L25, ymax=U75),
-                position=position_dodge(width=0.75), width=0.25,
+                position=position_dodge(width=0.75),
+                width=0.5,
+                linewidth=0.25,
                 color='grey60') +
   scale_fill_manual(values=hcomp.colors,
                     name=NULL,
                     guide = guide_legend()) +
   labs(x='Site', y='Median height (m)') +
-  ggthemes::theme_calc(base_size=18) +
-  theme(legend.position = c(0.270, 0.855),
+  ggthemes::theme_calc(base_size=8) +
+  theme(legend.position = c(0, 1),
+        legend.justification = c('left', 'top'),
+        legend.key.size=unit(0.02, 'npc'),
         legend.box.background = element_rect(fill = "white", color = "black"),
         axis.text.x = element_text(angle=60, hjust=1))
 
 # Plot: 90th pctl height comparison barplot
-ggplot(ls.match.comp.l.90, aes(x=site, y=value, fill=name)) +
-  geom_col(position=position_dodge(width=0.75), width=0.75) +
-  scale_fill_manual(values=hcomp.colors, name='90th percentile height') +
-  labs(x='Site', y='90th percentile of height (m)') +
-  ggthemes::theme_calc(base_size=18)
+# ggplot(ls.match.comp.l.90, aes(x=site, y=value, fill=name)) +
+#   geom_col(position=position_dodge(width=0.75), width=0.75) +
+#   scale_fill_manual(values=hcomp.colors, name='90th percentile height') +
+#   labs(x='Site', y='90th percentile of height (m)') +
+#   ggthemes::theme_calc(base_size=18)
 
 # Plot: QMD comparison barplot
 # ggplot(ls.match.qmd.l, aes(x=site, y=value, fill=name)) +
@@ -208,11 +224,10 @@ skill.density <- ggplot(df.matched.plt.l, aes(x=value, group=src, color=factor(s
   #scale_fill_manual(values=kdens.colors, name='Data source') +
   labs(x='Dimension value', y='Kernel density') +
   facet_wrap(~dim, nrow=3, scales='free') +
-  ggthemes::theme_calc(base_size=18) +
+  ggthemes::theme_calc(base_size=8) +
   theme(legend.position = 'bottom')
 
 skill.density
-
 
 ##########################
 # VERSION 2: XYZ DENSITY
@@ -236,12 +251,24 @@ skill.density.2 <- ggplot(df.matched.plt.l.z, aes(x=value, group=src, color=fact
   #scale_fill_manual(values=kdens.colors, name='Data source') +
   labs(x='Height (m)', y='Frequency of occurrence (kernel density)') +
   #facet_wrap(~dim, nrow=3, scales='free') +
-  ggthemes::theme_calc(base_size=18) +
-  theme(legend.position = c(0.742,0.895),
-        legend.box.background = element_rect(fill = "white", color = "black"),
+  ggthemes::theme_calc(base_size=8) +
+  theme(legend.position='none',
+        # legend.position = c(0.742,0.895),
+        # legend.box.background = element_rect(fill = "white", color = "black")
   )
 
 skill.density.2
+
+# Format for publication
+cairo_pdf('~/Desktop/Fig2.pdf', width=90/25.4, height=180/25.4, onefile=T,
+          family='Arial', bg='white')
+
+hcomp.plt /
+  skill.density.2 +
+  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:2], ')'))) &
+  theme(plot.tag = element_text(face = 'bold'))
+
+dev.off()
 
 ## Map example tree detections
 ## ---------------------------------------------------------------------------------------------------
@@ -251,19 +278,19 @@ plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
                        pattern=config$extdata$plotpattern)
 
 # Ingest LAS
-infiles <- list.files(config$extdata$las_dec, full.names=T)
-lascat <- readLAScatalog(infiles)
+# infiles <- list.files(config$extdata$las_dec, full.names=T)
+# lascat <- readLAScatalog(infiles)
 
 # Ingest CHM
-er.chm <- rast(file.path(config$extdata$scratch, 'chm_full_extent', 'chm_smooth_masked.tif'))
+# er.chm <- rast(file.path(config$extdata$scratch, 'chm_full_extent', 'chm_smooth_masked.tif'))
 
 # Ingest NAIP base image
-tmpfile <- drive_download(
-  as_id(config$extdata$naipid),
-  path=file.path(tempdir(), config$extdata$naipid),
-  overwrite=T)$local_path
-
-naip <- rast(tmpfile)
+# tmpfile <- drive_download(
+#   as_id(config$extdata$naipid),
+#   path=file.path(tempdir(), config$extdata$naipid),
+#   overwrite=T)$local_path
+#
+# naip <- rast(tmpfile)
 
 # View n for each site-src
 View(ls.match %>%
@@ -288,7 +315,7 @@ uc2.l <- uc2.pred %>%
          Z = coalesce(Zobs, Zpred),
          X = coalesce(Xobs, Xpred),
          Y = coalesce(Yobs, Ypred),
-         Zscale = Z^2,
+         Zscale = Z*.001,
          matched = ifelse(is.na(pair_id), F, T))
 
 # Subset plot boundaries to target site
@@ -320,6 +347,9 @@ uc2.naip <- crop(naip, st_buffer(uc2.bnd, 5, endCapStyle ='SQUARE', joinStyle='M
 uc2.naip.df <- as.data.frame(uc2.naip, xy=T)
 names(uc2.naip.df)[3:5] <- c('green', 'blue', 'red')
 
+uc2.chm.df <- read.csv(file.path(config$data$int, 'uc2_chm_df.csv'),
+                       row.names=1)
+
 # Plot
 nclr <- nrow(uc2.l)/2
 
@@ -330,39 +360,43 @@ uc2.base.map <- ggplot() +
                       breaks=c(1, 10, 20))
 
 uc2.match.map <- uc2.base.map +
-  geom_point(data=uc2.l, aes(x=X, y=Y, size=Z,
+  geom_sf(data=uc2.bnd, color='black', linewidth=1, fill=NA) +
+  geom_point(data=uc2.l, aes(x=X, y=Y, size=Zscale,
                              shape=factor(Source),
-                             color=factor(matched)),
+                             color=factor(matched, levels=c(T,F))),
              inherit.aes = F) +
-  geom_text(data=uc2.l, aes(x=X, y=Y,
-                            color=factor(matched),
-                            label=factor(pair_id)),
-            size=3,
-            position=position_jitter(width=.75, height=.75)
-            ) +
-  scale_color_manual(values=c('grey70', '#ff4040'), name='Matched') +
-  scale_shape_manual(values=c(1,3), name='Data source') +
-  geom_sf(data=uc2.bnd, color='gold', linewidth=1, fill=NA) +
+  geom_path(data=uc2.l[!is.na(uc2.l$pair_id),], aes(x=X, y=Y, group=factor(pair_id)),
+            color='#4AC63F', linewidth=0.4) +
+  # geom_text(data=uc2.l, aes(x=X, y=Y,
+  #                           color=factor(matched, levels=c(T,F)),
+  #                           label=factor(pair_id)),
+  #                           size=1,
+  #           position=position_jitter()
+  #           ) +
+  scale_color_manual(values=c('#4AC63F', 'grey40'), name='Matched') +
+  scale_shape_manual(values=c(0,1), name='Data source') +
   ggspatial::annotation_scale(location='br', style='ticks') +
   guides(size='none') +
   labs(x='Longitude', y='Latitude') +
   ggthemes::theme_calc(base_size=8) +
   theme(axis.text = element_blank(),
         axis.title = element_blank(),
-        legend.key.size=unit(.2, 'cm'),
-        legend.title = element_text(size=14),
-        legend.text = element_text(size=12),
-        legend.position=c(0.096, 0.13),
+        # plot.margin = margin(c(t=0, r=0, b=0, l=0.05), unit='npc'),
+        legend.key.size=unit(0.0075, 'npc'),
+        legend.spacing=unit(0.00008, 'npc'),
+        #legend.title = element_text(size=14),
+        #legend.text = element_text(size=12),
+        #legend.direction='horizontal',
+        legend.position=c(0, 0),
+        legend.justification = c('left', 'bottom'),
+        #legend.box.margin = margin(rep(0,4), unit='npc'),
         legend.box.background = element_rect(fill = "white", color = "black"),
         legend.background=element_blank(),
-        legend.spacing.y = unit(0.1,"cm"))
+        #legend.spacing.y = unit(0.1,"cm")
+        )
 
-<<<<<<< HEAD
-
-saveRDS(uc2.match.map, 'map')
-=======
-uc2.match.map <- readRDS(file.path(config$data$int, 'matchmap.Rda'))
->>>>>>> 9daaae45c3c80bf53a0b9d93ee3d08cdf1f62023
+# saveRDS(uc2.match.map, 'map')
+#uc2.match.map <- readRDS(file.path(config$data$int, 'matchmap.Rda'))
 
 cairo_pdf('~/Desktop/Fig2.pdf', width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')
@@ -371,7 +405,7 @@ print(uc2.match.map)
 
 dev.off()
 
-# SCRATCH
+ # SCRATCH
 # base.map <- ggplot() +
 #   geom_raster(data=uc2.naip.df, aes(x=x, y=y, fill=rgb(red=red,
 #                                                        blue=blue,

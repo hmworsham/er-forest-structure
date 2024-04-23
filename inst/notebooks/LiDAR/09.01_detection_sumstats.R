@@ -2,11 +2,7 @@
 
 ## ---------------------------------------------------------------------------------------------------
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -23,10 +19,16 @@ drive_auth(path=config$drivesa)
 ## Ingest data
 
 # Ingest detected trees
-alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_100m.csv'))
+alltrees <- read_csv(
+  drive_download(as_id('18zy_9ofHJ2-Cjl5perwN3mpjq8WTKB_6'),
+                 path=file.path(tempdir(), 'alltrees.csv'),
+                 overwrite = T)$local_path)
 
 # Ingest match data
-ls.match <- read.csv(file.path(config$extdata$itc, 'opt_matches.csv'))
+ls.match <- read.csv(drive_download(
+  as_id('1LCafch6gd2bYqYTT0eeW1o5QSHXv5O50'),
+  path=file.path(tempdir(), 'opt_matches.csv'),
+  overwrite = T)$local_path)
 
 # Ingest field data
 tmpfile <- drive_download(
@@ -152,14 +154,23 @@ alltrees.corx.l <- alltrees.corx %>%
   pivot_longer(cols=c(n, n_corr)) %>%
   mutate(name=ifelse(name=='n', 'Pre-correction', 'Post-correction'))
 
-ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fill=name)) +
+alltrees.corx.plt <- ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fill=name)) +
   geom_col(width=.8, position=position_dodge(.8)) +
   scale_fill_manual(values=c('#E31A1C', '#FD8D3C'), name=NULL) +
   scale_x_continuous(limits=c(0,40)) +
-  labs(x='Height (m)', y='Number of detected tree crown objects') +
-  ggthemes::theme_calc(base_size=18) +
-  theme(legend.position = c(0.855, 0.94),
+  labs(x='Height (1 m bins)', y='Number of detected tree crown objects') +
+  ggthemes::theme_calc(base_size=8) +
+  theme(legend.position = c(1,1),
+        legend.justification = c('right', 'top'),
         legend.box.background = element_rect(fill = "white", color = "black"))
 
+cairo_pdf('~/Desktop/Fig4.pdf', width=90/25.4, height=90/25.4, onefile=T,
+          family='Arial', bg='white')
 
+print(alltrees.corx.plt)
+
+dev.off()
+
+
+# Number of corrected trees
 sum(alltrees.corx$n_corr, na.rm=T)

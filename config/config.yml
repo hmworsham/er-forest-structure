@@ -13,6 +13,9 @@ default:
   - ggpattern
   - ggmap
   - gridExtra
+  - patchwork
+  - grid
+  - gtable
   - terra
   - sf
   - future
@@ -39,7 +42,6 @@ default:
   - raster
   - tidyterra
   - RColorBrewer
-  - grid
   - viridis
   - lme4
   - gbm
