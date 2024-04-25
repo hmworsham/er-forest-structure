@@ -85,7 +85,7 @@ stem.inv.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
                       'Sp_Code'=as.factor(inv$Sp_Code),
                       'Site_Name'=inv$Site_Name,
                       'Site_Tag'=paste0(inv$Site_Name, inv$Tag_Number))
-stem.inv.xyz = stem.xyz[!is.na(stem.inv.xyz$Height),]
+stem.inv.xyz = stem.inv.xyz[!is.na(stem.inv.xyz$Height),]
 
 # Turn stem.xyz into sf object
 stem.sf.inv <- st_as_sf(stem.inv.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
@@ -115,7 +115,7 @@ modtrees <- modtrees %>%
   filter(src==1) %>%
   mutate(Site_Tag=paste0(site, obs)) %>%
   st_as_sf(coords=c('Xpred', 'Ypred'), crs='EPSG:32613') %>%
-  left_join(stem.xyz, by='Site_Tag') %>%
+  left_join(stem.inv.xyz, by='Site_Tag') %>%
   mutate(Crown_Radius_Mod = 0.082*Zpred + 0.5)
 
 st_crs(modtrees) <- st_crs(plotsf)
@@ -281,32 +281,3 @@ plt.bar <- function(x){
 #     ylab('Latitude') +
 #     ggthemes::theme_calc(base_size=14)
 # })
-
-
-# Scratch
-# ergt1.stems <- stem.sf[stem.sf$Site_Name=='ER-GT1',]
-# ergt1.stems$treeID <- 1:nrow(ergt1.stems)
-#
-# algo <- dalponte2016(chm_pitfree_05_1, ergt1.stems, th_tree=1.3)
-#
-# ergt1.seg <- segment_trees(ergt1, algo)
-# plot(ergt1.seg, color='treeID', )
-# rglwidget()
-# crowns <- crown_metrics(ergt1.seg, func = NULL, geom = "convex")
-# plot(sf::st_geometry(crowns), reset = FALSE)
-#
-# ergt1.seg2 <- algo()
-# crowns2 <- as.polygons(ergt1.seg2)
-# plot(crowns2, col=pastel.colors(302))
-# ergt1.stems <- st_join(st_as_sf(crowns2), ergt1.stems, by=c('Z'='treeID'))
-
-
-# algos <- lapply(chm.smooth, dalponte2016, stem.sf, th_tree=1)
-# stem.seg <- list()
-# for(i in seq_along(algos)) {
-#   stem.seg[[i]] <- as.polygons(algos[[i]]())
-# }
-#
-# stem.seg <- do.call('rbind', stem.seg)
-# stem.seg <- st_join(st_as_sf(stem.seg), stem.sf, by=c('Z'='treeID'))
-# plot(stem.seg[stem.seg$Site_Name=='SG-NES1', 'treeID'])

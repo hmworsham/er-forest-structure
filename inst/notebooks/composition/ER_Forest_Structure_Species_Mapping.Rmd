@@ -70,11 +70,11 @@ data.frame(cm1$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm1.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm1$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 ```
 
 ```{r}
@@ -154,11 +154,11 @@ data.frame(cm2$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm2.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm2$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 
 ```
 
@@ -236,11 +236,11 @@ data.frame(cm3$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm3.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm3$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 ```
 
 ```{r}
@@ -292,11 +292,11 @@ data.frame(cm4$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm4.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm4$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 ```
 
 ```{r out.width='100%'}
@@ -355,11 +355,11 @@ data.frame(cm5$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm5.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm5$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 
 ```
 
@@ -431,11 +431,11 @@ data.frame(cm6$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm6.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm6$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 ```
 
 ```{r out.width='100%'}
@@ -509,11 +509,11 @@ data.frame(cm7$table) %>%
   tab_options(row_group.as_column = TRUE)
 
 data.frame(t(round(cm7.overall,2)))[c(2,1,3,4)] %>%
-  gt()
+  flextable()
 
 data.frame(round(cm7$byClass,2)) %>%
   rownames_to_column(var='Class') %>%
-  gt()
+  flextable()
 ```
 
 ```{r out.width='100%'}
@@ -531,6 +531,12 @@ pd7
 pb7
 ```
 
+### Write Approach 7 data table for reproducible tables
+```{r}
+st_write(stems.comp7, file.path(config$data$int, 'spp_class_data.csv'), layer_options = "GEOMETRY=AS_XY")
+```
+
+
 ---
 
 ## Compare accuracy
@@ -545,5 +551,5 @@ acc.df <- bind_rows(cm1.overall, cm2.overall, cm3.overall,
   dplyr::select(8, 2, 1, 3, 4)
 
 acc.df %>%
-  gt()
+  flextable()
 ```
