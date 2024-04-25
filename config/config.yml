@@ -50,6 +50,7 @@ default:
   - officedown
   - jtools
   - flextable
+  - ftExtra
 
  extdata:
   scratch: '/global/scratch/users/worsham'
