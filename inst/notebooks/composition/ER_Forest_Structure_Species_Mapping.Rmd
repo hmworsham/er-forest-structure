@@ -538,7 +538,7 @@ stems.comp7.out <- stems.comp7 %>%
   st_set_geometry(NULL) %>%
   rename(geometry=geometry.1)
 
-write.csv(stems.comp7.out, file.path(config$data$int, 'spp_class_data.csv'))
+write.csv(stems.comp7.out, file.path(config$data$int, 'spp_class_data.csv'), row.names=F)
 ```
 
 
