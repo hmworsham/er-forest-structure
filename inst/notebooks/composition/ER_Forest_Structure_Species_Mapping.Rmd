@@ -533,7 +533,12 @@ pb7
 
 ### Write Approach 7 data table for reproducible tables
 ```{r}
-st_write(stems.comp7, file.path(config$data$int, 'spp_class_data.csv'), layer_options = "GEOMETRY=AS_XY")
+stems.comp7.out <- stems.comp7 %>%
+  cbind(., st_geometry(.)) %>%
+  st_set_geometry(NULL) %>%
+  rename(geometry=geometry.1)
+
+st_write(stems.comp7.out, file.path(config$data$int, 'spp_class_data.csv'))
 ```
 
 
