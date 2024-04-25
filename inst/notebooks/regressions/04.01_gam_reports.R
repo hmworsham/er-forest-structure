@@ -50,12 +50,6 @@ vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
 gam.sum <- lapply(gams, summary)
 gam.pde <- lapply(gams, \(x) return(summary(x)$dev.expl))
 
-# lapply(1:8, \(i) {
-#   sink(file.path(config$data$pro, 'gam_performance', paste0(names(gams)[[i]], '_summary.txt')))
-#   print(gam.sum[[i]])
-#   sink()
-#   })
-
 #############
 # Table
 #############

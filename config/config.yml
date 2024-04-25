@@ -47,10 +47,9 @@ default:
   - gbm
   - caret
   - car
-  - reporter
   - officedown
   - jtools
-  - gt
+  - flextable
 
  extdata:
   scratch: '/global/scratch/users/worsham'

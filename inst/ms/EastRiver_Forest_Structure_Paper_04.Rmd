@@ -295,7 +295,7 @@ This work was funded by the U.S. Department of Energy Watershed Function Scienti
 **Table 1.** Response (RE) and explanatory (EX) variables used in this study's statistical analyses. Variables listed in the "Topography" category were also used in the sampling procedure to stratify inventory plots.
 
 ```{r, echo=F}
-tbl1
+flextable(tbl1)
 ```
 
 \clearpage

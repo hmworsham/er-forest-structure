@@ -8,14 +8,15 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 # Read itc optimization results
-itc.res.files <- list.files(config$extdata$itc, pattern='results.csv', full.names=T)
+itc.res.files <- list.files(file.path(config$data$int, 'itc_results'),
+                            pattern='results.csv', full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
 
 # Bind into one dataframe
 itc.res <- bind_rows(itc.res, .id='mi')
 
 # Get model names and parameter set IDs and assign to columns
-mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 8))
+mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
 mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
