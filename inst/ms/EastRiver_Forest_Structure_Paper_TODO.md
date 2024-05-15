@@ -1,18 +1,8 @@
 # East River Forest Structure Paper: TODO
 
 ## Analysis
-- Regrid trees to 100 m and write out
-- Regrid trees to 500 m and write out
-- Export all results to eastriver Drive
-- Export all data to ESS DIVE
-
-## Tables, Figures, Numbers, Equations
-- FIG: Fig 5, Fig 6 update BA units to m^2 ha^-1
-- FIG: Partial effects plots for ALL significant variables in GAM
-- FIG: Partial dependence plots for significant variables in GBM
-- NUM: sd of 95P height and QMD in full domain
-- NUM: Elevation, maximum density, height, etc.
-- NUM: TWI values 
+- Zip data from savio and egress to GCS
+- Export key data to ESS DIVE
 
 ## Draft 4 Revisions
 
@@ -30,15 +20,19 @@
 
 ### Results
 - [HARUKO] Figure 5. I might have missed, but I wonder why aspects are not included; folded into SWE? 
+- FIG: Fig 5, Fig 6 update BA units to m^2 ha^-1
+- NUM: sd of 95P height and QMD in full domain
 
 ### Conclusions
 - LARA (in abstract): In conclusion, return to this point--"Quantifying the drivers of fine-scale heterogeneity... is an essential foundation for understanding how these systems will respond to synoptic environmental change..."--but say what you think your results reaaly say about each of these things. How do your results suggest these forests might change given plausible climate change? Can differences in height/density/BA be reliably detected using these methods and the error in your estimates? What does your analysis say about where in the watershed there may be key conservation values or management opportunities (e.g. for species, carbon, water, etc.). [In short, provide more detail on this important argument you briefly raise in abstract]
+
+## Tables, Figures, Numbers, Equations
+
 
 ### Maybes
 - FIG: Comparison of PC density, original NEON vs discretized waveform
 - FIG: Map with missing flightpath and gap-filled showing density discrepancy
 - TAB: make a table with AIC and/or REML values for each model selection approach (assuming one of the gam selection approaches actually works)
-
 
 ---
 
@@ -88,7 +82,9 @@
 - TAB: Table 8: significant geology variables
 - CAP: Update Fig. 7 caption
 - [HARUKO] Figure 4. I assume that mapping these forest structure metrics is a tremendous achievement. You might want to include the maps of these metrics. Also, people who work on remote sensing tend to love looking at maps. 
-
+- FIG S3: Partial effects plots for ALL significant variables in GAM
+- NUM: Elevation, maximum density, height, etc.
+- NUM: TWI values 
 
 ## Draft 3 completed tasks
 X TAB: Make table of abiotic explanatory variables: Name, Category, Units, Source
