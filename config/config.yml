@@ -58,6 +58,7 @@ default:
   las_reg: '/global/scratch/users/worsham/las_regridded'
   trees: '/global/scratch/users/worsham/trees_ls_100m_csv'
   itc: '/global/scratch/users/worsham/itc_results'
+  siteindex: '1KPpaiTZSfrq0RYMJQwNdwgCU-4rWucheW5KUN_maERs'
   invpattern: 'EastRiver_Census1_Data_Collated.csv'
   invid: '17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9'
   plotid: '17y17SPt8xcowTeKjfGWmzuar-LI_5sl7'
