@@ -57,44 +57,51 @@ inv <- inv %>%
 # Remove unlikely detected trees
 alltrees <- alltrees[alltrees$H<=60,]
 
-## ---------------------------------------------------------------------------------------------------
+## ---------------------------------------------------------------------------------------
 
 ## Summary stats on inventory trees
 inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
 inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
 inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
-inv.p90.ht <- quantile(inv$Height_Avg_M, .95, na.rm=T)
+inv.p95.ht <- quantile(inv$Height_Avg_M, .95, na.rm=T)
+inv.p99.ht <- quantile(inv$Height_Avg_M, .99, na.rm=T)
 inv.sd.ht <- sd(inv$Height_Avg_M, na.rm=T)
+inv.max.ht <- max(inv$Height_Avg_M, na.rm=T)
 
 data.frame('QMD'=inv.qmd,
            'SD DBH'=inv.sd.dbh,
            'Median Height'=inv.median.ht,
-           'Percentile-90 Height'=inv.p90.ht,
-           'SD Height'=inv.sd.ht)
+           'Percentile-95 Height'=inv.p95.ht,
+           'Percentile-99 Height'=inv.p99.ht,
+           'SD Height'=inv.sd.ht,
+           'Max height'=inv.max.ht)
 
-## ---------------------------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------------------
 ## Summary stats on detected trees in training
 
 ls.match.det <- ls.match %>%
   filter(src==1) %>%
   dplyr::select(Zpred) %>%
-  # mutate(DBH_est=exp(-0.1379 + 1.2082*log(Zpred))*exp(0.0105)) %>%
   mutate(H=Zpred)
 
-ls.match.det$DBH_est <- exp(predict(m2,ls.match.det))*exp(summary(m2)$sigma^2/2)
+ls.match.det$DBH_est <- exp(-mean.coef$alpha + mean.coef$beta*log(ls.match.det$H))*exp(mean.coef$sigma^2/2)
 ls.qmd <- sqrt(mean(ls.match.det$DBH_est^2, na.rm=T))
 ls.sd.dbh <- sd(ls.match.det$DBH_est, na.rm=T)
 ls.median.ht <- median(ls.match.det$H, na.rm=T)
-ls.p90.ht <- quantile(ls.match.det$H, .95, na.rm=T)
+ls.p95.ht <- quantile(ls.match.det$H, .95, na.rm=T)
+ls.p99.ht <- quantile(ls.match.det$H, 0.99, na.rm=T)
 ls.sd.ht <- sd(ls.match.det$H, na.rm=T)
+ls.max.ht <- max(ls.match.det$H, na.rm=T)
 
 data.frame('QMD'=ls.qmd,
            'SD DBH'=ls.sd.dbh,
            'Median Height'=ls.median.ht,
-           'Percentile-90 Height'=ls.p90.ht,
-           'SD Height'=ls.sd.ht)
+           'Percentile-95 Height'=ls.p95.ht,
+           'Percentile-99 Height'=ls.p99.ht,
+           'SD Height'=ls.sd.ht,
+           'Max Height'=ls.max.ht)
 
-## ---------------------------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------------------
 ## Summary stats on ALL detected trees
 
 ntrees <- nrow(alltrees)
