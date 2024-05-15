@@ -37,7 +37,7 @@ ls.match <- drive_download(
 ls.match <- read.csv(ls.match)
 
 ## Compare detected and reference trees
-## ---------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------------------
 pred.med.ht <- median(ls.match$Zpred, na.rm=T)
 pred.sd.ht <- sd(ls.match$Zpred, na.rm=T)
 pred.p90.ht <- quantile(ls.match$Zpred, .9, na.rm=T)
@@ -45,8 +45,12 @@ pred.p90.ht <- quantile(ls.match$Zpred, .9, na.rm=T)
 pred.med.ht
 pred.sd.ht
 
+ht.delta <- ls.match %>%
+  filter(src==1) %>%
+  summarise(mean(Zpred-Zobs, na.rm=T))
+
 ## Compare detected and reference trees by plot
-## ---------------------------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------------------
 
 # Compare median height by site
 ls.detect.med.l <- ls.match %>%
@@ -165,7 +169,7 @@ hcomp.plt <- ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src)))
 #   ggthemes::theme_calc(base_size=18)
 
 ## Compare detected and reference trees across the full domain
-## ---------------------------------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------
 
 ## Reformat matches
 ls.match.l <- ls.match %>%
