@@ -43,9 +43,13 @@ keywords: forest structure, subalpine forest, conifer, ecology, LiDAR, remote se
 bibliography: ./ER_Forest_Structure_Paper_Bib.bib # File created from reference manager
 csl: ./remote-sensing-of-environment.csl # This can be changed to your citation style of choice
 abstract: Abiotic constraints explain much of the variability in forest structure and composition. At broad scales, climatic factors such as actual evapotranspiration (AET) and climatic water deficit (CWD) often emerge as the strongest constraints. However, at finer scales, such as that of a watershed or basin, other locally varying topographic and edaphic factors may mediate the effects of synoptic climate. Here we quantified the effects of abiotic constraints on a complement of conifer stand structural and compositional characteristics on a spatially continuous basis at the scale of a watershed. We used full-waveform LiDAR to derive multiple measures of stand structure across their full ranges within an upper montane--subalpine domain in the Rocky Mountains of Colorado. We also used a species-level classification map to estimate spatial variability in tree species density. Using generalized additive and gradient boosting modeling strategies, we evaluated the covariability of structural and compositional metrics with a suite of climate, topography, soil, and geologic variables, incorporating end members of the abiotic gradients along which forest stands grow. Peak snow input, snow disappearance rate, and soil water storage explained the majority of variability in stand density, with nonlinear structures. Stand density was related to snow water equivalent along an approximately quadratic function, positively to snow disappearance rate and elevation along an approximately cubic function, and positively related to soil water content along a more complex polynomial function. The same factors explained most of the variation in maximum canopy height, quadratic mean diameter, and basal area, but the functional forms were inverse of those for density. Height skew, an index of the relative proportion of small and large trees in a stand, was poorly correlated with all factors. Quantifying the drivers of fine-scale heterogeneity in the structure of montane and subalpine forests is an essential foundation for understanding how these systems will respond to synoptic environmental change, for establishing a baseline against which these responses can be measured, and for devising conservation and management strategies that promote forest resilience.
-
 ---
-```{r setup, include=F}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r config, include=F}
 config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
@@ -280,7 +284,6 @@ To our knowledge, this paper is the first to evaluate a complement of conifer st
 
 Over the past two decades, the Southern Rocky Mountains have experienced drier and warmer conditions than any prior period in the last millennium, and forests in the region have experienced high canopy water loss and mortality (@williams_rapid_2022). Given the evident importance of total snow accumulation and snowpack duration for stand density, maximum height, relative species densities, and other structural factors, a low-to-no snow future could yield widespread changes in these forests' structure, species mix, and function (Siirla-Woodburn 2021). The results we have presented here could be a foundation for future work to benchmark and predict how these systems will respond to synoptic environmental change in the future. Additionally, evaluating forest structural change in this domain under warmer conditions could enable more detailed characterization of the W-E mosaic. 
 
-
 # Acknowledgements
 This work was funded by the U.S. Department of Energy Watershed Function Scientific Focus Area at Lawrence Berkeley National Lab, by the U.S. Department of Energy Environmental System Science (Project [TODO: #######] "Integrating tree hydraulic trait, forest stand structure, and topographic controls on ecohydrologic function in a Rocky Mountain subalpine watershed"), the Colorado Mountain Club Foundation, the Energy and Resources Group, UC Berkeley (Berkeley, CA, USA), and the Rocky Mountain Biological Lab (RMBL, Gothic, CO, USA). The authors would additionally like to thank RMBL for assistance with field site access, research permitting, and GNSS data acquisition. We also thank Hilary Henry, Sophia Bagshaw, Sarah Hettema, Jessica Katz, and Asa Elliott for field assistance, and Maggi Kelly, Dennis Baldocchi, Marcos Longo, and Ian Breckheimer for productive discussions.
 
@@ -293,18 +296,7 @@ This work was funded by the U.S. Department of Energy Watershed Function Scienti
 **Table 1.** Response (RE) and explanatory (EX) variables used in this study's statistical analyses. Variables listed in the "Topography" category were also used in the sampling procedure to stratify inventory plots.
 
 ```{r, echo=F}
-
-fit.ft <- function(ft, pgwidth = 7.5){
-
-  ft_out <- ft %>% autofit()
-
-  ft_out <- width(ft_out, 
-                  width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
-  return(ft_out)
-}
-
-fit.ft(flextable(tbl1))
-
+tbl1
 ```
 
 \clearpage
@@ -333,7 +325,9 @@ tbl3
 
 **Table 4.** Summary statistics for the best-performing runs of six individual tree delineation (ITD) algorithms. Parameters and values for each run appear in Table S1. Root mean squares were computed for results across the 17 training plots.
 
-![](./Figures/tbl4.png)
+```{r, echo=F}
+tbl4
+```
 
 \clearpage
 
@@ -349,8 +343,11 @@ tbl5
 
 \newpage
 
-**Table 6.** Performance
-![](./Figures/tbl6.png)
+**Table 6.** Classification performance metrics by species.
+
+```{r, echo=F}
+tbl6
+```
 
 \clearpage
 

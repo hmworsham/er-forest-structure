@@ -4,15 +4,9 @@
 ## Workspace setup
 #####################
 
-# Load config
-config <- config::get(file=file.path('config', 'config.yml'))
-
-# Load local helper functions and packages
-devtools::load_all()
-load.pkgs(config$pkgs)
-
-# Configure Drive auth
-drive_auth(path=config$drivesa)
+library(tidyverse)
+library(flextable)
+library(ftExtra)
 
 ############################
 # Define flextable formatting
@@ -51,7 +45,7 @@ tbl1 <- make.ft(flextable(tbl1))
 ##########
 
 tbl2 <- read.csv('~/Desktop/tbl2.csv', stringsAsFactors = F,
-             na = "", encoding='UTF-8')
+                 na = "", encoding='UTF-8')
 
 tbl2 <- make.ft(flextable(tbl2))
 
@@ -120,12 +114,26 @@ best.mean <- best.res %>%
                  'PTrees',
                  'Watershed'))
 
-names(best.mean) <- c('Model', names(opt.mean))
+names(best.mean) <- c('Model',
+                      'N reference trees',
+                      'N detected trees',
+                      'Extraction rate',
+                      'Match rate',
+                      'Overall accuracy',
+                      'Omission rate',
+                      'Commission rate',
+                      'RMS ∆XY',
+                      'RMS ∆Z',
+                      'RMS ∆XYZ',
+                      'Precision',
+                      'Recall',
+                      'F'
+)
 best.mean <- best.mean[c(5, 1:4, 6:8),]
 
 # Flextables
 tbl4 <- make.ft(flextable(best.mean) %>%
-                          bold(i=1))
+                  bold(i=1))
 
 ##########
 # Table 5
@@ -140,7 +148,24 @@ tbl5 <- make.ft(flextable(tbl5))
 # Table 6
 ##########
 
+spp.class <- read.csv(file.path(config$data$int, 'spp_class_data.csv')) %>%
+  mutate(across(c(Reference, Classified), factor))
+cm.spp <- confusionMatrix(spp.class$Reference, spp.class$Classified)
 
+cm.spp.overall <- cm.spp$overall
+
+data.frame(t(round(cm.spp.overall,2)))[c(2,1,3,4)] %>%
+  flextable()
+
+tbl6 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
+  rownames_to_column(var='Class') %>%
+  mutate(Class=factor(c('Fir', 'Pine', 'Spruce'),
+                      levels=c('Fir', 'Spruce', 'Pine'))) %>%
+  select(Class, Sensitivity, Specificity,
+         Precision, Recall, F1, `Detection Rate`,
+         `Balanced Accuracy`)
+
+tbl6 <- make.ft(flextable(tbl6))
 
 ##########
 # Table 7
@@ -225,16 +250,16 @@ tbl7 <- gbm.perf.df %>%
   rename(`Training error`='Train error',
          `CV error`='CV error',
          `PDE`='PDE'
-         ) %>%
+  ) %>%
   mutate(across(`Training error`:`PDE`, \(x) round(x,2)),
          Response= factor(Response, levels=c('Basal area',
-                         'Height 95P',
-                         'Height skew',
-                         'QMD',
-                         'Total density',
-                         'Fir density',
-                         'Spruce density',
-                         'Pine density'))) %>%
+                                             'Height 95P',
+                                             'Height skew',
+                                             'QMD',
+                                             'Total density',
+                                             'Fir density',
+                                             'Spruce density',
+                                             'Pine density'))) %>%
   arrange(Response)
 
 tbl7 <- make.ft(flextable(tbl7) %>%
@@ -244,7 +269,7 @@ tbl7 <- make.ft(flextable(tbl7) %>%
                   align(i=1, align='center', part='header') %>%
                   hline(i=1, j=2:3, part='header') %>%
                   hline(i=1, j=4, part='header')
-                )
+)
 tbl7
 
 ############
