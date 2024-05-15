@@ -139,7 +139,7 @@ peplot.dfs <- peplot.df %>%
                        T ~ 'Full')) %>%
   group_split(Model)
 
-lblr <- c(`Basal area`=bquote('Basal area ('*m^2~m^-2*')'),
+lblr <- c(`Basal area`=bquote('Basal area ('*m^2~ha^-1*')'),
            `Height 95P`='Height 95P (m)',
            `Height skew`='Height skew',
            QMD='QMD (cm)',
@@ -408,7 +408,10 @@ peplot.itx.df <- bind_rows(pe.itx.dfs, .id='Model') %>%
          lab2=factor(l2, levels=c('aet', 'cwd', 'delta_swe', 'swe',
                                   'heat_load', 'tpi', 'awc', 'y'),
                      labels=c('AET', 'CWD', '\u0394SWE', 'SWE',
-                              'Heat load', 'TPI', 'AWC', 'Y'))
+                              'Heat load', 'TPI', 'AWC', 'Y')),
+         model_orig=factor(Model, labels=c('ba', 'height', 'height.skew',
+                                           'diam', 'density',
+                                           'abla_density', 'pien_density', 'pico_density'))
   ) %>%
   arrange(Model, var) %>%
   drop_na()
@@ -440,8 +443,13 @@ peplot.itx.sub <- peplot.itx.df %>%
   left_join(peplot.itx.df, by=c('Model', 'var')) %>%
   ungroup() %>%
   filter(!Model %in% c('Fir density', 'Pine density', 'Spruce density')) %>%
+  group_by(Model) %>%
+  mutate(# liml=min(range(fit, na.rm=T)[1]),
+         # limu=max(range(fit, na.rm=T)[2]),
+         liml=min(vars[names(vars)==first(model_orig)], na.rm=T),
+         limu=max(vars[names(vars)==first(model_orig)], na.rm=T)) %>%
+  ungroup() %>%
   group_split(Model, var)
-
 
 exp.lblr <- c('awc'=bquote('AWC ('*cm~cm^-1*')'),
               'elevation'='Elevation (m)',
@@ -457,58 +465,65 @@ exp.lblr <- c('awc'=bquote('AWC ('*cm~cm^-1*')'),
 
 peplots <- lapply(peplot.itx.sub, \(i) {
   g <- ggplot(i, aes(x=v1, y=v2, z=fit)) +
-  geom_raster(aes(fill=fit)) +
-  geom_contour(color='white', bins=20, alpha=0.25) +
-  scale_fill_viridis(option='F', na.value=NA, direction=1,
-                     name=lblr[names(lblr)==i$Model[1]][[1]],
-                     guide=guide_colorbar(title.position='right',
-                                          title.vjust=0.5)) +
-  labs(title=paste(i$lab1, i$lab2, sep=':'),
-       x=exp.lblr[names(exp.lblr)==i$l1[1]][[1]],
-       y=exp.lblr[names(exp.lblr)==i$l2[1]][[1]]) +
-  ggthemes::theme_calc(base_size=8) +
-  theme(#aspect.ratio=1,
-        legend.title = element_text(angle = -90,
-                                    hjust = 0.5),
-        legend.key.width = unit(0.005, 'npc'),
-        legend.key.height = unit(0.03, 'npc'),
-        #legend.margin=margin(t=0, b=0, r=0 l=0.0002, 'npc'),
-        legend.text.align=1,
-        legend.text=element_text(size=6),
-        plot.margin=margin(l=0.025, b=0.01, unit='npc'),
-        plot.background=element_rect(fill=NA, color=NA, linewidth=0),
-        plot.title=element_text(face='bold',
-                                hjust=0.5))
+    geom_raster(aes(fill=fit), interpolate=F) +
+    geom_contour(color='white', bins=20, alpha=0.25) +
+    scale_fill_viridis(option='F', na.value=NA, direction=1,
+                       name=lblr[names(lblr)==i$Model[1]][[1]],
+                       limits=c(i$liml[[1]], i$limu[[1]]),
+                       guide=guide_colorbar(title.position='right',
+                                            title.vjust=0.5)) +
+    labs(title=paste(i$lab1, i$lab2, sep=' : '),
+         #x=exp.lblr[names(exp.lblr)==i$l1[1]][[1]],
+         #y=exp.lblr[names(exp.lblr)==i$l2[1]][[1]]
+         x=paste(i$lab1, '(zero-centered)'),
+         y=paste(i$lab2, '(zero-centered)')) +
+    ggthemes::theme_calc(base_size=8) +
+    theme(#aspect.ratio=1,
+      legend.title = element_text(angle = -90,
+                                  hjust = 0.5),
+      legend.key.width = unit(0.005, 'npc'),
+      legend.key.height = unit(0.03, 'npc'),
+      #legend.margin=margin(t=0, b=0, r=0 l=0.0002, 'npc'),
+      legend.text=element_text(size=6, hjust=1),
+      plot.margin=margin(l=0.025, b=0.01, unit='npc'),
+      plot.background=element_rect(fill=NA, color=NA, linewidth=0),
+      plot.title=element_text(face='bold',
+                              hjust=0.5))
   g
-  })
+})
 
-p <- wrap_plots(peplots, nrow=5, ncol=3, byrow=F)
+p <- wrap_plots(peplots, nrow=5, ncol=3, byrow=T)
 
 cairo_pdf('~/Desktop/Fig10.pdf', width=190/25.4, height=220/25.4, onefile=T,
           family='Arial', bg='white')
 
 p
 
-# grid.rect(x=unit(0, 'npc'), y=unit(0, 'npc'), width = 1, height = 0.2, gp = gpar(lwd = 1, col = "black", fill = NA),
-#            just=c('left', 'bottom'))
+grid.rect(x=unit(0, 'npc'), y=unit(0, 'npc'), width = 1, height = 0.21, gp = gpar(lwd = 1, col = "black", fill = NA),
+           just=c('left', 'bottom'))
 grid.text(paste('(A)', levels(peplot.itx.df$Model)[1]), x=unit(0.015, 'npc'), y=unit(0.9, 'npc'), rot=90, just='center',
           gp=gpar(fontface='bold'))
-# grid.rect(x=unit(0.2, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
+# grid.rect(x=unit(0, 'npc'), y=unit(0.2, 'npc'), width = 1, height = 0.2, gp = gpar(lwd = 1, col = "black", fill = NA),
 #           just=c('left', 'bottom'))
 grid.text(paste('(B)', levels(peplot.itx.df$Model)[2]), x=unit(0.015, 'npc'), y=unit(0.7, 'npc'), rot=90, just='center',
           gp=gpar(fontface='bold'))
-# grid.rect(x=unit(0.4, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
-#           just=c('left', 'bottom'))
+grid.rect(x=unit(0, 'npc'), y=unit(0.405, 'npc'), width = 1, height = 0.2, gp = gpar(lwd = 1, col = "black", fill = NA),
+           just=c('left', 'bottom'))
 grid.text(paste('(C)', levels(peplot.itx.df$Model)[3]), x=unit(0.015, 'npc'), y=unit(0.5, 'npc'), rot=90, just='center',
           gp=gpar(fontface='bold'))
 # grid.rect(x=unit(0.6, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
 #           just=c('left', 'bottom'))
 grid.text(paste('(D)', levels(peplot.itx.df$Model)[4]), x=unit(0.015, 'npc'), y=unit(0.3, 'npc'), rot=90, just='center',
           gp=gpar(fontface='bold'))
-# grid.rect(x=unit(0.8, 'npc'), y=unit(0, 'npc'), width = 0.2, height = 1, gp = gpar(lwd = 1, col = "black", fill = NA),
-#           just=c('left', 'bottom'))
+
 grid.text(paste('(E)', levels(peplot.itx.df$Model)[5]), x=unit(0.015, 'npc'), y=unit(0.1, 'npc'), rot=90, just='center',
           gp=gpar(fontface='bold'))
+
+grid.rect(x=unit(0, 'npc'), y=unit(0.8, 'npc'), width = 1, height = 0.2, gp = gpar(lwd = 1, col = "black", fill = NA),
+          just=c('left', 'bottom'))
+
+grid.rect(x=unit(0, 'npc'), y=unit(0, 'npc'), width = 1, height = 1, gp = gpar(lwd = 1.1, col = "black", fill = NA),
+          just=c('left', 'bottom'))
 
 dev.off()
 
