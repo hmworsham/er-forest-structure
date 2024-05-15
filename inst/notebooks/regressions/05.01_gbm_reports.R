@@ -271,13 +271,6 @@ p1.leg <- ggplot(mapping=aes(x=Model, y=rel.inf)) +
         plot.background = element_rect(color = NA)
   )
 
-g_legend <- function(a.gplot){
-  tmp <- ggplot_gtable(ggplot_build(a.gplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  legend
-}
-
 p1.leg <- g_legend(p1.leg)
 
 # Facet wrap top 10 variables
@@ -349,7 +342,7 @@ vp1 <- viewport(x = 0, y = 0,
 pushViewport(vp1)
 #grid.rect()
 grid.draw(p1.leg)
-grid.text('(A)', x=0.04, y=0.02, just=c('left', 'bottom'))
+grid.text(expression(bold('(A)')), x=0.04, y=0.92, just=c('left', 'bottom'))
 
 upViewport(1)
 vp2 <- viewport(x=0.12, y=0,
@@ -367,7 +360,7 @@ vp3 <- viewport(x=1, y=0.4,
 pushViewport(vp3)
 #grid.rect()
 print(p2, newpage=F)
-grid.text('(B)', x=0.02, y=0.03, just=c('left', 'bottom'))
+grid.text(expression(bold('(B)')), x=0.02, y=0.93, just=c('left', 'bottom'))
 
 upViewport(1)
 vp4 <- viewport(x=1, y=0,
@@ -377,7 +370,7 @@ vp4 <- viewport(x=1, y=0,
 pushViewport(vp4)
 #grid.rect()
 print(p3, newpage=F)
-grid.text('(C)', x=0.02, y=0.04, just=c('left', 'bottom'))
+grid.text(expression(bold('(C)')), x=0.02, y=0.94, just=c('left', 'bottom'))
 
 
 upViewport(1)
