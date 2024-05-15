@@ -1,0 +1,24 @@
+Type,Category,Variable,Description,Units,Source
+RE,Forest structure,Total number density,Total number of ITC objects per grid cell,stems ha^–1^,This study (derived from NEON LiDAR)
+RE,Forest structure,QMD,Quadratic mean of stem diameters of objects per grid cell,cm,This study (derived from NEON LiDAR)
+RE,Forest structure,Basal area,Sum of cross-sectional areas of stems per hectare,m^2^ ha^–1^,This study (derived from NEON LiDAR)
+RE,Forest structure,90th percentile height,Estimated maximum canopy height per grid cell,m,This study (derived from NEON LiDAR)
+RE,Forest structure,Height skew,Third moment of height distribution per grid cell,NA,This study (derived from NEON LiDAR)
+EX,Topography,Curvature,McNab's (1993) index of terrain concavity/convexity computed in a 30x30 m window,unitless index,This study (derived from NEON LiDAR)
+EX,Topography,Elevation,Elevation above sea level,m. a. s. l.,This study (derived from NEON LiDAR)
+EX,Topography,Slope,atan(√[(dz/dx)^2^+(dz/dy)^2^] computed in a 30x30 m window,degrees,This study (derived from NEON LiDAR)
+EX,Topography,Folded aspect,Index of cardinal aspect adjusted for higher incident radiation on SW slopes,unitless index,This study (derived from NEON LiDAR)
+EX,Topography,Heat load,Potential heat load calculated according to Eq. 3 in McCune and Keon (2002),unitless index,This study (derived from NEON LiDAR)
+EX,Topography,TPI,Topographic Position Index: Index of hillslope position computed in a 1000x1000 m window,unitless index,This study (derived from NEON LiDAR)
+EX,Topography,TWI,"Topographic Wetness Index: Terrain-driven ratio of upslope water supply to local drainage expressed as a function of local slope and upslope contributing area per unit contour length, computed on a 100 m pixel scale",unitless index,This study (derived from NEON LiDAR)
+EX,Climate,AET,Actual evapotranspiration: mean annual water depth evaporated from the surface or transpired by plants per grid cell,mm,BCM (Budo et al. 2017)
+EX,Climate,CWD,Climatic water deficit: difference between potential evapotranspiration (PET) and AET, where PET is the total depth of water that can be evaporated or transpired given prevailing atmospheric conditions,mm,BCM (Budo et al. 2017)
+EX,Climate,SWE,Snow water equivalent derived by forcing iSnobal with 50 m snow depth data from eight Airborne Snow Observatory flights,mm,ASO
+EX,Climate,∆SWE,Relative velocity of snow disappearance; difference between winter SWE and summer SWE divided by days between flights averaged over three flight-years,mm,ASO
+EX,Soil,AWC,Available water capacity: depth of plant-available water that can be stored per unit of soil depth,mm,SSURGO
+EX,Soil,CEC,Total negative charge in soil at pH 7.0,meq hg^–1^,SSURGO
+EX,Soil,k~sat~,Saturated hydraulic conductivity,µm sec^–1^ ,SSURGO
+EX,Soil,OM,Mass percentage of decomposed plant and animal material in the < 2 mm soil fraction,% mass,SSURGO
+EX,Soil,pH,Potential of hydrogen in soil,-log[10] H^+^,SSURGO
+EX,Soil,Silt content,Mass percent of mineral particles 0.002 to 0.05mm in equivalent diameter in the < 2 mm soil fraction,% mass,SSURGO
+EX,Geology,Lithologic substrate,Geological unit code,NA,Colorado Geological Survey

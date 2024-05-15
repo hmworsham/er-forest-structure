@@ -1,0 +1,9 @@
+Measurement,Units,Method
+Species,NA,Visual identification
+Stem height,m,Nikon Forestry Pro II hypsometer or metric tape
+DBH,cm,Diameter tape or calipers
+Stem geolocation,decimal degrees,Trimble Geo 7X GNSS unit
+Crown illumination,unitless index,Visual determination using Clark and Clark (1992)
+Canopy position,unitless index,Visual determination
+Life status,NA,Visual determination
+Health status,NA,"Visual inspection for infection, damage, decay, browning, or wilting"

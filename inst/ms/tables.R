@@ -8,9 +8,9 @@ library(tidyverse)
 library(flextable)
 library(ftExtra)
 
-############################
+###############################
 # Define flextable formatting
-############################
+###############################
 
 make.ft <- function(ft, pgwidth = 6.5){
 
@@ -20,8 +20,8 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=11, part='all') %>%
-    colformat_md()
+    fontsize(size=8, part='all') %>%
+    colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -35,7 +35,7 @@ make.ft <- function(ft, pgwidth = 6.5){
 ##########
 
 # Descriptions of variables
-tbl1 <- read.csv('~/Desktop/tbl1.csv', stringsAsFactors = F,
+tbl1 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl1.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8')
 
 tbl1 <- make.ft(flextable(tbl1))
@@ -44,7 +44,7 @@ tbl1 <- make.ft(flextable(tbl1))
 # Table 2
 ##########
 
-tbl2 <- read.csv('~/Desktop/tbl2.csv', stringsAsFactors = F,
+tbl2 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl2.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8')
 
 tbl2 <- make.ft(flextable(tbl2))
@@ -52,7 +52,7 @@ tbl2 <- make.ft(flextable(tbl2))
 ############
 # Table 3
 ###########
-tbl3 <- read.csv('~/Desktop/tbl3.csv', stringsAsFactors = F,
+tbl3 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl3.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8', check.names = F)
 
 tbl3 <- make.ft(flextable(tbl3))
@@ -122,9 +122,9 @@ names(best.mean) <- c('Model',
                       'Overall accuracy',
                       'Omission rate',
                       'Commission rate',
-                      'RMS ∆XY',
-                      'RMS ∆Z',
-                      'RMS ∆XYZ',
+                      'RMS ~∆XY~',
+                      'RMS ~∆Z~',
+                      'RMS ~∆XYZ~',
                       'Precision',
                       'Recall',
                       'F'
@@ -139,8 +139,10 @@ tbl4 <- make.ft(flextable(best.mean) %>%
 # Table 5
 ##########
 
-tbl5 <- read.csv('~/Desktop/tbl5.csv', stringsAsFactors = F,
-                 na = "", encoding='UTF-8')
+tbl5 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl5.csv'), stringsAsFactors = F,
+                 na = "", encoding='UTF-8', check.names=F)
+
+tbl5$ID <- paste0('λ', '~', 1:7, '~')
 
 tbl5 <- make.ft(flextable(tbl5))
 
@@ -163,7 +165,9 @@ tbl6 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
                       levels=c('Fir', 'Spruce', 'Pine'))) %>%
   select(Class, Sensitivity, Specificity,
          Precision, Recall, F1, `Detection Rate`,
-         `Balanced Accuracy`)
+         `Balanced Accuracy`) %>%
+  rename(`Detection rate`=`Detection Rate`,
+         `Balanced accuracy`=`Balanced Accuracy`)
 
 tbl6 <- make.ft(flextable(tbl6))
 
@@ -178,14 +182,14 @@ gams <- lapply(gams.rda, readRDS)
 # Clean up and append names
 gam.names <- names(gams) <- tools::file_path_sans_ext(basename(gams.rda))
 gam.names.new <- data.frame('o'=gam.names,
-                            'n'=c('Fir density',
-                                  'Basal area',
-                                  'Total density',
-                                  'QMD',
-                                  'Height 95P',
-                                  'Height skew',
-                                  'Pine density',
-                                  'Spruce density'))
+                            'n'=c('Fir density (stems ha^–1^)',
+                                  'Basal area (m^2^ ha^–1^)',
+                                  'Total density (stems ha ^–1^)',
+                                  'QMD (cm)',
+                                  'Height 95P (m)',
+                                  'Height skew (unitless)',
+                                  'Pine density (stems ha^–1^)',
+                                  'Spruce density (stems ha^–1^)'))
 
 x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
@@ -198,7 +202,7 @@ gam.pde <- lapply(gams, \(x) return(summary(x)$dev.expl))
 gam.perf.df <- data.frame(cbind('Response'=names(gams),
                                 'PDE'=unlist(gam.pde)),
                           check.names=F) %>%
-  mutate(PDE=as.numeric(PDE))
+  mutate(PDE=round(as.numeric(PDE)*100,1))
 
 # Ingest stored GBMs
 gbms.rda <- list.files('models', pattern='gbm', full.names=T)
@@ -207,14 +211,14 @@ gbms <- lapply(gbms.rda, readRDS)
 # Clean up and append names
 gbm.names <- names(gbms) <- tools::file_path_sans_ext(basename(gbms.rda))
 gbm.names.new <- data.frame('o'=gbm.names,
-                            'n'=c('Fir density',
-                                  'Basal area',
-                                  'Total density',
-                                  'QMD',
-                                  'Height 95P',
-                                  'Height skew',
-                                  'Pine density',
-                                  'Spruce density'))
+                            'n'=c('Fir density (stems ha^–1^)',
+                                  'Basal area (m^2^ ha^–1^)',
+                                  'Total density (stems ha ^–1^)',
+                                  'QMD (cm)',
+                                  'Height 95P (m)',
+                                  'Height skew (unitless)',
+                                  'Pine density (stems ha^–1^)',
+                                  'Spruce density (stems ha^–1^)'))
 x1 <- match(names(gbms), gbm.names.new$o)
 names(gbms) <- gbm.names.new$n[x1]
 
@@ -251,45 +255,27 @@ tbl7 <- gbm.perf.df %>%
          `CV error`='CV error',
          `PDE`='PDE'
   ) %>%
-  mutate(across(`Training error`:`PDE`, \(x) round(x,2)),
-         Response= factor(Response, levels=c('Basal area',
-                                             'Height 95P',
-                                             'Height skew',
-                                             'QMD',
-                                             'Total density',
-                                             'Fir density',
-                                             'Spruce density',
-                                             'Pine density'))) %>%
-  arrange(Response)
+  mutate(across(`Training error`:`CV error`, \(x) round(x,2)),
+         # Response= factor(Response, levels=c('Basal area (m^2^ ha^–1^)',
+         #                                     'Height 95P (m)',
+         #                                     'Height skew (unitless)',
+         #                                     'QMD (cm)',
+         #                                     'Total density (stems ha ^–1^)',
+         #                                     'Fir density (stems ha^–1^)',
+         #                                     'Spruce density (stems ha^–1^)',
+         #                                     'Pine density (stems ha^–1^)')),
+         ord = factor(c(6,1,5,4,2,3,8,7))
+         ) %>%
+  arrange(ord) %>%
+  select(-ord)
 
 tbl7 <- make.ft(flextable(tbl7) %>%
                   add_header_row(values=c('', 'GBM','GAM'),
                                  colwidths=c(1,2,1)) %>%
-                  theme_booktabs() %>%
-                  align(i=1, align='center', part='header') %>%
-                  hline(i=1, j=2:3, part='header') %>%
-                  hline(i=1, j=4, part='header')
+                  flextable::theme_booktabs() %>%
+                  flextable::align(i=1, align='center', part='header') %>%
+                  flextable::hline(i=1, j=2:3, part='header') %>%
+                  flextable::hline(i=1, j=4, part='header')
 )
+
 tbl7
-
-############
-# Table S1
-############
-
-# Best models in tuning
-gbm.best <- bind_rows(sapply(gbms, '[', 'bestTune', simplify=T), .id='Response') %>%
-  mutate(Response=str_replace_all(Response, '.bestTune', ''))
-names(gbm.best) <- c('Response', 'N trees', 'Interaction depth',
-                     'Shrinkage', 'Min obs. in node')
-
-tbls1 <- gbm.best %>%
-  mutate(Response=factor(Response,
-                         levels=c('Basal area',
-                                  'Height 95P',
-                                  'Height skew',
-                                  'QMD',
-                                  'Total density',
-                                  'Fir density',
-                                  'Spruce density',
-                                  'Pine density'))) %>%
-  arrange(Response)

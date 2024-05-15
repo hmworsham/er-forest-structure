@@ -1,0 +1,5 @@
+"Tree height (Z)","∆Z criterion","∆Y criterion"
+"Z ≤ 10 m","∆Z < 3 m","∆XY < 3 m"
+"10 m < Z ≤ 15 m","∆Z < 3 m","∆XY < 4 m"
+"15 m < Z ≤ 25 m","∆Z < 4 m","∆XY < 5 m"
+"Z > 25 m","∆Z < 4 m","∆XY < 5 m"

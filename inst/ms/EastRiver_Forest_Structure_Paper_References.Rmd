@@ -1,0 +1,37 @@
+---
+title: |
+  Abiotic influences on subalpine conifer forest structure
+output:
+  officedown::rdocx_document:
+    base_format: bookdown::word_document2
+    reference_docx: styles.docx
+    tables:
+      style: PaperTable
+      layout: autofit
+      width: 1
+      table_caption: true
+  pdf_document:
+    fig_caption: true
+    keep_tex: true
+    latex_engine: pdflatex
+pandoc_args:
+- "-Fpandoc-crossref"
+- "--csl"
+- "remote-sensing-of-environment.csl"
+bibliography: ER_Forest_Structure_Paper_Bib.bib
+csl: remote-sensing-of-environment.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r config, include=F}
+# config <- config::get(file=file.path('config', 'config.yml'))
+# devtools::load_all()
+# load.pkgs(config$pkgs)
+```
+
+Example reference in line here [@anderson_is_2016] and another here @antonarakis_using_2011; @asner_mapping_2014.
+
+# References
