@@ -4,7 +4,7 @@
 - Zip data from savio and egress to GCS
 - Export key data to ESS DIVE
 
-## Draft 4 Revisions
+## Draft 5 Revisions
 
 ### Abstract
 - Update abstract, address abstract-specific comments
@@ -73,7 +73,7 @@
 - Describe variable/model selection in GAM/GBM
 - Mention variables dropped from models for multicollinearity!! (TWI, etc.)
 
-## Tables, Figures, Numbers, Equations
+### Tables, Figures, Numbers, Equations
 - EQ: Write allometric equation and coefficients for methods
 - NUM: Median and s.d. density at inventory sites
 - NUM: Mean basal area at inventory sites
