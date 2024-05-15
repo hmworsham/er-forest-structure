@@ -22,7 +22,7 @@ exp.rasters <- lapply(explainers, project, y='EPSG:4326')
 naip.raster <- project(naip, y='EPSG:4326')
 
 geol <- tail(exp.rasters,1)[[1]]
-exp.rasters[16] <- geol
+# exp.rasters[16] <- geol
 values(naip.raster)[values(naip.raster) == 0] <- NA
 ext(naip.raster) <- ext(res.rasters[[1]])
 
@@ -90,25 +90,23 @@ wrap_plots(rast.plots) + np +
 
 dev.off()
 
-
-
-for(i in 1:8) {
-  terra::plot(res.rasters[[i]], col=viridis(n=20, end=0.8, direction=-1, option=virlet[i]),
-  asp=NA, axes=F, mar=c(2.1, 2.1, 3.5, 5.1), ext=ext(res.rasters[[i]]),
-  cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
-  plg=list(cex = 2))
-  title(res.labs[[i]], line = 1, cex.main=1.8)
-  mtext(paste0('(', LETTERS[i], ')'), side=1, line=1)
-}
-
-nr <- plotRGB(naip.raster,
-        main='True color',
-        asp=NA, colNA='transparent', bgalpha=0,
-        axes=F, mar=c(2.1,2.1,2.5,5.1),
-        cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5)
-mtext('(I)', side=1, line=1)
-
-dev.off()
+# for(i in 1:8) {
+#   terra::plot(res.rasters[[i]], col=viridis(n=20, end=0.8, direction=-1, option=virlet[i]),
+#   asp=NA, axes=F, mar=c(2.1, 2.1, 3.5, 5.1), ext=ext(res.rasters[[i]]),
+#   cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
+#   plg=list(cex = 2))
+#   title(res.labs[[i]], line = 1, cex.main=1.8)
+#   mtext(paste0('(', LETTERS[i], ')'), side=1, line=1)
+# }
+#
+# nr <- plotRGB(naip.raster,
+#         main='True color',
+#         asp=NA, colNA='transparent', bgalpha=0,
+#         axes=F, mar=c(2.1,2.1,2.5,5.1),
+#         cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5)
+# mtext('(I)', side=1, line=1)
+#
+# dev.off()
 
 ######################################
 # Plot histogram of forest structure
@@ -188,15 +186,26 @@ target.vars <- c('heat_load',
                  'delta_swe',
                  'cwd',
                  'aet', #20
-                 'geology',
-                 'x',
-                 'y')
+                 'geology')
 
 exp.rasters <- exp.rasters[unlist(lapply(exp.rasters, names)) %in% target.vars]
-exp.labs <- c(heat_load='Heat load', elevation='Elevation', twi='TWI', tpi='TPI',
-              curvature='Curvature', awc='Soil AWC', cec='Soil CEC',
-              silt='Soil silt content', ksat=expression('Soil k'[sat]), ph='Soil pH',
-              om='Soil % organic matter', swe='SWE', delta_swe='∆ SWE', aet='AET', cwd='CWD',
+exp.rasters <- lapply(exp.rasters, \(x) {x[is.nan(x)] <- NA;x})
+
+exp.labs <- c(heat_load='Heat load (unitless)',
+              elevation='Elevation (m. a. s. l.)',
+              twi='TWI (unitless)',
+              tpi='TPI (unitless)',
+              curvature='Curvature (unitless)',
+              awc='Soil AWC (mm)',
+              cec=expression(paste('Soil CEC (meq', ~hg^-1, ')')),
+              silt='Soil silt content (%)',
+              ksat=expression(paste('Soil k'[sat], ~'(', µm~sec^-1, ')')),
+              ph=expression(paste('Soil pH (', -log[10]~H^'+', ')')),
+              om='Soil organic matter (%)',
+              swe='SWE (mm)',
+              delta_swe=expression(paste('∆ SWE (mm', ~sec^-1, ')')),
+              aet='AET (mm)',
+              cwd='CWD (mm)',
               geology='Geology')
 
 exp.colors <- list('Heat load'=colorRampPalette(viridis(10, option=2))(100),
@@ -216,18 +225,74 @@ exp.colors <- list('Heat load'=colorRampPalette(viridis(10, option=2))(100),
                    'CWD'=colorRampPalette(viridis(9, option=4))(100),
                    'Geology'=brewer.pal(9, name='BrBG'))
 
+exp.plots <- lapply(1:15, \(i) {
+  gp <- ggplot() +
+    geom_spatraster(data=exp.rasters[[i]]) +
+    scale_fill_gradientn(colors=exp.colors[[i]],
+                       na.value=NA, name=exp.labs[i],
+                       guide=guide_colorbar(title.position='right',
+                                            title.vjust=0.5)) +
+    labs(x = NULL, y = NULL) +
+    theme_void(base_size=8,
+               base_family='Arial') +
+    theme(legend.title = element_text(angle = -90,
+                                      hjust = 0.5),
+          legend.key.width = unit(0.01, 'npc'),
+          plot.margin=margin(unit(c(0,0,0,0), 'null')),
+          plot.title=element_text(face='bold',
+                                  hjust=0.5))
+  print(gp)
+})
+
+# Process geology raster separately as factor
+geol.rast <- as.factor(geol)
+
+geol.plt <- ggplot() +
+  geom_spatraster(data=geol.rast) +
+  scale_fill_manual(values=exp.colors$Geology,
+                       na.value=NA, name=exp.labs[16],
+                       guide=guide_legend(title.position='right',
+                                            title.vjust=0.5),
+                    na.translate=F) +
+  labs(x = NULL, y = NULL) +
+  theme_void(base_size=8,
+             base_family='Arial') +
+  theme(legend.title = element_text(angle = -90,
+                                    hjust = 0.5),
+        legend.key.width = unit(0.01, 'npc'),
+        legend.key.height = unit(0.0175, 'npc'),
+        plot.margin=margin(unit(c(0,0,0,0), 'null')),
+        plot.title=element_text(face='bold',
+                                hjust=0.5))
+
+cairo_pdf('~/Desktop/FigS2.pdf', width=190/25.4, height=190/25.4, onefile=T,
+          family='Arial', bg='white')
+
+design='
+ABCD
+EFGH
+IJKL
+MNOP
+'
+
+wrap_plots(exp.plots) + geol.plt +
+  patchwork::plot_layout(heights=c(20,20,20,20), design=design) +
+  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:16], ')'))) &
+  theme(plot.tag = element_text(face = 'bold'))
+
 dev.off()
-par(mfrow=c(3,6), mar=rep(1,4))
-for(i in 1:15) {
-  plot(exp.rasters[[i]], col=exp.colors[[i]], main=exp.labs[i],
-       asp=NA, axes=F, mar=c(3.1, 3.1, 3.1, 7.1), ext=ext(exp.rasters[[i]]),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
-       plg=list(cex = 2))
-}
-plot(exp.rasters[[16]], main=exp.labs[16],
-     asp=NA, axes=F, mar=c(2.1, 2.1, 3.1, 7.1), ext=ext(exp.rasters[[16]]),
-     cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
-     plg=list(cex = 2, digits=0))
+
+# par(mfrow=c(3,6), mar=rep(1,4))
+# for(i in 1:15) {
+#   plot(exp.rasters[[i]], col=exp.colors[[i]], main=exp.labs[i],
+#        asp=NA, axes=F, mar=c(3.1, 3.1, 3.1, 7.1), ext=ext(exp.rasters[[i]]),
+#        cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
+#        plg=list(cex = 2))
+# }
+# plot(exp.rasters[[16]], main=exp.labs[16],
+#      asp=NA, axes=F, mar=c(2.1, 2.1, 3.1, 7.1), ext=ext(exp.rasters[[16]]),
+#      cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
+#      plg=list(cex = 2, digits=0))
 
 ####################################
 # Plot elevation for domain figure
