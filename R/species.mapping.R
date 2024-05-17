@@ -1,18 +1,11 @@
 ## East River tree species mapping
 
-## ---------
-# Workspace setup
-config <- config::get(file=file.path('config',
-                                     'config.yml'))
+## ---------------------------------------------------------------------------------------------
+# Data ingest
 
-# Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
-
-drive_auth(path=config$drivesa)
-register_google(readLines(config$mapkey))
-
-## ---------------------------------------------------------------------------------------------------
+## ---------------------------------------------------------------------------------------------
 # Data ingest
 
 # Ingest plot boundaries
