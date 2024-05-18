@@ -12,6 +12,8 @@ default:
   - ggplot2
   - ggpattern
   - ggmap
+  - usmap
+  - ggspatial
   - gridExtra
   - patchwork
   - grid

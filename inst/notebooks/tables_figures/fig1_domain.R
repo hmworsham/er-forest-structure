@@ -9,17 +9,16 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-# Configure drive auth
-drive_auth(path=config$drivesa)
-
 #############################
 # Ingest data
 #############################
 
-#### AOP ####
+#### AOP boundary ####
+download.file('https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-13f264ad5d1bbfd-20230228T000240452', destfile=file.path('~/Desktop', 'aop.zip'), method='wget')
+
+aop <- unzip(file.path(tempdir(), 'aop.zip'), file.path(tempdir(), 'aop.zip'))
 aop <- load.plot.sf(path=as_id(config$extdata$bndid),
                     pattern=config$extdata$bndpattern)
-
 
 #### Plots ####
 plotsf <- load.plot.sf(path=as_id('1xqG7Mig73txKO4SMjxbAIyE5C_GY0BiU'),
@@ -37,10 +36,9 @@ elv <- rast(elvfile)
 elv <- crop(elv, aop)
 elv <- mask(elv, aop)
 
-#### Region map ####
-library(usmap)
-library(patchwork)
-library(ggspatial)
+#############################
+# Build region map
+#############################
 
 sg.coords <- data.frame('lon'=-106.9656486,
                      'lat'=38.9131767)
@@ -52,8 +50,10 @@ w.map <- plot_usmap(regions='states',
                     linewidth=0.5) +
   geom_point(data=sg.coords, aes(x=x, y=y), size=1.1, shape=13)
 
-cairo_pdf('~/Desktop/Fig1.pdf', width=90/25.4, height=75/25.4, onefile=T,
-          family='Arial', bg='white')
+
+#############################
+# Plot
+#############################
 
 d.map <- ggplot() +
   geom_spatraster(data=elv) +
@@ -74,6 +74,12 @@ d.map <- ggplot() +
              base_family='Arial') +
   theme(plot.margin=margin(t=0, r=0, b=0, l=0.2, unit='npc'))
 
+#############################
+# Write
+#############################
+
+cairo_pdf(file.path('..', '..', 'ms', 'figures', 'Fig1.pdf'), width=90/25.4, height=75/25.4, onefile=T,
+          family='Arial', bg='white')
 
 (d.map + inset_element(w.map,
                       left=0, bottom=0, right=0.28, top=0.48,
