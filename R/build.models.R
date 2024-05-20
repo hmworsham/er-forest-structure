@@ -1,8 +1,8 @@
 # Functions to assist with inferential model building for GAM and GBM
 
-#' LayerStacking initialization
-#' @description Initialize LayerStacking for optimization
-#' @export ls.init
+#' make.modframe
+#' @description Make a standard model frame for inferential modeling
+#' @export make.modframe
 #'
 
 make.modframe <- function(y, df, modtype=c('gam', 'gbm'), target.vars, itx=c('none')) {
