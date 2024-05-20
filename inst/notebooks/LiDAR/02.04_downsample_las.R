@@ -29,18 +29,15 @@ resample_las <- function(las, outdir){
   write.las(newlas, xx@header, xx@data)
 }
 
+# Identify which files have been resampled
 did <- list.files(outdir)
 inputs <- list.files(datadir)
 notdid <- file.path(datadir, inputs[!inputs %in% did])
 
+# Resample files not completed
 mclapply(notdid, resample_las, outdir, mc.cores=getOption('mc.cores', 24L))
 
+# Plot to check
 lascat <- readLAScatalog(file.path(outdir, did))
 plot(lascat['Number.of.point.records'])
 plot(lascat[lascat['Number.of.point.records']$Number.of.point.records>0])
-
-errs <- which(lascat['Number.of.point.records']$Number.of.point.records==0)
-errs <- c(99,192,193,194,804,1063,1064,1065)
-errs <- file.path(datadir, inputs[errs])
-errs
-mclapply(errs, resample_las, outdir, mc.cores=getOption('mc.cores', 24L))
