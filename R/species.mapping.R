@@ -1,149 +1,9 @@
-## East River tree species mapping
+## Functions to assist with tree species mapping
 
-## ---------------------------------------------------------------------------------------------
-# Data ingest
-
-devtools::load_all()
-load.pkgs(config$pkgs)
-## ---------------------------------------------------------------------------------------------
-# Data ingest
-
-# Ingest plot boundaries
-plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
-                       pattern=config$extdata$plotpattern)
-
-# Ingest field data
-tmpfile <- drive_download(
-  as_id(config$extdata$invid),
-  type='csv',
-  path=file.path(tempdir(), config$extdata$invid),
-  overwrite=T)$local_path
-
-inv <- read.csv(tmpfile)
-
-# Ingest Nicola's classification map
-tmpfile <- drive_download(
-  as_id(config$extdata$falcoid),
-  path=file.path(tempdir(), config$extdata$falcoid),
-  overwrite = T)$local_path
-
-sp.class <- rast(tmpfile)
-sp.class <- as.numeric(sp.class)
-names(sp.class) <- 'Sp_Code'
-
-# Ingest Nicola's species codes
-tmpfile <- drive_download(
-  as_id(config$extdata$classid),
-  path=file.path(tempdir(), config$extdata$classid),
-  overwrite=T)$local_path
-
-sp.codes <- read.csv(tmpfile)
-sp.codes <- sp.codes %>%
-  mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
-  dplyr::select(-c(Genus:Common))
-
-# Ingest detected tree crowns
-# treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
-# crowns <- mclapply(treefiles, \(x) {
-#   tf <- st_read(x) },
-#   mc.cores = getOption("mc.cores", 16))
-modtrees <- read.csv(file.path(config$data$int, 'itc_results', 'opt_matches.csv'))
-
-# Ingest las
-infiles <- list.files(config$extdata$las_dec, full.names=T)
-lascat <- readLAScatalog(infiles)
-
-## ---------------------------------------------------------------------------------------------------
-# Process field data
-
-# Subset field data to AOP sites
-inv <- inv %>%
-  filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-CAR3',
-                           'XX-PLN1', 'XX-PLN2', 'SG-NWS1',
-                           'XX-FAR1', 'ER-BME3'))
-
-# Filter out field trees not meeting criteria
-inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Within plot bounds
-inv <- inv[inv$Status == 'Live',] # Living stems
-inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),] # Have geolocation data
-
-# Keep stem x,y,z data
-stem.inv.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
-                      'Height'=as.numeric(inv$Height_Avg_M),
-                      'DBH'=as.numeric(inv$DBH_Avg_CM),
-                      'Crown_Radius'=0.082*inv$Height_Avg_M + 0.5,
-                      'Canopy_Position'=inv$Canopy_Position,
-                      'X'=as.numeric(inv$Longitude),
-                      'Y'=as.numeric(inv$Latitude),
-                      'Sp_Code'=as.factor(inv$Sp_Code),
-                      'Site_Name'=inv$Site_Name,
-                      'Site_Tag'=paste0(inv$Site_Name, inv$Tag_Number))
-stem.inv.xyz = stem.inv.xyz[!is.na(stem.inv.xyz$Height),]
-
-# Turn stem.xyz into sf object
-stem.sf.inv <- st_as_sf(stem.inv.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
-stem.sf.inv <- st_transform(stem.sf.inv, crs=st_crs(plotsf))
-
-# FILTER OUT SUBORDINATE TREES
-# Buffer around all trees
-# Exclude if:
-# A. a tree is < 80th pctl in height
-# B. buffer intersects the buffer of another tree(s)
-# C. any of those trees are larger
-
-# Apply diameter-weighted buffer around all trees
-stem.inv.buff <- st_buffer(stem.sf.inv, dist=stem.sf.inv$Crown_Radius,
-                       endCapStyle = 'SQUARE', joinStyle='MITRE')
-
-# Apply 3px buffer around all trees
-stem.inv.buff.3m <- st_buffer(stem.sf.inv, dist=1, endCapStyle='SQUARE', joinStyle='MITRE')
-
-# Create sparse matrix describing overlapping trees
-stem.inv.overlap <- st_overlaps(stem.inv.buff)
-stem.inv.within <- st_within(stem.inv.buff)
-
-## ---------------------------------------------------------------------------------------------------
-# Process modeled trees
-modtrees <- modtrees %>%
-  filter(src==1) %>%
-  mutate(Site_Tag=paste0(site, obs)) %>%
-  st_as_sf(coords=c('Xpred', 'Ypred'), crs='EPSG:32613') %>%
-  left_join(stem.inv.xyz, by='Site_Tag') %>%
-  mutate(Crown_Radius_Mod = 0.082*Zpred + 0.5)
-
-st_crs(modtrees) <- st_crs(plotsf)
-
-stem.sf <- modtrees
-
-# Apply diameter-weighted buffer around all trees
-stem.buff <- st_buffer(stem.sf, dist=stem.sf$Crown_Radius_Mod,
-                       endCapStyle = 'SQUARE', joinStyle='MITRE')
-
-# Apply 3px buffer around all trees
-stem.buff.3m <- st_buffer(stem.sf, dist=3, endCapStyle='SQUARE', joinStyle='MITRE')
-
-# Create sparse matrix describing overlapping trees
-stem.overlap <- st_overlaps(stem.buff)
-stem.within <- st_within(stem.buff)
-
-## ---------------------------------------------------------------------------------------------------
-# Make CHM
-
-# Clip las to plot boundaries
-lasplots <- clip_roi(lascat, plotsf)
-lasplots <- lasplots[lapply(lasplots, nrow)>0]
-
-# Rasterize canooy
-chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.25, pitfree(), pkg = "terra")
-
-# Smooth canopy
-kernel <- matrix(1,5,5)
-chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm = TRUE)
-
-## ---------------------------------------------------------------------------------------------------
-## Prep for plotting: subset and reclassify raster
-
-gt1.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
+#' reclass
+#' @description Reclassify raster with factor labels
+#' @export make.modframe
+#'
 
 reclass <- function(rs, target) {
   v <- rast(rs)
@@ -161,18 +21,11 @@ reclass <- function(rs, target) {
   return(v)
 }
 
-gt1.sp.fct <- reclass(gt1.sp, sp.codes)
+#' mapit
+#' @description Create a tree crown map figure to visualize ITD detection at a target plot
+#' @export mapit
+#'
 
-# Pull basemap from google
-gt1.bmap <- get_map(location=c(lon = -107.00595, lat = 38.9772),
-                    zoom=20,
-                    maptype = 'satellite',
-                    source = 'google')
-
-# Specify plotting palette
-sp.pal <- PNWColors::pnw_palette('Sunset2', n=5)
-
-# Function to map at focal plot
 mapit <- function(spras, stems) {
   ggmap(gt1.bmap) +
     tidyterra::geom_spatraster(data=spras, aes(fill=Sp_Code), alpha=0.8) +
@@ -188,14 +41,12 @@ mapit <- function(spras, stems) {
     theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1))
 }
 
-# Pull species from classification map
+#' get.spp
+#' @description Pull species from a classification map
+#' @export get.spp
+#'
 
 get.spp <- function(spras, stems, spcodes) {
-
-  #class.sp.plots <- extract(spras, stems, fun=\(x) modal(x, na.rm=T, ties='random'), touches=T)
-  #names(class.sp.plots) <- c('N', 'Pixel_Code')
-  #class.sp.plots$N <- as.character(class.sp.plots$N)
-  #class.sp.plots$Pixel_Code <- as.numeric(class.sp.plots$Pixel_Code)
 
   class.sp.plots <- exactextractr::exact_extract(spras, stems, 'mode', progress=T)
   class.sp.plots <- data.frame('N'=1:length(class.sp.plots),
@@ -220,7 +71,11 @@ get.spp <- function(spras, stems, spcodes) {
   return(stems.comp)
 }
 
-# Plot
+#' plt.density
+#' @description Generate a kernel density plot for tree detection evaluation
+#' @export plt.density
+#'
+
 plt.density <- function(x) {
   x %>%
     pivot_longer(cols=c('Reference', 'Classified'),
@@ -239,6 +94,11 @@ plt.density <- function(x) {
     #       legend.direction = 'horizontal') +
     facet_grid(~Species)
 }
+
+#' plt.bar
+#' @description Generate a bar plot for tree detection evaluation
+#' @export plt.bar
+#'
 
 plt.bar <- function(x){
   x %>%

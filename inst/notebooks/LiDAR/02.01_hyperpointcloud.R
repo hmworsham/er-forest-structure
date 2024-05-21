@@ -15,24 +15,24 @@ returns <- list.files(datadir, full.names=T)
 wfs <- list.files(wfdir, full.names=T)
 
 makehpc <- function(repath, geopath){
-  
+
   filenam = tail(unlist(strsplit(geopath, '/')), 1)
-  
+
   pts = read.csv(repath)
   geo = ingest(geopath)$geol
   colnames(geo)[c(1:9,16)]<- c("index", "x","y","z","dx","dy","dz","or","fr", "outpeak")
   geo <- geo[which(seq(1,nrow(geo)) %in% unique(pts$index))]
-  
+
   ge <- lapply(
-    split(pts, pts$index), 
-    build.gauss, 
+    split(pts, pts$index),
+    build.gauss,
     tbins=500#,
     #mc.preschedule = T,
     #mc.cores = getOption("mc.cores", detectCores()-2)
     )
-  
+
   waveform = data.table(do.call('rbind', ge))
-  
+
   hypc = hpc(waveform, geo, thres=1)
   hypc = data.table(hypc)
   rb = setorder(rbind.fill(pts, hypc), index)
@@ -40,7 +40,7 @@ makehpc <- function(repath, geopath){
 
   outname = paste0(filenam, '_hpc.csv')
   write.csv(rb, file.path(outdir, outname), row.names = F)
-  
+
   print(filenam)
   #return(rb)
 
@@ -55,9 +55,9 @@ g.did = file.path(wfdir, g.did)
 wfs <- wfs[!wfs %in% g.did]
 
 mcmapply(
-  makehpc, 
-  returns[1:700], 
-  wfs[1:700],
+  makehpc,
+  returns,
+  wfs,
   mc.preschedule = T,
   mc.cores = getOption("mc.cores", detectCores()-2)
   )

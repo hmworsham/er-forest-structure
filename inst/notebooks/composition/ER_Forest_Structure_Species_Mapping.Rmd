@@ -27,10 +27,6 @@ drive_auth(path=config$drivesa)
 register_google(readLines(config$mapkey))
 ```
 
-``` {r source, include=F}
-source(file.path('..','..','..','R','species.mapping.R'))
-```
-
 This notebook reports on several approaches to selecting tree stems for individual-scale species classification, uniting Kueppers, Worsham et al. forest inventory data with Falco et al. species classification map derived from the 2018 NEON spectroscopy mission. The approaches range from least to most conservative, that is, from preserving all trees to removing all but those in the uppermost canopy. Maps, agreement statistics, and agreement figures are shown for each approach.
 
 ## Pipeline
@@ -54,6 +50,163 @@ This notebook reports on several approaches to selecting tree stems for individu
 5. Static 3m buffer and filter on 90th percentile height
 6. Segment tree-crown polygons and no filtering
 7. Segment tree polygons and filter on 90th percentile height
+
+---
+
+## Ingest data
+``` {r ingest, include=F}
+# Ingest plot boundaries
+plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
+                       pattern=config$extdata$plotpattern)
+
+# Ingest field data
+tmpfile <- drive_download(
+  as_id(config$extdata$invid),
+  type='csv',
+  path=file.path(tempdir(), config$extdata$invid),
+  overwrite=T)$local_path
+
+inv <- read.csv(tmpfile)
+
+# Ingest Nicola's classification map
+tmpfile <- drive_download(
+  as_id(config$extdata$falcoid),
+  path=file.path(tempdir(), config$extdata$falcoid),
+  overwrite = T)$local_path
+
+sp.class <- rast(tmpfile)
+sp.class <- as.numeric(sp.class)
+names(sp.class) <- 'Sp_Code'
+
+# Ingest Nicola's species codes
+tmpfile <- drive_download(
+  as_id(config$extdata$classid),
+  path=file.path(tempdir(), config$extdata$classid),
+  overwrite=T)$local_path
+
+sp.codes <- read.csv(tmpfile)
+sp.codes <- sp.codes %>%
+  mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
+  dplyr::select(-c(Genus:Common))
+
+# Ingest detected tree crowns
+# treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
+# crowns <- mclapply(treefiles, \(x) {
+#   tf <- st_read(x) },
+#   mc.cores = getOption("mc.cores", 16))
+modtrees <- read.csv(file.path('..', '..', '..', 'data', 'itc_results', 'opt_matches.csv'))
+
+# Ingest las
+infiles <- list.files(config$extdata$las_dec, full.names=T)
+lascat <- readLAScatalog(infiles)
+
+```
+
+## Clean data
+```{r clean, include=F}
+# Subset field data to AOP sites
+inv <- inv %>%
+  filter(!Site_Name %in% c('XX-CAR1', 'XX-CAR2', 'XX-CAR3',
+                           'XX-PLN1', 'XX-PLN2', 'SG-NWS1',
+                           'XX-FAR1', 'ER-BME3'))
+
+# Filter out field trees not meeting criteria
+inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Within plot bounds
+inv <- inv[inv$Status == 'Live',] # Living stems
+inv <- inv[!is.na(inv$Latitude | !is.na(inv$Longitude)),] # Have geolocation data
+
+# Keep stem x,y,z data
+stem.inv.xyz = data.frame('Tag_Number'=as.numeric(inv$Tag_Number),
+                      'Height'=as.numeric(inv$Height_Avg_M),
+                      'DBH'=as.numeric(inv$DBH_Avg_CM),
+                      'Crown_Radius'=0.082*inv$Height_Avg_M + 0.5,
+                      'Canopy_Position'=inv$Canopy_Position,
+                      'X'=as.numeric(inv$Longitude),
+                      'Y'=as.numeric(inv$Latitude),
+                      'Sp_Code'=as.factor(inv$Sp_Code),
+                      'Site_Name'=inv$Site_Name,
+                      'Site_Tag'=paste0(inv$Site_Name, inv$Tag_Number))
+stem.inv.xyz = stem.inv.xyz[!is.na(stem.inv.xyz$Height),]
+
+# Turn stem.xyz into sf object
+stem.sf.inv <- st_as_sf(stem.inv.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
+stem.sf.inv <- st_transform(stem.sf.inv, crs=st_crs(plotsf))
+
+# FILTER OUT SUBORDINATE TREES
+# Buffer around all trees
+# Exclude if:
+# A. a tree is < 80th pctl in height
+# B. buffer intersects the buffer of another tree(s)
+# C. any of those trees are larger
+
+# Apply diameter-weighted buffer around all trees
+stem.inv.buff <- st_buffer(stem.sf.inv, dist=stem.sf.inv$Crown_Radius,
+                       endCapStyle = 'SQUARE', joinStyle='MITRE')
+
+# Apply 3px buffer around all trees
+stem.inv.buff.3m <- st_buffer(stem.sf.inv, dist=1, endCapStyle='SQUARE', joinStyle='MITRE')
+
+# Create sparse matrix describing overlapping trees
+stem.inv.overlap <- st_overlaps(stem.inv.buff)
+stem.inv.within <- st_within(stem.inv.buff)
+
+# Process modeled trees
+modtrees <- modtrees %>%
+  filter(src==1) %>%
+  mutate(Site_Tag=paste0(site, obs)) %>%
+  st_as_sf(coords=c('Xpred', 'Ypred'), crs='EPSG:32613') %>%
+  left_join(stem.inv.xyz, by='Site_Tag') %>%
+  mutate(Crown_Radius_Mod = 0.082*Zpred + 0.5)
+
+st_crs(modtrees) <- st_crs(plotsf)
+
+stem.sf <- modtrees
+
+# Apply diameter-weighted buffer around all trees
+stem.buff <- st_buffer(stem.sf, dist=stem.sf$Crown_Radius_Mod,
+                       endCapStyle = 'SQUARE', joinStyle='MITRE')
+
+# Apply 3px buffer around all trees
+stem.buff.3m <- st_buffer(stem.sf, dist=3, endCapStyle='SQUARE', joinStyle='MITRE')
+
+# Create sparse matrix describing overlapping trees
+stem.overlap <- st_overlaps(stem.buff)
+stem.within <- st_within(stem.buff)
+```
+
+## Make CHM
+```{r}
+# Make CHM
+
+# Clip las to plot boundaries
+lasplots <- clip_roi(lascat, plotsf)
+lasplots <- lasplots[lapply(lasplots, nrow)>0]
+
+# Rasterize canooy
+chm.pitfree.05 <- lapply(lasplots, rasterize_canopy, 0.25, pitfree(), pkg = "terra")
+
+# Smooth canopy
+kernel <- matrix(1,5,5)
+chm.smooth <- lapply(chm.pitfree.05, terra::focal, w = kernel, fun = mean, na.rm = TRUE)
+```
+
+## Prep dataset for plotting
+```{r}
+## Prep for plotting: subset and reclassify raster
+gt1.sp <- crop(sp.class, ext(plotsf[plotsf$PLOT_ID=='ER-GT1',]))
+
+# Reclassify raster using species codes
+gt1.sp.fct <- reclass(gt1.sp, sp.codes)
+
+# Pull basemap from google
+gt1.bmap <- get_map(location=c(lon = -107.00595, lat = 38.9772),
+                    zoom=20,
+                    maptype = 'satellite',
+                    source = 'google')
+
+# Specify plotting palette
+sp.pal <- PNWColors::pnw_palette('Sunset2', n=5)
+```
 
 ---
 
