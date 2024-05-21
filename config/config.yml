@@ -18,6 +18,7 @@ default:
   - patchwork
   - grid
   - gtable
+  - tagger
   - terra
   - sf
   - future
@@ -63,7 +64,7 @@ default:
   siteindex: '1KPpaiTZSfrq0RYMJQwNdwgCU-4rWucheW5KUN_maERs'
   invpattern: 'EastRiver_Census1_Data_Collated.csv'
   invid: '17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9'
-  plotid: '17y17SPt8xcowTeKjfGWmzuar-LI_5sl7'
+  plotid: '1xrIjs8noEwkfQnSy_VGMdNLmfEr9RUEC'
   plotpattern: 'Kueppers_EastRiver_AllPlots_poly_2021_WGS84UTM13N'
   lcpattern: 'UER_landcover_1m_v4.tif'
   bndid: '1nkfaomyxsOjsRgPH8W9Q5a9cDR7xg9Xr'

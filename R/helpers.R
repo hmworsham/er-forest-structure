@@ -84,3 +84,11 @@ runpng <- function(ras, bound, clrs, filepath){
 nthroot = function(x,n) {
   (abs(x)^(1/n))*sign(x)
 }
+
+# Function to pull legend from ggplot object
+grab.legend <- function(gp){
+  tmp <- ggplot_gtable(ggplot_build(gp))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  legend
+}

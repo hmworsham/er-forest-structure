@@ -1,3 +1,5 @@
+# Figure 1
+
 #############################
 # Set up working environment
 #############################
@@ -10,29 +12,34 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 #############################
-# Ingest data
+# Ingest location data
 #############################
 
-#### AOP boundary ####
-download.file('https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-13f264ad5d1bbfd-20230228T000240452', destfile=file.path('~/Desktop', 'aop.zip'), method='wget')
+# AOP boundary
+download.file('https://drive.google.com/uc?export=download&id=1Ax0F5Z4Bo3Ka0j2BKD7YSdEo_eOfQfpr&usp=drive_fs',
+              destfile=file.path(tempdir(), 'aop.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'aop.tar.gz'), exdir=file.path(tempdir(), 'aop'))
+aop <- untar(file.path(tempdir(), 'aop.tar.gz'), list=T)
+aop <- st_read(file.path(tempdir(), 'aop', aop[file_ext(aop)=='shp']))
 
-aop <- unzip(file.path(tempdir(), 'aop.zip'), file.path(tempdir(), 'aop.zip'))
-aop <- load.plot.sf(path=as_id(config$extdata$bndid),
-                    pattern=config$extdata$bndpattern)
+# Plots
+download.file('https://drive.google.com/uc?export=download&id=1Ax68dArhdEJ3KgGbfwWoAL20VcmDVOG3&usp=drive_fs',
+              destfile=file.path(tempdir(), 'plots.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'plots.tar.gz'), exdir=file.path(tempdir(), 'plots'))
+plotsf <- untar(file.path(tempdir(), 'plots.tar.gz'), list=T)
+plotsf <- st_read(file.path(tempdir(), 'plots', plotsf[file_ext(plotsf)=='shp']))
 
-#### Plots ####
-plotsf <- load.plot.sf(path=as_id('1xqG7Mig73txKO4SMjxbAIyE5C_GY0BiU'),
-                       pattern='Kueppers_EastRiver_AllPlots_Centroid_2023_WGS84UTM13N')
 aois <- plotsf$PLOT_ID
 aois <- c(aois[grep('XX', aois)], 'ER-BME3', 'SG-NWS1')
 plotsf <- plotsf[!plotsf$PLOT_ID %in% aois,]
 
-elvfile <- drive_download(
-  as_id('1sDKyVFypWFk0BbTe43PTuDv007XycZ23'),
-  path=file.path(tempdir(), 'usgs_dem.tif'),
-  overwrite = T)$local_path
-
-elv <- rast(elvfile)
+# DEM
+download.file('https://drive.usercontent.google.com/download?id=1mWHn_kGv2tNNy744yypNy8QO1ODYKkc5&usp=drive_fs&confirm=t',
+              destfile=file.path(tempdir(), 'usgs_dem.tif'),
+              method='wget')
+elv <- rast(file.path(tempdir(), 'usgs_dem.tif'))
 elv <- crop(elv, aop)
 elv <- mask(elv, aop)
 
@@ -48,7 +55,7 @@ w.map <- plot_usmap(regions='states',
                     include=c('WA', 'OR', 'CA', 'ID', 'NV', 'UT', 'NM',
                               'AZ', 'MT', 'WY', 'CO', 'NM'),
                     linewidth=0.5) +
-  geom_point(data=sg.coords, aes(x=x, y=y), size=1.1, shape=13)
+  geom_sf(data=sg.coords, size=1.1, shape=13)
 
 
 #############################
@@ -78,7 +85,8 @@ d.map <- ggplot() +
 # Write
 #############################
 
-cairo_pdf(file.path('..', '..', 'ms', 'figures', 'Fig1.pdf'), width=90/25.4, height=75/25.4, onefile=T,
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig1.pdf'),
+          width=90/25.4, height=75/25.4, onefile=T,
           family='Arial', bg='white')
 
 (d.map + inset_element(w.map,

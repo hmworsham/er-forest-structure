@@ -112,10 +112,6 @@ dev.off()
 # Plot histogram of forest structure
 ######################################
 
-
-par(mfrow=c(3,3),
-    mar=c(5,3,3,4))
-
 res.x.labs <- c(ba=expression(paste('BA (m'^'2', ' m'^'-2', ')')),
                 height='Height (m)', height.skew='Height skew', diam='QMD (cm)',
                 density=expression(paste('Total density (stems ha'^'-1',')')),
@@ -281,47 +277,6 @@ wrap_plots(exp.plots) + geol.plt +
   theme(plot.tag = element_text(face = 'bold'))
 
 dev.off()
-
-# par(mfrow=c(3,6), mar=rep(1,4))
-# for(i in 1:15) {
-#   plot(exp.rasters[[i]], col=exp.colors[[i]], main=exp.labs[i],
-#        asp=NA, axes=F, mar=c(3.1, 3.1, 3.1, 7.1), ext=ext(exp.rasters[[i]]),
-#        cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
-#        plg=list(cex = 2))
-# }
-# plot(exp.rasters[[16]], main=exp.labs[16],
-#      asp=NA, axes=F, mar=c(2.1, 2.1, 3.1, 7.1), ext=ext(exp.rasters[[16]]),
-#      cex.lab=1.5, cex.axis=1.5, cex.main=1.8, cex.sub=1.5,
-#      plg=list(cex = 2, digits=0))
-
-####################################
-# Plot elevation for domain figure
-####################################
-
-plotsf <- load.plot.sf(path=as_id('1xqG7Mig73txKO4SMjxbAIyE5C_GY0BiU'),
-                       pattern='Kueppers_EastRiver_AllPlots_Centroid_2023_WGS84UTM13N')
-aois <- plotsf$PLOT_ID
-aois <- c(aois[grep('XX', aois)], 'ER-BME3', 'SG-NWS1')
-plotsf <- plotsf[!plotsf$PLOT_ID %in% aois,]
-
-elvfile <- drive_download(
-  as_id('1sDKyVFypWFk0BbTe43PTuDv007XycZ23'),
-  path=file.path(tempdir(), 'usgs_dem.tif'),
-  overwrite = T)$local_path
-
-elv <- rast(elvfile)
-elv <- crop(elv, aop)
-elv <- mask(elv, aop)
-
-plot(ext(elv)+100, col='white', axes=F, border=NA)
-plot(elv, col=gray.colors(100), axes=F, plg = list(title = 'Elevation (m.a.s.l)'))
-plot(aop['geometry'], col=NA, border='black', lwd=2, add=T)
-plot(plotsf['PLOT_ID'], add=T, col='black', lwd=2, pch=21, cex=1.5)
-sbar(d=10000, label=c(0,"km",10), xy=c(322000, 4295000), xpd=TRUE, scaleby=1000)
-legend(title='Elevation (m. a. s. l.)')
-north(xy=c(335000, 4295500), type=1, label="N", angle=0, head=0.1, xpd=TRUE)
-
-
 
 ####################################
 # Scratch

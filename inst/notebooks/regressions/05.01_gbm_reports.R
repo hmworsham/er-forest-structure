@@ -68,6 +68,8 @@ gbm.sums <- gbm.sums %>%
   rbind(gbm.geol) %>%
   arrange(Model, desc(rel.inf))
 
+# write.csv(gbm.sums, file.path(config$data$int,'gbm_relative_influence.csv'), row.names = F)
+
 gbm.biplots <- lapply(gbms, \(x) {
   m.bi <- gbm.perf(x$finalModel, method='OOB')
   m.bi
@@ -214,12 +216,8 @@ p1 <- ggplot(gbm.summaries.cat, aes(x=Model, y=rel.inf, fill=interaction(categor
 
 p1
 
+# Build legend separately
 gbm.sum.tbl <- split(gbm.summaries.cat, gbm.summaries.cat$category)
-# gbm.sum.tbl <- lapply(gbm.sum.tbl, \(x) {
-#   #x$label=as.character(x$label)
-#   x %>%
-#     arrange(x, label, Model)
-#   x})
 
 gbm.col.tbl <- lapply(gbm.sum.tbl, \(x) {
   x %>%
@@ -274,7 +272,6 @@ p1.leg <- ggplot(mapping=aes(x=Model, y=rel.inf)) +
 p1.leg <- g_legend(p1.leg)
 
 # Facet wrap top 10 variables
-
 reorder_within <- function(x, by, within, fun = mean, sep = "___", ...) {
   new_x <- paste(x, within, sep = sep)
   stats::reorder(new_x, by, FUN = fun)

@@ -1,7 +1,7 @@
 ### ITC optimization using LayerStacking
 
 ## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -14,7 +14,7 @@ load.pkgs(config$pkgs)
 drive_auth(path=config$drivesa)
 
 ## Load data: optimized segmented trees and matched trees
-## ---------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 
 # Ingest optimized segmented trees
 opt.trees <- drive_ls(as_id('1aPYSoWdXJxX8L81ABSvCZuwi_CRzgd9U'))
@@ -169,7 +169,7 @@ hcomp.plt <- ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src)))
 #   ggthemes::theme_calc(base_size=18)
 
 ## Compare detected and reference trees across the full domain
-## ----------------------------------------------------------------------------------------
+## -------------------------------------------------------------------------------
 
 ## Reformat matches
 ls.match.l <- ls.match %>%
@@ -275,7 +275,7 @@ hcomp.plt /
 dev.off()
 
 ## Map example tree detections
-## ---------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
@@ -331,7 +331,7 @@ st_crs(uc2.las) <- st_crs(uc2.bnd)
 plot(uc2.las)
 rglwidget()
 
-# Rasterize canooy
+# Rasterize canopy
 uc2.chm.pitfree.05 <- rasterize_canopy(uc2.las, 0.5, p2r(subcircle=0.25, na.fill=knnidw()), pkg = "terra")
 plot(ext(uc2.chm.pitfree.05)+20)
 plot(uc2.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')), add=T)
@@ -343,6 +343,9 @@ uc2.chm.smooth <- mask(uc2.chm.smooth, st_buffer(uc2.bnd, 5, endCapStyle ='SQUAR
 plot(ext(uc2.chm.pitfree.05)+20)
 plot(uc2.chm.smooth, col=rev(brewer.pal(11,'Spectral')),add=T)
 
+# Write out
+writeRaster(uc2.chm.smooth, file.path(config$extdata$scratch, 'uc2_chm.tif'))
+
 # Coerce to df
 uc2.chm.df <- as.data.frame(uc2.chm.smooth, xy=T)
 
@@ -351,12 +354,7 @@ uc2.naip <- crop(naip, st_buffer(uc2.bnd, 5, endCapStyle ='SQUARE', joinStyle='M
 uc2.naip.df <- as.data.frame(uc2.naip, xy=T)
 names(uc2.naip.df)[3:5] <- c('green', 'blue', 'red')
 
-uc2.chm.df <- read.csv(file.path(config$data$int, 'uc2_chm_df.csv'),
-                       row.names=1)
-
 # Plot
-nclr <- nrow(uc2.l)/2
-
 uc2.base.map <- ggplot() +
   geom_raster(data=uc2.chm.df, aes(x=x, y=y, fill=focal_median)) +
   scale_fill_gradient(low='#1A1A1A', high='#FFFFFF',

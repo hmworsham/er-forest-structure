@@ -81,7 +81,7 @@ gam.perf.df <- data.frame(cbind('Response'=names(gams),
 # })
 
 ##################################
-# Visualizations
+# Partial-effects
 ##################################
 
 # Slice the model frame for one response to estimate partial effects
