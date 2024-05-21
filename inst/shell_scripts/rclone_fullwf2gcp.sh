@@ -2,7 +2,7 @@
 
 # Rclone data from Savio Scratch to watched Drive directory
 
-scratch=/global/scratch/users/worsham/waveform_lidar_chunks_1e5.tar.gz/
+scratch=/global/scratch/users/worsham/las_normalized.tar.gz
 
 dest=eastriver-gcp:/eastriver
 
