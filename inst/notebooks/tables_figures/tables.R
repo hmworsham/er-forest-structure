@@ -4,9 +4,21 @@
 ## Workspace setup
 #####################
 
-library(tidyverse)
-library(flextable)
-library(ftExtra)
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
+
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
+
+###############################
+# Ingest qualitative data
+###############################
+
+download.file('https://drive.google.com/uc?export=download&id=12eSdo6XbUqcXf_u7yeyTeZxvetyLZ2j6&usp=drive_fs',
+              destfile=file.path(tempdir(), 'table_data.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'table_data.tar.gz'), exdir=file.path(tempdir(), 'table_data'))
 
 ###############################
 # Define flextable formatting
@@ -21,7 +33,7 @@ make.ft <- function(ft, pgwidth = 6.5){
     font(fontname='Times New Roman',
          part='all') %>%
     fontsize(size=8, part='all') %>%
-    colformat_md(part='all', metadata=list())
+    colformat_md(part='all')
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -35,42 +47,48 @@ make.ft <- function(ft, pgwidth = 6.5){
 ##########
 
 # Descriptions of variables
-tbl1 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl1.csv'), stringsAsFactors = F,
+tbl1 <- read.csv(file.path(tempdir(), 'table_data', 'variable_definitions.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8')
 
 tbl1 <- make.ft(flextable(tbl1))
+save_as_image(tbl1, file.path('inst', 'ms', 'tables', 'tbl1.svg'))
 
 ###########
 # Table 2
 ##########
 
-tbl2 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl2.csv'), stringsAsFactors = F,
+tbl2 <- read.csv(file.path(tempdir(), 'table_data', 'field_methods.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8')
 
 tbl2 <- make.ft(flextable(tbl2))
+save_as_image(tbl2, file.path('inst', 'ms', 'tables', 'tbl2.svg'))
 
 ############
 # Table 3
 ###########
-tbl3 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl3.csv'), stringsAsFactors = F,
+tbl3 <- read.csv(file.path(tempdir(), 'table_data', 'match_criteria.csv'), stringsAsFactors = F,
                  na = "", encoding='UTF-8', check.names = F)
 
 tbl3 <- make.ft(flextable(tbl3))
+save_as_image(tbl3, file.path('inst', 'ms', 'tables', 'tbl3.svg'))
 
 ##########
 # Table 4
 ##########
 
 # Read itc optimization results
-itc.res.files <- list.files(file.path(config$data$int, 'itc_results'),
-                            pattern='results.csv', full.names=T)
+download.file('https://drive.google.com/uc?export=download&id=1zJUsIbIaxOe1CQH7ny7dD69bNII_kvZI&usp=drive_fs',
+              destfile=file.path(tempdir(), 'itd_results.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'itd_results.tar.gz'), exdir=file.path(tempdir(), 'itd_results'))
+itc.res.files <- list.files(file.path(tempdir(), 'itd_results'), full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
 
 # Bind into one dataframe
 itc.res <- bind_rows(itc.res, .id='mi')
 
 # Get model names and parameter set IDs and assign to columns
-mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
+mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 12))
 mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
@@ -134,17 +152,19 @@ best.mean <- best.mean[c(5, 1:4, 6:8),]
 # Flextables
 tbl4 <- make.ft(flextable(best.mean) %>%
                   bold(i=1))
+save_as_image(tbl4, file.path('inst', 'ms', 'tables', 'tbl4.svg'))
 
 ##########
 # Table 5
 ##########
 
-tbl5 <- read.csv(file.path('inst', 'ms', 'tables', 'tbl5.csv'), stringsAsFactors = F,
-                 na = "", encoding='UTF-8', check.names=F)
+tbl5 <- read.csv(file.path(tempdir(), 'table_data', 'layerstacking_parameters.csv'),
+                 stringsAsFactors = F, na = "", encoding='UTF-8', check.names=F)
 
 tbl5$ID <- paste0('λ', '~', 1:7, '~')
 
 tbl5 <- make.ft(flextable(tbl5))
+save_as_image(tbl5, file.path('inst', 'ms', 'tables', 'tbl5.svg'))
 
 ##########
 # Table 6
@@ -170,6 +190,7 @@ tbl6 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
          `Balanced accuracy`=`Balanced Accuracy`)
 
 tbl6 <- make.ft(flextable(tbl6))
+save_as_image(tbl6, file.path('inst', 'ms', 'tables', 'tbl6.svg'))
 
 ##########
 # Table 7
@@ -278,4 +299,4 @@ tbl7 <- make.ft(flextable(tbl7) %>%
                   flextable::hline(i=1, j=4, part='header')
 )
 
-tbl7
+save_as_image(tbl7, file.path('inst', 'ms', 'tables', 'tbl7.svg'))

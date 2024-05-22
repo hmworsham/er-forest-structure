@@ -4,9 +4,21 @@
 ## Workspace setup
 #####################
 
-library(tidyverse)
-library(flextable)
-library(ftExtra)
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
+
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
+
+###############################
+# Ingest qualitative table data
+###############################
+
+download.file('https://drive.google.com/uc?export=download&id=12eSdo6XbUqcXf_u7yeyTeZxvetyLZ2j6&usp=drive_fs',
+              destfile=file.path(tempdir(), 'table_qual_data.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'table_data.tar.gz'), exdir=file.path(tempdir(), 'table_data'))
 
 ###############################
 # Define flextable formatting
@@ -20,8 +32,8 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=8, part='all') # %>%
-    # colformat_md(part='all', metadata=list())
+    fontsize(size=8, part='all') %>%
+    colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -34,65 +46,68 @@ make.ft <- function(ft, pgwidth = 6.5){
 # Table S1
 ############
 
-tbls1 <- read.csv(file.path('inst', 'ms', 'tables', 'tbls1.csv'), stringsAsFactors = F,
+tbls1 <- read.csv(file.path(tempdir(), 'table_data', 'itd_algorithms.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
-tbls1
 tbls1 <- make.ft(flextable(tbls1))
+save_as_image(tbls1, file.path('inst', 'ms', 'tables', 'tbls1.svg'))
 
 ############
 # Table S2
 ############
 
 # Read itc optimization results
-itc.res.files <- list.files(file.path(config$data$int, 'itc_results'),
-                            pattern='results.csv', full.names=T)
-itc.res <- lapply(itc.res.files, read.csv)
+# download.file('https://drive.google.com/uc?export=download&id=1zJUsIbIaxOe1CQH7ny7dD69bNII_kvZI&usp=drive_fs',
+#               destfile=file.path(tempdir(), 'itd_results.tar.gz'),
+#               method='wget')
+# untar(file.path(tempdir(), 'itd_results.tar.gz'), exdir=file.path(tempdir(), 'itd_results'))
+# itc.res.files <- list.files(file.path(tempdir(), 'itd_results'), full.names=T)
+# itc.res <- lapply(itc.res.files, read.csv)
 
-# Bind into one dataframe
-itc.res <- bind_rows(itc.res, .id='mi')
-
-# Get model names and parameter set IDs and assign to columns
-mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
-mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
-itc.res <- left_join(itc.res, mod.names, by='mi')
-itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
-
-# Get means
-ls.means <- itc.res %>%
-  group_by(model, paramset) %>%
-  summarise(across(nobstrees:npredtrees, \(x) sum(x, na.rm=T)),
-            across(c(ext.rt, match.rt, accuracy:f), \(x) round(sqrt(mean(x^2, na.rm=T)),2)),
-            .groups='drop'
-  ) %>%
-  mutate(ext.rt = round(npredtrees/nobstrees,2)) %>%
-  filter(model=='ls')
-
-names(ls.means) <- c('Model',
-                     'Parameter set',
-                      'N reference trees',
-                      'N detected trees',
-                      'Extraction rate',
-                      'Match rate',
-                      'Overall accuracy',
-                      'Omission rate',
-                      'Commission rate',
-                      'RMS ~∆XY~',
-                      'RMS ~∆Z~',
-                      'RMS ~∆XYZ~',
-                      'Precision',
-                      'Recall',
-                      'F'
-)
-ls.means <- ls.means[,c(2:length(ls.means))]
-
-tbls2 <- make.ft(flextable(ls.means))
+# # Bind into one dataframe
+# itc.res <- bind_rows(itc.res, .id='mi')
+#
+# # Get model names and parameter set IDs and assign to columns
+# mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
+# mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
+# itc.res <- left_join(itc.res, mod.names, by='mi')
+# itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
+#
+# # Get means
+# ls.means <- itc.res %>%
+#   group_by(model, paramset) %>%
+#   summarise(across(nobstrees:npredtrees, \(x) sum(x, na.rm=T)),
+#             across(c(ext.rt, match.rt, accuracy:f), \(x) round(sqrt(mean(x^2, na.rm=T)),2)),
+#             .groups='drop'
+#   ) %>%
+#   mutate(ext.rt = round(npredtrees/nobstrees,2)) %>%
+#   filter(model=='ls')
+#
+# names(ls.means) <- c('Model',
+#                      'Parameter set',
+#                       'N reference trees',
+#                       'N detected trees',
+#                       'Extraction rate',
+#                       'Match rate',
+#                       'Overall accuracy',
+#                       'Omission rate',
+#                       'Commission rate',
+#                       'RMS ~∆XY~',
+#                       'RMS ~∆Z~',
+#                       'RMS ~∆XYZ~',
+#                       'Precision',
+#                       'Recall',
+#                       'F'
+# )
+# ls.means <- ls.means[,c(2:length(ls.means))]
+#
+# tbls2 <- make.ft(flextable(ls.means))
 
 ############
 # Table S3
 ############
 
 # Ingest variable table
-tbls3.in <- read.csv(file.path('inst', 'ms', 'tables', 'tbls3.csv'), stringsAsFactors = F,
+tbls3.in <- read.csv(file.path(tempdir(), 'table_data', 'gam_specs.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
 
 # Ingest stored GAMs
@@ -143,14 +158,17 @@ tbls3 <- make.ft(flextable(tbls3) %>%
                    flextable::theme_booktabs() %>%
                    flextable::align(i=1, align='center', part='header'))
 
+save_as_image(tbls3, file.path('inst', 'ms', 'tables', 'tbls3.svg'))
+
 ############
 # Table S4
 ############
 
-tbls4 <- read.csv(file.path('inst', 'ms', 'tables', 'tbls4.csv'), stringsAsFactors = F,
+tbls4 <- read.csv(file.path(tempdir(), 'table_data', 'all_variables.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
 
 tbls4 <- make.ft(flextable(tbls4))
+save_as_image(tbls4, file.path('inst', 'ms', 'tables', 'tbls4.svg'))
 
 ############
 # Table S5
@@ -185,6 +203,7 @@ names(gbm.best) <- c('Response', 'N trees', 'Interaction depth',
                      'Shrinkage', 'Min obs. in node')
 
 tbls5 <- make.ft(flextable(gbm.best))
+save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
 
 ############
 # Table S6
