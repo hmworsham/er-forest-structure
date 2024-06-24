@@ -147,6 +147,18 @@ print(gbm.sums %>%
   top_n(-3, wt=rel.inf),
   n=30)
 
+# Cumu RI of climate explainers
+gbm.sums %>%
+  filter(category=='Climate') %>%
+  group_by(Model) %>%
+  summarise(sum=sum(rel.inf))
+
+# Cumu RI of topo explainers
+gbm.sums %>%
+  filter(category=='Topography') %>%
+  group_by(Model) %>%
+  summarise(sum=sum(rel.inf))
+
 # Cumu RI of soil explainers
 gbm.sums %>%
   filter(category=='Soil') %>%
@@ -155,7 +167,7 @@ gbm.sums %>%
 
 # Max RI of geology
 gbm.sums %>%
-  filter(category=='Geology') %>%
+  filter(category %in% c('Soil','Geology')) %>%
   group_by(Model) %>%
   summarise(sum=sum(rel.inf))
 
