@@ -150,7 +150,7 @@ files = os.listdir(files_upload_directory)
 
 files_tuples_array.append((("json-ld", json.dumps(json_ld))))
 
-for filename in files:
+for filename in files[0:2]:
    file_directory = files_upload_directory + filename
    files_tuples_array.append((("data", open(file_directory, 'rb'))))
 
