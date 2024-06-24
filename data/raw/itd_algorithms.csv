@@ -1,0 +1,34 @@
+﻿I,Algorithm,Parameter,Description,Tested values
+1,Li (2012),dt1,Threshold 1. Refer to p. 79 in Li et al. (2012),"0.5, 1.0, 1.5, 2.0"
+,,dt2,Threshold 2. Refer to p. 79 in Li et al. (2012),"0.5, 1.0, 1.5, 2.0"
+,,hmin,"Minimum height threshold in m, below which a new tree cannot be initiated",1.3
+,,R,Search radius. Refer to p. 79 in Li et al. (2012),"0, 1, 2"
+,,Zu,Height switch for dt1 and dt2. Use dt1 unless point height > Zu; then use dt2,"14, 15, 16"
+2,LMF-auto (Jean-Romain et al. in prep),NA,LMF-auto is parameterless by design,NA
+3,LMF fixed-window (Popescu and Wynne 2004),ws,Window size: side length or diameter of the moving window used to detect the local maxima,The sequence 0.2:10.0 incrementing by 0.2
+,,shape,"Shape of the window, either circular or square","circular, square"
+,,hmin ,"Minimum height threshold in m, below which a new tree cannot be initiated",1.3
+4,LMF variable-window (Popescu and Wynne 2004),b0,"First coefficient, β_0 on the function for computing variable-window size: w=β_0*-e^(-β_1 (Z-2)-1)+β_2","0.5, 1.0, 1.5, 2.0, 2.5"
+,,b1,Second coefficient β_1 on the variable window size function,"0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16"
+,,c0,Third coefficient β_2 on the variable window size function,"1, 2, 3, 4, 5"
+,,shape,"Shape of the window, either circular or square","circular, square"
+,,hmin,"Minimum height threshold in m, below which a new tree cannot be initiated",1.3
+5,LayerStacking (Ayrey 2017),start,the starting height above ground at which layer divisions begin,0.5
+,,resolution,Resolution of the CHM,"0.5, 1"
+,,window1,window radius for the first local maximum filter for detecting tree tops,"1, 2, 3"
+,,buffer,size of the buffer enforced around each point to create a polygonal cluster,"1, 2, 3"
+,,hardwood,"logical switch, where False adds weight to clusters to account for mid-canopy density in conifer stands ",F
+,,window2,window radius for the second local maximum filter for detecting tree tops,"0.2, 0.4, 0.6, 0.8"
+,,hmin,"Minimum height threshold in m, below which a new tree cannot be initiated",1.3
+6,MultiCHM (Eysn 2015),resolution,Resolution of the CHM,"0.5, 1"
+,,layer_thickness,The eliminating layer in the original paper is defined as a layer of `layer_thickness` m below the current CHM. Refer to Eysn 2015 p. 1728).,"0.25, 0.5"
+,,dist_2d,2D threshold for delineating a tree from local maximum. A tree is created if no other detected tree lies within this distance,"0.1, 0.25, 0.5, 1, 2"
+,,dist_3d,3D threshold for delineating a tree from local maximum. A tree is created if no other detected tree lies within this distance,"0.5, 1, 3, 5"
+7,PTrees (Vega 2014),k,Number of nearest neighbors to use in search. Refer to Vega (2014).,"All forward and reverse permutations of the sequence: {5, 6, 7, 8, 10, 12, 15, 20, 25, 30, 40, 60, 80, 100}"
+,,hmin,Minimum height of a detected tree. Addition not in the original paper included to reduce oversegmentation. ,1.3
+8,Inverted watershed (Koch et al. 2006),resolution,Resolution of the CHM,"0.5, 1, 1.5, 2"
+,,th_tree,"Minimum height threshold in m, below which a new tree cannot be initiated",1.3
+,,subcircle_size,radius of circles used to rasterize the point cloud to CHM,"0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8"
+,,kernel_size,Size of kernel to smoothe CHM before applying watershed algorithm,"3, 5, 9, 15"
+,,tolerance,"Minimum Z distance between a tree candidate's highest point and the point where it contacts another tree. If Z distance < tolerance, the object is merged with its highest neighbor.",1
+,,ext,Search radius in pixels for neighboring trees,1

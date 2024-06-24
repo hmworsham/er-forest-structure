@@ -1,0 +1,8 @@
+ID,Parameter,Description,Optimal value
+_~1~,start,Starting height above ground at which layer divisions begin,0.5
+_~2~,resolution,Resolution of the CHM,0.5
+_~3~,window1,Window radius for the first local maximum filter for detecting tree tops,1.2
+_~4~,buffer,Size of the buffer enforced around each point to create a polygonal cluster,0.5
+_~5~,hardwood,"Logical switch, where False adds weight to clusters to account for mid-canopy density in conifer stands",0
+_~6~,window2,Window radius for the second local maximum filter for detecting tree tops,2
+_~7~,hmin,"Minimum height threshold, below which a new tree cannot be initiated",1.3
