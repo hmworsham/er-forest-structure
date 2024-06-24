@@ -89,12 +89,12 @@ sp.codes <- sp.codes %>%
   mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
   dplyr::select(-c(Genus:Common))
 
-# Ingest detected tree crowns
-# treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
-# crowns <- mclapply(treefiles, \(x) {
-#   tf <- st_read(x) },
-#   mc.cores = getOption("mc.cores", 16))
-modtrees <- read.csv(file.path('..', '..', '..', 'data', 'itc_results', 'opt_matches.csv'))
+
+# Ingest match data
+modtrees <- read.csv(drive_download(
+  as_id('1LCafch6gd2bYqYTT0eeW1o5QSHXv5O50'),
+  path=file.path(tempdir(), 'opt_matches.csv'),
+  overwrite = T)$local_path)
 
 # Ingest las
 infiles <- list.files(config$extdata$las_dec, full.names=T)
