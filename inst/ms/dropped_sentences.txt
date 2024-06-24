@@ -1,10 +1,14 @@
 # Dropped sentences
 
+Rising rates of climate-driven forest decline and mortality (Higuera et al., 2014; McDowell et al., 2020; McDowell and Allen, 2015; Van Mantgem et al., 2013) are likely outpacing concomitant increases in seedling establishment and range expansion (Andrus et al., 2018; Conlisk et al., 2017; Kueppers et al., 2017; Macias-Fauria and Johnson, 2013; Hankin et al. 2024). 
+
 Forest stand structure can be thought of as an ensemble of emergent properties of ecosystem development manifest on a landscape. Studying such an ensemble at an arbitrary point in time carries inherent limitations, notably, in collapsing the legacies of past change, including disturbance history and individual life histories. Nevertheless, we start from the position that undertaking this sort of analysis is valuable (a) on its own as a contribution to the broader field of ecological gradient analysis, and (b) for improving understanding forest dynamics under novel climate forcings and anthropogenic land-use modification, in so far as it establishes a baseline against which to evaluate future change or provides a benchmark for mechanistic modeling of future scenarios.
 
 Forest structure and composition emerge from complex "interactions between a spatially and temporally variable abiotic environment and adaptive biotic agents (e.g., trees)."
 
 Complex interactions between adaptive biotic agents and a spatiotemporally variable environment give rise to emergent properties of forests, such as structural and compositional diversity. 
+
+Because CWD and convective temperature tend to decrease with increasing elevation, water- and energy-limitation gradients are often mapped to elevation [@korner_worldwide_2004]. Yet, since other locally varying topographic factors also modify radiative and moisture conditions, sites at similar elevations but with different slopes and aspects may experience different limitations. 
 
 Few studies directly address microclimatic heterogeneity in high-elevation complex terrain (). Fewer still account for state-variable interactions ().
 
