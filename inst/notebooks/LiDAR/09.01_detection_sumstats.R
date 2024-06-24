@@ -1,6 +1,6 @@
 # Pull detection summary statistics and figures
 
-## ---------------------------------------------------------------------------------------------------
+## --------------------------------------------------------------------------------------------
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
 
@@ -51,7 +51,7 @@ inv <- inv %>%
          Height_Avg_M/DBH_Avg_CM > 0.17,
          Height_Avg_M/DBH_1_CM < 10,
          !grepl('outside plot', Comments),
-         #Status=='Live',
+         Status=='Live',
          !is.na(inv$Latitude) | !is.na(inv$Longitude))
 
 # Remove unlikely detected trees
@@ -63,6 +63,8 @@ alltrees <- alltrees[alltrees$H<=60,]
 inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
 inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
 inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
+inv.p25.ht <- quantile(inv$Height_Avg_M, .25, na.rm=T)
+inv.p75.ht <- quantile(inv$Height_Avg_M, .75, na.rm=T)
 inv.p95.ht <- quantile(inv$Height_Avg_M, .95, na.rm=T)
 inv.p99.ht <- quantile(inv$Height_Avg_M, .99, na.rm=T)
 inv.sd.ht <- sd(inv$Height_Avg_M, na.rm=T)
@@ -71,6 +73,8 @@ inv.max.ht <- max(inv$Height_Avg_M, na.rm=T)
 data.frame('QMD'=inv.qmd,
            'SD DBH'=inv.sd.dbh,
            'Median Height'=inv.median.ht,
+           'Percentile-25 Height'=inv.p25.ht,
+           'Percentile-75 Height'=inv.p75.ht,
            'Percentile-95 Height'=inv.p95.ht,
            'Percentile-99 Height'=inv.p99.ht,
            'SD Height'=inv.sd.ht,
@@ -88,6 +92,8 @@ ls.match.det$DBH_est <- exp(-mean.coef$alpha + mean.coef$beta*log(ls.match.det$H
 ls.qmd <- sqrt(mean(ls.match.det$DBH_est^2, na.rm=T))
 ls.sd.dbh <- sd(ls.match.det$DBH_est, na.rm=T)
 ls.median.ht <- median(ls.match.det$H, na.rm=T)
+ls.p25.ht <- quantile(ls.match.det$H, .25, na.rm=T)
+ls.p75.ht <- quantile(ls.match.det$H, .75, na.rm=T)
 ls.p95.ht <- quantile(ls.match.det$H, .95, na.rm=T)
 ls.p99.ht <- quantile(ls.match.det$H, 0.99, na.rm=T)
 ls.sd.ht <- sd(ls.match.det$H, na.rm=T)
@@ -96,6 +102,8 @@ ls.max.ht <- max(ls.match.det$H, na.rm=T)
 data.frame('QMD'=ls.qmd,
            'SD DBH'=ls.sd.dbh,
            'Median Height'=ls.median.ht,
+           'Percentile-25 Height'=ls.p25.ht,
+           'Percentile-75 Height'=ls.p75.ht,
            'Percentile-95 Height'=ls.p95.ht,
            'Percentile-99 Height'=ls.p99.ht,
            'SD Height'=ls.sd.ht,
@@ -111,12 +119,16 @@ sd.dbh <- sd(alltrees$DBH_est, na.rm=T)
 median.ht <- median(alltrees$H, na.rm=T)
 p90.ht <- quantile(alltrees$H, .95, na.rm=T)
 sd.ht <- sd(alltrees$H, na.rm=T)
+p25.ht <- quantile(alltrees$H, .25, na.rm=T)
+p75.ht <- quantile(alltrees$H, .75, na.rm=T)
 
 data.frame('QMD'=qmd,
            'SD DBH'=sd.dbh,
            'Median Height'=median.ht,
            'Percentile-90 Height'=p90.ht,
-           'SD Height'=sd.ht)
+           'SD Height'=sd.ht,
+           'Percentile-25 Height'=p25.ht,
+           'Percentile-75 Height'=p75.ht)
 
 
 ## Corrections on ALL detected trees
