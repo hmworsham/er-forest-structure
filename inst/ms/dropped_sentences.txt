@@ -59,3 +59,5 @@ This suggested a potential decoupling of stand-scale and individual-scale dynami
 
 One hypothesis, which could be tested through repeat measurement or dendrochronology methods, is that extreme AWC values impose stronger constraints on individual productivity than on stand-level dynamics, such as recruitment and survival. If this is the case, then while the number of trees increases with higher levels of soil available water, there may be a preferential zone of soil moisture facilitating growth for the individual.
 
+
+In early testing we attempted to gap-fill this region by processing the NEON discrete-return point cloud, but ultimately abandoned the effort because of unacceptable anomalies from the higher-fidelity waveform-based estimates. 

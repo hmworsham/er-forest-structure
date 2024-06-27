@@ -1,7 +1,6 @@
 ---
 title: |
-  Supplementary information: Worsham et al. 2024. Abiotic influences on subalpine conifer forest structure
-date: "`r format(Sys.time(), '%B %d, %Y')`"
+  Appendix A. Supplementary information
 output: 
   officedown::rdocx_document:
     reference_docx: styles.docx
@@ -46,14 +45,13 @@ load.pkgs(config$pkgs)
 ```
 
 ```{r source}
-source('./inst/ms/si_tables.R')
+source('./inst/notebooks/tables_figures/si_tables.R')
 ```
 
 ## Supplementary tables 
 
-**Table S1.** Algorithms, parameters, and vectors of values applied on those parameters in ITD training and validation. 
-
-```{r tbls1}
+**Table S1.** Response (RE) and explanatory (EX) variables used in this study's statistical analyses. Variables listed in the "Topography" category were also used in the sampling procedure to stratify inventory plots.
+```{r}
 tbls1
 ```
 
@@ -61,10 +59,41 @@ tbls1
 
 \newpage
 
-**Table S2.** Performance statistics for each parameter permutation used to force the LayerStacking individual tree detection (ITD) algorithm.
-
-```{r tbls2}
+**Table S2.** Measurements taken in field inventory with their units and a summary of methods.
+```{r}
 tbls2
+```
+
+\clearpage
+
+\newpage
+
+**Table S3.** Algorithms, parameters, and vectors of values applied on those parameters in ITD training and validation. 
+```{r tbls1}
+tbls3
+```
+
+\clearpage
+
+\newpage
+
+**Table S4.** Tree height (∆Z) and horizontal (∆XY) distance criteria for candidate searching in the matching procedure (Eysn et al. 2015).
+```{r}
+tbls4
+```
+
+\clearpage
+
+\newpage
+
+**Table S5.** User-specified parameters ($\lambda_{1:7}$) applied in the Layer Stacking algorithm with the optimal values found in training. The algorithm proceeds by first dividing the point cloud into stacked horizontal layers at 1-m intervals, starting at $\lambda_1$ m above ground. A series of clustering procedures is then applied to each layer. In the lowest three layers ($\lambda_{1}+1 : \lambda_{1}+3$ m a.g.), points are clustered through Density-Based Scanning [@ester_densitybased_1996]; points within these initial clusters are removed as non-tree low vegetation, while those lying outside clusters are retained as sparse returns from small tree boles. Next, a canopy height model (CHM) of resolution $\lambda_2$ is computed from the point cloud. Tree tops are identified from the CHM using a local maximum filter (LMF) with a window of radius $\lambda_3$. Then, points in each layer undergo *k*-means clustering, using the local maxima as seeds, and a polygonal buffer of radius $\lambda_4$ is placed around each resulting cluster. The polygons from each layer are then flattened and rasterized to create an intermediate "overlap map." This abstraction quantifies the density of clusters, such that areas of high-density polygonal overlap represent individual trees. In conifer forests, this delineation can be improved with an additional parameter, $\lambda_5$, which enforces higher weighting for clusters near the canopy top, because these tend to be closer to a conifer's center. A second LMF is applied to the overlap map, using a window of radius $\lambda_6$, and local maxima are taken to be tree centers. Additional smoothing of the local maxima, and filtering and merging of clusters, yields a set of points representing tree tops with embedded height and position information.
+```{r}
+tbls5
+```
+
+**Table S6.** Performance statistics for each parameter permutation used to force the LayerStacking individual tree detection (ITD) algorithm.
+```{r tbls6}
+tbls6
 ```
 
 \clearpage
@@ -91,10 +120,10 @@ tbls3
 
 <!-- \newpage -->
 
-**Table S4.** Optimal tuning parameters for GBMs under the full-factorial design.
+**Table S8.** Optimal tuning parameters for GBMs under the full-factorial design.
 
 ```{r tbls5}
-tbls5
+tbls8
 ```
 
 \clearpage
