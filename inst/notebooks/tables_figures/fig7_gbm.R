@@ -21,6 +21,7 @@ download.file('https://drive.usercontent.google.com/download?id=TKTKTK&confirm=t
               destfile=file.path(tempdir(), 'gbm_relative_influence.csv'),
               method='wget')
 gbm.sums <- read.csv(file.path(tempdir(), 'gbm_relative_influence.csv'))
+gbm.sums <- read.csv('/Users/hmworsham/Desktop/ER_ForestStructure_RepData/gbm_relative_influence.csv')
 
 # Read local variable names reference table
 varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
@@ -58,7 +59,7 @@ gbm.summaries.5 <- gbm.sums %>%
 # Group by category
 gbm.summaries.cat <- gbm.sums %>%
   mutate(category = factor(category, levels=c('Climate', 'Topography',
-                                              'Soil', 'Geology')),
+                                              'Substrate')),
          label = factor(label,
                         levels=c('AET', 'CWD', 'SWE', '\u0394SWE',
                                  'Curvature', 'Elevation', 'Heat load',
@@ -98,7 +99,7 @@ p1 <- ggplot(gbm.summaries.cat, aes(x=Model, y=rel.inf, fill=interaction(categor
         # legend.text = element_text(size=rel(0.7)),
         legend.key.size = unit(0.8, 'lines'),
         legend.margin = margin(r=1, l=0, t=10, b=10),
-        plot.background = element_rect(color = NA)
+        plot.background = element_rect(fill=NA, color = NA, linewidth = 0)
   )
 
 # Build legend separately
@@ -121,16 +122,16 @@ p1.leg <- ggplot(mapping=aes(x=Model, y=rel.inf)) +
                     name='Topography',
                     guide=guide_legend(order=2)) +
   ggnewscale::new_scale_fill() +
-  geom_col(data=gbm.sum.tbl$Soil, position='stack', aes(fill=label)) +
-  scale_fill_manual(values=gbm.col.tbl$Soil,
-                    name='Soil',
+  geom_col(data=gbm.sum.tbl$Substrate, position='stack', aes(fill=label)) +
+  scale_fill_manual(values=gbm.col.tbl$Substrate,
+                    name='Substrate',
                     guide=guide_legend(order=3),
-                    labels=soil.labs) +
-  ggnewscale::new_scale_fill() +
-  geom_col(data=gbm.sum.tbl$Geology, position='stack', aes(fill=label)) +
-  scale_fill_manual(values=gbm.col.tbl$Geology,
-                    name='Geology',
-                    guide=guide_legend(order=4)) +
+                    labels=c(soil.labs, 'Geology')) +
+  # ggnewscale::new_scale_fill() +
+  # geom_col(data=gbm.sum.tbl$Geology, position='stack', aes(fill=label)) +
+  # scale_fill_manual(values=gbm.col.tbl$Geology,
+  #                   name='Geology',
+  #                   guide=guide_legend(order=4)) +
   theme(legend.position = "left",
         legend.box = "vertical",
         legend.direction='vertical',
@@ -181,7 +182,8 @@ p2 <- ggplot(gbm.summaries.5.all, aes(x=reorder_within(label, rel.inf, Model), y
   labs(x='Abiotic explanatory variable', y='Relative influence (%)') +
   facet_wrap(~Model, scales='free_y') +
   ggthemes::theme_calc(base_size=8,
-                       base_family='Arial')
+                       base_family='Arial') +
+  theme(plot.background=element_rect(fill=NA, color=NA, linewidth=0))
 
 # Panel C: Top 5 faceted by model for species densities
 gbm.summaries.5.spp <- gbm.summaries.5[gbm.summaries.5$Model %in%
@@ -199,7 +201,8 @@ p3 <- ggplot(gbm.summaries.5.spp, aes(x=reorder_within(label, rel.inf, Model),
   labs(x='Abiotic explanatory variable', y='Relative influence (%)') +
   facet_wrap(~Model, scales='free_y') +
   ggthemes::theme_calc(base_size=8,
-                       base_family='Arial')
+                       base_family='Arial') +
+  theme(plot.background=element_rect(fill=NA, color=NA, linewidth=0))
 
 ################################
 # Assemble plot grid and write
@@ -220,7 +223,7 @@ vp1 <- viewport(x = 0, y = 0,
                 name = "leg1")
 pushViewport(vp1)
 grid.draw(p1.leg)
-grid.text(expression(bold('(A)')), x=0.04, y=0.92, just=c('left', 'bottom'))
+grid.text(expression(bold('(A)')), x=0.04, y=0.96, just=c('left', 'bottom'))
 
 upViewport(1)
 vp2 <- viewport(x=0.12, y=0,
@@ -238,7 +241,7 @@ vp3 <- viewport(x=1, y=0.4,
                 name='p2')
 pushViewport(vp3)
 print(p2, newpage=F)
-grid.text(expression(bold('(B)')), x=0.02, y=0.93, just=c('left', 'bottom'))
+grid.text(expression(bold('(B)')), x=0.01, y=0.93, just=c('left', 'bottom'))
 
 # Panel C
 upViewport(1)
@@ -248,7 +251,7 @@ vp4 <- viewport(x=1, y=0,
                 name='p3')
 pushViewport(vp4)
 print(p3, newpage=F)
-grid.text(expression(bold('(C)')), x=0.02, y=0.94, just=c('left', 'bottom'))
+grid.text(expression(bold('(C)')), x=0.01, y=0.90, just=c('left', 'bottom'))
 
 upViewport(1)
 vp5 <- viewport(x=0, y=0,
@@ -256,6 +259,6 @@ vp5 <- viewport(x=0, y=0,
                 just=c('left', 'bottom'),
                 name='vp4')
 pushViewport(vp5)
-grid.rect(gp=gpar(fill=NA))
+#grid.rect(gp=gpar(fill=NA))
 
 dev.off()
