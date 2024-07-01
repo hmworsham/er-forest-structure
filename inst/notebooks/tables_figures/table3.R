@@ -23,8 +23,8 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=8, part='all') %>%
-    colformat_md(part='all')
+    fontsize(size=10, part='all') %>%
+    colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -111,7 +111,7 @@ gbm.perf.df <- data.frame(cbind('Response'=names(gbms),
                           check.names=F)  %>%
   mutate(across(`Train error`:`CV error`, as.numeric))
 
-tbl7 <- gbm.perf.df %>%
+tbl3 <- gbm.perf.df %>%
   left_join(gam.perf.df, by='Response') %>%
   rename(`Training error`='Train error',
          `CV error`='CV error',
@@ -123,7 +123,7 @@ tbl7 <- gbm.perf.df %>%
   arrange(ord) %>%
   select(-ord)
 
-tbl7 <- make.ft(flextable(tbl7) %>%
+tbl3 <- make.ft(flextable(tbl3) %>%
                   add_header_row(values=c('', 'GBM','GAM'),
                                  colwidths=c(1,2,1)) %>%
                   flextable::theme_booktabs() %>%
@@ -132,4 +132,4 @@ tbl7 <- make.ft(flextable(tbl7) %>%
                   flextable::hline(i=1, j=4, part='header')
 )
 
-save_as_image(tbl7, file.path('inst', 'ms', 'tables', 'tbl7.svg'))
+save_as_image(tbl3, file.path('inst', 'ms', 'tables', 'tbl3.svg'))
