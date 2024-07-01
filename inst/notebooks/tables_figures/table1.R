@@ -23,8 +23,8 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=8, part='all') %>%
-    colformat_md(part='all')
+    fontsize(size=10, part='all') %>%
+    colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -107,6 +107,6 @@ names(best.mean) <- c('Model',
 best.mean <- best.mean[c(5, 1:4, 6:8),]
 
 # Flextables
-tbl4 <- make.ft(flextable(best.mean) %>%
+tbl1 <- make.ft(flextable(best.mean) %>%
                   bold(i=1))
-save_as_image(tbl4, file.path('inst', 'ms', 'tables', 'tbl4.svg'))
+save_as_image(tbl1, file.path('inst', 'ms', 'tables', 'tbl1.svg'))
