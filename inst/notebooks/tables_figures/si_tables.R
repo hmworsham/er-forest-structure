@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 ###############################
 
 download.file('https://drive.google.com/uc?export=download&id=12eSdo6XbUqcXf_u7yeyTeZxvetyLZ2j6&usp=drive_fs',
-              destfile=file.path(tempdir(), 'table_qual_data.tar.gz'),
+              destfile=file.path(tempdir(), 'table_data.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'table_data.tar.gz'), exdir=file.path(tempdir(), 'table_data'))
 
@@ -32,7 +32,7 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=8, part='all') %>%
+    fontsize(size=10, part='all') %>%
     colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
@@ -46,8 +46,10 @@ make.ft <- function(ft, pgwidth = 6.5){
 # Table S1
 ############
 
-tbls1 <- read.csv(file.path(tempdir(), 'table_data', 'itd_algorithms.csv'), stringsAsFactors = F,
-                  na = "", encoding='UTF-8', check.names=F)
+# Descriptions of variables
+tbls1 <- read.csv(file.path(config$data$raw, 'variable_definitions.csv'), stringsAsFactors = F,
+                 na = "", encoding='UTF-8')
+
 tbls1 <- make.ft(flextable(tbls1))
 save_as_image(tbls1, file.path('inst', 'ms', 'tables', 'tbls1.svg'))
 
@@ -55,59 +57,110 @@ save_as_image(tbls1, file.path('inst', 'ms', 'tables', 'tbls1.svg'))
 # Table S2
 ############
 
-# Read itc optimization results
-# download.file('https://drive.google.com/uc?export=download&id=1zJUsIbIaxOe1CQH7ny7dD69bNII_kvZI&usp=drive_fs',
-#               destfile=file.path(tempdir(), 'itd_results.tar.gz'),
-#               method='wget')
-# untar(file.path(tempdir(), 'itd_results.tar.gz'), exdir=file.path(tempdir(), 'itd_results'))
-# itc.res.files <- list.files(file.path(tempdir(), 'itd_results'), full.names=T)
-# itc.res <- lapply(itc.res.files, read.csv)
+# Descriptions of field methods
+tbls2 <- read.csv(file.path(config$data$raw, 'field_methods.csv'), stringsAsFactors = F,
+                 na = "", encoding='UTF-8')
 
-# # Bind into one dataframe
-# itc.res <- bind_rows(itc.res, .id='mi')
-#
-# # Get model names and parameter set IDs and assign to columns
-# mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
-# mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
-# itc.res <- left_join(itc.res, mod.names, by='mi')
-# itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
-#
-# # Get means
-# ls.means <- itc.res %>%
-#   group_by(model, paramset) %>%
-#   summarise(across(nobstrees:npredtrees, \(x) sum(x, na.rm=T)),
-#             across(c(ext.rt, match.rt, accuracy:f), \(x) round(sqrt(mean(x^2, na.rm=T)),2)),
-#             .groups='drop'
-#   ) %>%
-#   mutate(ext.rt = round(npredtrees/nobstrees,2)) %>%
-#   filter(model=='ls')
-#
-# names(ls.means) <- c('Model',
-#                      'Parameter set',
-#                       'N reference trees',
-#                       'N detected trees',
-#                       'Extraction rate',
-#                       'Match rate',
-#                       'Overall accuracy',
-#                       'Omission rate',
-#                       'Commission rate',
-#                       'RMS ~∆XY~',
-#                       'RMS ~∆Z~',
-#                       'RMS ~∆XYZ~',
-#                       'Precision',
-#                       'Recall',
-#                       'F'
-# )
-# ls.means <- ls.means[,c(2:length(ls.means))]
-#
-# tbls2 <- make.ft(flextable(ls.means))
+tbls2 <- make.ft(flextable(tbls2))
+save_as_image(tbls2, file.path('inst', 'ms', 'tables', 'tbls2.svg'))
 
 ############
 # Table S3
 ############
 
+# All ITD parameters
+tbls3 <- read.csv(file.path(tempdir(), 'table_data', 'itd_algorithms.csv'), stringsAsFactors = F,
+                  na = "", encoding='UTF-8', check.names=F)
+tbls3 <- make.ft(flextable(tbls3))
+save_as_image(tbls3, file.path('inst', 'ms', 'tables', 'tbls3.svg'))
+
+
+############
+# Table S4
+###########
+
+# ∆XYZ matching criteria
+tbls4 <- read.csv(file.path(config$data$raw, 'match_criteria.csv'), stringsAsFactors = F,
+                 na = "", encoding='UTF-8', check.names = F)
+
+tbls4 <- make.ft(flextable(tbls4))
+save_as_image(tbls4, file.path('inst', 'ms', 'tables', 'tbls4.svg'))
+
+############
+# Table S5
+############
+
+# Results for all Layer Stacking parameter permutations
+
+# Read itc optimization results
+download.file('https://drive.google.com/uc?export=download&id=1zJUsIbIaxOe1CQH7ny7dD69bNII_kvZI&usp=drive_fs',
+              destfile=file.path(tempdir(), 'itd_results.tar.gz'),
+              method='wget')
+untar(file.path(tempdir(), 'itd_results.tar.gz'), exdir=file.path(tempdir(), 'itd_results'))
+itc.res.files <- list.files(file.path(tempdir(), 'itd_results'), full.names=T)
+itc.res <- lapply(itc.res.files, read.csv)
+
+# Bind into one dataframe
+itc.res <- bind_rows(itc.res, .id='mi')
+
+# Get model names and parameter set IDs and assign to columns
+mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 12))
+mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
+itc.res <- left_join(itc.res, mod.names, by='mi')
+itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
+
+# Get means
+ls.means <- itc.res %>%
+  group_by(model, paramset) %>%
+  summarise(across(nobstrees:npredtrees, \(x) sum(x, na.rm=T)),
+            across(c(ext.rt, match.rt, accuracy:f), \(x) round(sqrt(mean(x^2, na.rm=T)),2)),
+            .groups='drop'
+  ) %>%
+  mutate(ext.rt = round(npredtrees/nobstrees,2)) %>%
+  filter(model=='ls')
+
+names(ls.means) <- c('Model',
+                     'Parameter set',
+                      'N reference trees',
+                      'N detected trees',
+                      'Extraction rate',
+                      'Match rate',
+                      'Overall accuracy',
+                      'Omission rate',
+                      'Commission rate',
+                      'RMS ~∆XY~',
+                      'RMS ~∆Z~',
+                      'RMS ~∆XYZ~',
+                      'Precision',
+                      'Recall',
+                      'F'
+)
+ls.means <- ls.means[,c(2:length(ls.means))]
+
+tbls5 <- make.ft(flextable(ls.means))
+save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
+
+##########
+# Table S6
+##########
+
+# Layer Stacking parameters and optimal values
+tbls6 <- read.csv(file.path(config$data$raw, 'layerstacking_params.csv'),
+                 stringsAsFactors = F, na = "", encoding='UTF-8', check.names=F)
+
+tbls6$ID <- paste0('λ', '~', 1:7, '~')
+
+tbls6 <- make.ft(flextable(tbls6))
+save_as_image(tbls6, file.path('inst', 'ms', 'tables', 'tbls6.svg'))
+
+############
+# Table S7
+############
+
+# GAM variables
+
 # Ingest variable table
-tbls3.in <- read.csv(file.path(tempdir(), 'table_data', 'gam_specs.csv'), stringsAsFactors = F,
+tbls7.in <- read.csv(file.path(tempdir(), 'table_data', 'gam_specs.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
 
 # Ingest stored GAMs
@@ -149,30 +202,22 @@ names(basis) <- names(gams)
 basis.df <- do.call(cbind, basis)
 names(basis.df)[1] <- 'Call'
 
-tbls3 <- left_join(tbls3.in, basis.df, by='Call') %>%
+tbls7 <- left_join(tbls7.in, basis.df, by='Call') %>%
   select(-contains(c('.Call', 'k-index', 'p-value'))) %>%
   mutate_at(vars(contains('edf')), ~round(.,2))
 
-tbls3 <- make.ft(flextable(tbls3) %>%
+tbls7 <- make.ft(flextable(tbls7) %>%
                    ftExtra::span_header(sep='\\.') %>%
                    flextable::theme_booktabs() %>%
                    flextable::align(i=1, align='center', part='header'))
 
-save_as_image(tbls3, file.path('inst', 'ms', 'tables', 'tbls3.svg'))
+save_as_image(tbls7, file.path('inst', 'ms', 'tables', 'tbls7.svg'))
 
 ############
-# Table S4
+# Table S8
 ############
 
-tbls4 <- read.csv(file.path(tempdir(), 'table_data', 'all_variables.csv'), stringsAsFactors = F,
-                  na = "", encoding='UTF-8', check.names=F)
-
-tbls4 <- make.ft(flextable(tbls4))
-save_as_image(tbls4, file.path('inst', 'ms', 'tables', 'tbls4.svg'))
-
-############
-# Table S5
-############
+# Optimal GBM tuning parameters
 
 # Ingest stored GBMs
 gbms.rda <- list.files('models', pattern='gbm', full.names=T)
@@ -202,11 +247,21 @@ gbm.best <- bind_rows(sapply(gbms, '[', 'bestTune', simplify=T), .id='Response')
 names(gbm.best) <- c('Response', 'N trees', 'Interaction depth',
                      'Shrinkage', 'Min obs. in node')
 
-tbls5 <- make.ft(flextable(gbm.best))
-save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
+tbls8 <- make.ft(flextable(gbm.best))
+save_as_image(tbls8, file.path('inst', 'ms', 'tables', 'tbls8.svg'))
 
 ############
-# Table S6
+# Table SX1
+############
+
+# tblsx1 <- read.csv(file.path(tempdir(), 'table_data', 'all_variables.csv'), stringsAsFactors = F,
+#                   na = "", encoding='UTF-8', check.names=F)
+#
+# tblsx1 <- make.ft(flextable(tbls4))
+# save_as_image(tblsx1, file.path('inst', 'ms', 'tables', 'tblsx1.svg'))
+
+############
+# Table SX2
 ############
 # Summary stats by species for field inventory
 
@@ -217,7 +272,7 @@ save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
 #                                                             'XX-PLN1',
 #                                                             'XX-PLN2'),]
 # full_unq_inv <- full_unq_inv[!full_unq_inv$Sp_Code %in% c(NA, 'UNKN'),]
-# tbls6 <- full_unq_inv %>%
+# tblsx2 <- full_unq_inv %>%
 #         group_by(Sp_Code) %>%
 #         summarise('N'=n(),
 #                   'Median height (m)'=round(median(Height_Avg_M, na.rm=T),0),
@@ -225,14 +280,14 @@ save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
 #                   'Stem Density (stems ha^-1)'=round(n()/2.72,0),
 #                   'Basal area (m^2 ha^-1)'=round(sum(pi*(DBH_Avg_CM/2)^2, na.rm=T)/2.72*(10^-4),1))
 #
-# tbls6 <- make.ft(flextable(tbls6))
+# tblsx2 <- make.ft(flextable(tblsx2))
 
 ############
-# Table S7
+# Table SX3
 ############
 
 # Summary statistics by plot for trees observed in field census.
-# tbls7 <- full_unq_inv %>%
+# tblsx3 <- full_unq_inv %>%
 #         group_by(Site_Name) %>%
 #         summarise('N'=n(),
 #                   'N\ species'=length(unique(Sp_Code)),
@@ -241,4 +296,4 @@ save_as_image(tbls5, file.path('inst', 'ms', 'tables', 'tbls5.svg'))
 #                   'Stem Density'=round(n()/.16,0),
 #                   'Basal area (m^2 ha^-1)'=round((sum(pi*(DBH_Avg_CM/2)^2, na.rm=T)/.16)*(10^-4),1))
 #
-# tbls7 <- make.ft(flextable(tbls7))
+# tblsx3 <- make.ft(flextable(tblsx3))
