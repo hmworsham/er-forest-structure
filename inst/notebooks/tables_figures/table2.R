@@ -23,8 +23,8 @@ make.ft <- function(ft, pgwidth = 6.5){
                                           keep_with_next=T)) %>%
     font(fontname='Times New Roman',
          part='all') %>%
-    fontsize(size=8, part='all') %>%
-    colformat_md(part='all')
+    fontsize(size=10, part='all') %>%
+    colformat_md(part='all', metadata=list())
 
   # Adjust widths manually
   # ft_out <- width(ft_out,
@@ -46,7 +46,7 @@ cm.spp.overall <- cm.spp$overall
 data.frame(t(round(cm.spp.overall,2)))[c(2,1,3,4)] %>%
   flextable()
 
-tbl6 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
+tbl2 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
   rownames_to_column(var='Class') %>%
   mutate(Class=factor(c('Fir', 'Pine', 'Spruce'),
                       levels=c('Fir', 'Spruce', 'Pine'))) %>%
@@ -56,5 +56,5 @@ tbl6 <- data.frame(round(cm.spp$byClass,2), check.names=F) %>%
   rename(`Detection rate`=`Detection Rate`,
          `Balanced accuracy`=`Balanced Accuracy`)
 
-tbl6 <- make.ft(flextable(tbl6))
-save_as_image(tbl6, file.path('inst', 'ms', 'tables', 'tbl6.svg'))
+tbl2 <- make.ft(flextable(tbl2))
+save_as_image(tbl2, file.path('inst', 'ms', 'tables', 'tbl2.svg'))
