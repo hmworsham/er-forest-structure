@@ -1,0 +1,2485 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body {
+  max-width: 980px;
+  margin: 16px auto;
+}
+
+body .markdown-body
+{
+  padding: 45px;
+}
+
+@font-face {
+  font-family: fontawesome-mini;
+  src: url(data:font/woff;charset=utf-8;base64,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) format('woff');
+}
+
+.markdown-body {
+  font-family: sans-serif;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  color: #333333;
+  overflow: hidden;
+  font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.markdown-body a {
+  background: transparent;
+}
+
+.markdown-body a:active,
+.markdown-body a:hover {
+  outline: 0;
+}
+
+.markdown-body b,
+.markdown-body strong {
+  font-weight: bold;
+}
+
+.markdown-body mark {
+  background: #ff0;
+  color: #000;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.markdown-body sub,
+.markdown-body sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.markdown-body sup {
+  top: -0.5em;
+}
+.markdown-body sub {
+  bottom: -0.25em;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+
+.markdown-body img {
+  border: 0;
+}
+
+.markdown-body hr {
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  height: 0;
+}
+
+.markdown-body pre {
+  overflow: auto;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: monospace, monospace;
+  font-size: 1em;
+}
+
+.markdown-body input {
+  color: inherit;
+  font: inherit;
+  margin: 0;
+}
+
+.markdown-body html input[disabled] {
+  cursor: default;
+}
+
+.markdown-body input {
+  line-height: normal;
+}
+
+.markdown-body input[type="checkbox"] {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.markdown-body td,
+.markdown-body th {
+  padding: 0;
+}
+
+.markdown-body .codehilitetable,
+.markdown-body .highlighttable {
+  border: 0;
+  border-spacing: 0;
+}
+
+.markdown-body .codehilitetable tr,
+.markdown-body .highlighttable {
+  border: 0;
+}
+
+.markdown-body .codehilitetable pre,
+.markdown-body .codehilitetable div.codehilite,
+.markdown-body .highlighttable pre,
+.markdown-body .highlighttable div.highlight {
+  margin: 0;
+}
+
+.markdown-body .linenos,
+.markdown-body .code,
+.markdown-body .codehilitetable td,
+.markdown-body .highlighttable td {
+  border: 0;
+  padding: 0;
+}
+
+.markdown-body td:not(.linenos) .linenodiv {
+  padding: 0 !important;
+}
+
+.markdown-body .code {
+  width: 100%;
+}
+
+.markdown-body .linenos div pre,
+.markdown-body .linenodiv pre,
+.markdown-body .linenodiv {
+  border: 0;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-bottom-left-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-bottomleft: 3px;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.markdown-body .code div pre,
+.markdown-body .code div {
+  border: 0;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-border-top-right-radius: 3px;
+  -webkit-border-bottom-right-radius: 3px;
+  -moz-border-radius-topright: 3px;
+  -moz-border-radius-bottomright: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.markdown-body * {
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.markdown-body input {
+  font: 13px Helvetica, arial, freesans, clean, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.4;
+}
+
+.markdown-body a {
+  color: #4183c4;
+  text-decoration: none;
+}
+
+.markdown-body a:hover,
+.markdown-body a:focus,
+.markdown-body a:active {
+  text-decoration: underline;
+}
+
+.markdown-body hr {
+  height: 0;
+  margin: 15px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.markdown-body hr:before,
+.markdown-body hr:after {
+  display: table;
+  content: " ";
+}
+
+.markdown-body hr:after {
+  clear: both;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  line-height: 1.1;
+}
+
+.markdown-body h1 {
+  font-size: 30px;
+}
+
+.markdown-body h2 {
+  font-size: 21px;
+}
+
+.markdown-body h3 {
+  font-size: 16px;
+}
+
+.markdown-body h4 {
+  font-size: 14px;
+}
+
+.markdown-body h5 {
+  font-size: 12px;
+}
+
+.markdown-body h6 {
+  font-size: 11px;
+}
+
+.markdown-body blockquote {
+  margin: 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body ol ol,
+.markdown-body ul ol {
+  list-style-type: lower-roman;
+}
+
+.markdown-body ul ul ol,
+.markdown-body ul ol ol,
+.markdown-body ol ul ol,
+.markdown-body ol ol ol {
+  list-style-type: lower-alpha;
+}
+
+.markdown-body dd {
+  margin-left: 0;
+}
+
+.markdown-body code,
+.markdown-body pre,
+.markdown-body samp {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body kbd {
+  background-color: #e7e7e7;
+  background-image: -moz-linear-gradient(#fefefe, #e7e7e7);
+  background-image: -webkit-linear-gradient(#fefefe, #e7e7e7);
+  background-image: linear-gradient(#fefefe, #e7e7e7);
+  background-repeat: repeat-x;
+  border-radius: 2px;
+  border: 1px solid #cfcfcf;
+  color: #000;
+  padding: 3px 5px;
+  line-height: 10px;
+  font: 11px Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  display: inline-block;
+}
+
+.markdown-body>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body .headerlink {
+  font: normal 400 16px fontawesome-mini;
+  vertical-align: middle;
+  margin-left: -16px;
+  float: left;
+  display: inline-block;
+  text-decoration: none;
+  opacity: 0;
+  color: #333;
+}
+
+.markdown-body .headerlink:focus {
+  outline: none;
+}
+
+.markdown-body h1 .headerlink {
+  margin-top: 0.8rem;
+}
+
+.markdown-body h2 .headerlink,
+.markdown-body h3 .headerlink {
+  margin-top: 0.6rem;
+}
+
+.markdown-body h4 .headerlink {
+  margin-top: 0.2rem;
+}
+
+.markdown-body h5 .headerlink,
+.markdown-body h6 .headerlink {
+  margin-top: 0;
+}
+
+.markdown-body .headerlink:hover,
+.markdown-body h1:hover .headerlink,
+.markdown-body h2:hover .headerlink,
+.markdown-body h3:hover .headerlink,
+.markdown-body h4:hover .headerlink,
+.markdown-body h5:hover .headerlink,
+.markdown-body h6:hover .headerlink {
+  opacity: 1;
+  text-decoration: none;
+}
+
+.markdown-body h1 {
+  padding-bottom: 0.3em;
+  font-size: 2.25em;
+  line-height: 1.2;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.75em;
+  line-height: 1.225;
+  border-bottom: 1px solid #eee;
+}
+
+.markdown-body h3 {
+  font-size: 1.5em;
+  line-height: 1.43;
+}
+
+.markdown-body h4 {
+  font-size: 1.25em;
+}
+
+.markdown-body h5 {
+  font-size: 1em;
+}
+
+.markdown-body h6 {
+  font-size: 1em;
+  color: #777;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body .admonition {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.markdown-body hr {
+  height: 4px;
+  padding: 0;
+  margin: 16px 0;
+  background-color: #e7e7e7;
+  border: 0 none;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ol,
+.markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body li>p {
+  margin-top: 16px;
+}
+
+.markdown-body dl {
+  padding: 0;
+}
+
+.markdown-body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.markdown-body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+.markdown-body blockquote {
+  padding: 0 15px;
+  color: #777;
+  border-left: 4px solid #ddd;
+}
+
+.markdown-body blockquote>:first-child {
+  margin-top: 0;
+}
+
+.markdown-body blockquote>:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+
+.markdown-body table th {
+  font-weight: bold;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid #ddd;
+}
+
+.markdown-body table tr {
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.markdown-body code,
+.markdown-body samp {
+  padding: 0;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
+  margin: 0;
+  font-size: 85%;
+  border-radius: 3px;
+}
+
+.markdown-body code:not(.highlight):not(.codehilite), .markdown-body samp {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.markdown-body code:before,
+.markdown-body code:after {
+  letter-spacing: -0.2em;
+  content: "\00a0";
+}
+
+.markdown-body pre>code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+
+.markdown-body .codehilite,
+.markdown-body .highlight {
+  margin-bottom: 16px;
+}
+
+.markdown-body .codehilite pre,
+.markdown-body .highlight pre,
+.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+}
+
+.markdown-body .codehilite,
+.markdown-body .highlight,
+.markdown-body pre {
+  border-radius: 3px;
+}
+
+.markdown-body :not(.highlight) > pre {
+  background-color: #f7f7f7;
+}
+
+.markdown-body .codehilite pre,
+.markdown-body .highlight pre {
+  margin-bottom: 0;
+  word-break: normal;
+}
+
+.markdown-body pre {
+  word-wrap: normal;
+}
+
+.markdown-body pre code {
+  display: inline;
+  max-width: initial;
+  padding: 0;
+  margin: 0;
+  overflow: initial;
+  line-height: inherit;
+  word-wrap: normal;
+  background-color: transparent;
+  border: 0;
+}
+
+.markdown-body pre code:before,
+.markdown-body pre code:after {
+  content: normal;
+}
+
+/* Admonition */
+.markdown-body .admonition {
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  position: relative;
+  border-radius: 3px;
+  border: 1px solid #e0e0e0;
+  border-left: 6px solid #333;
+  padding: 10px 10px 10px 30px;
+}
+
+.markdown-body .admonition table {
+  color: #333;
+}
+
+.markdown-body .admonition p {
+  padding: 0;
+}
+
+.markdown-body .admonition-title {
+  font-weight: bold;
+  margin: 0;
+}
+
+.markdown-body .admonition>.admonition-title {
+  color: #333;
+}
+
+.markdown-body .attention>.admonition-title {
+  color: #a6d796;
+}
+
+.markdown-body .caution>.admonition-title {
+  color: #d7a796;
+}
+
+.markdown-body .hint>.admonition-title {
+  color: #96c6d7;
+}
+
+.markdown-body .danger>.admonition-title {
+  color: #c25f77;
+}
+
+.markdown-body .question>.admonition-title {
+  color: #96a6d7;
+}
+
+.markdown-body .note>.admonition-title {
+  color: #d7c896;
+}
+
+.markdown-body .admonition:before,
+.markdown-body .attention:before,
+.markdown-body .caution:before,
+.markdown-body .hint:before,
+.markdown-body .danger:before,
+.markdown-body .question:before,
+.markdown-body .note:before {
+  font: normal normal 16px fontawesome-mini;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  line-height: 1.5;
+  color: #333;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding-top: 10px;
+  padding-left: 10px;
+}
+
+.markdown-body .admonition:before {
+  content: "\f056\00a0";
+  color: 333;
+}
+
+.markdown-body .attention:before {
+  content: "\f058\00a0";
+  color: #a6d796;
+}
+
+.markdown-body .caution:before {
+  content: "\f06a\00a0";
+  color: #d7a796;
+}
+
+.markdown-body .hint:before {
+  content: "\f05a\00a0";
+  color: #96c6d7;
+}
+
+.markdown-body .danger:before {
+  content: "\f057\00a0";
+  color: #c25f77;
+}
+
+.markdown-body .question:before {
+  content: "\f059\00a0";
+  color: #96a6d7;
+}
+
+.markdown-body .note:before {
+  content: "\f040\00a0";
+  color: #d7c896;
+}
+
+.markdown-body .admonition::after {
+  content: normal;
+}
+
+.markdown-body .attention {
+  border-left: 6px solid #a6d796;
+}
+
+.markdown-body .caution {
+  border-left: 6px solid #d7a796;
+}
+
+.markdown-body .hint {
+  border-left: 6px solid #96c6d7;
+}
+
+.markdown-body .danger {
+  border-left: 6px solid #c25f77;
+}
+
+.markdown-body .question {
+  border-left: 6px solid #96a6d7;
+}
+
+.markdown-body .note {
+  border-left: 6px solid #d7c896;
+}
+
+.markdown-body .admonition>*:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body .admonition>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* progress bar*/
+.markdown-body .progress {
+  display: block;
+  width: 300px;
+  margin: 10px 0;
+  height: 24px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #ededed;
+  position: relative;
+  box-shadow: inset -1px 1px 3px rgba(0, 0, 0, .1);
+}
+
+.markdown-body .progress-label {
+  position: absolute;
+  text-align: center;
+  font-weight: bold;
+  width: 100%; margin: 0;
+  line-height: 24px;
+  color: #333;
+  text-shadow: 1px 1px 0 #fefefe, -1px -1px 0 #fefefe, -1px 1px 0 #fefefe, 1px -1px 0 #fefefe, 0 1px 0 #fefefe, 0 -1px 0 #fefefe, 1px 0 0 #fefefe, -1px 0 0 #fefefe, 1px 1px 2px #000;
+  -webkit-font-smoothing: antialiased !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.markdown-body .progress-bar {
+  height: 24px;
+  float: left;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #96c6d7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(0, 0, 0, .1);
+  background-size: 30px 30px;
+  background-image: -webkit-linear-gradient(
+    135deg, rgba(255, 255, 255, .4) 27%,
+    transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%,
+    transparent 77%, transparent
+  );
+  background-image: -moz-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: -ms-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: -o-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, .4) 27%, transparent 27%,
+    transparent 52%, rgba(255, 255, 255, .4) 52%,
+    rgba(255, 255, 255, .4) 77%, transparent 77%,
+    transparent
+  );
+}
+
+.markdown-body .progress-100plus .progress-bar {
+  background-color: #a6d796;
+}
+
+.markdown-body .progress-80plus .progress-bar {
+  background-color: #c6d796;
+}
+
+.markdown-body .progress-60plus .progress-bar {
+  background-color: #d7c896;
+}
+
+.markdown-body .progress-40plus .progress-bar {
+  background-color: #d7a796;
+}
+
+.markdown-body .progress-20plus .progress-bar {
+  background-color: #d796a6;
+}
+
+.markdown-body .progress-0plus .progress-bar {
+  background-color: #c25f77;
+}
+
+.markdown-body .candystripe-animate .progress-bar{
+  -webkit-animation: animate-stripes 3s linear infinite;
+  -moz-animation: animate-stripes 3s linear infinite;
+  animation: animate-stripes 3s linear infinite;
+}
+
+@-webkit-keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+@-moz-keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+@keyframes animate-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 60px 0;
+  }
+}
+
+.markdown-body .gloss .progress-bar {
+  box-shadow:
+    inset 0 4px 12px rgba(255, 255, 255, .7),
+    inset 0 -12px 0 rgba(0, 0, 0, .05);
+}
+
+/* MultiMarkdown Critic Blocks */
+.markdown-body .critic_mark {
+  background: #ff0;
+}
+
+.markdown-body .critic_delete {
+  color: #c82829;
+  text-decoration: line-through;
+}
+
+.markdown-body .critic_insert {
+  color: #718c00 ;
+  text-decoration: underline;
+}
+
+.markdown-body .critic_comment {
+  color: #8e908c;
+  font-style: italic;
+}
+
+.markdown-body .headeranchor {
+  font: normal normal 16px fontawesome-mini;
+  line-height: 1;
+  display: inline-block;
+  text-decoration: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.headeranchor:before {
+  content: '\e157';
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+}
+
+.markdown-body .task-list-item+.task-list-item {
+  margin-top: 3px;
+}
+
+.markdown-body .task-list-item input {
+  margin: 0 4px 0.25em -20px;
+  vertical-align: middle;
+}
+
+.markdown-body diagram-div, .markdown-body div.uml-sequence-diagram, .markdown-body, div.uml-flowchart {
+  overflow: auto;
+}
+
+/* Media */
+@media only screen and (min-width: 480px) {
+  .markdown-body {
+    font-size:14px;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .markdown-body {
+    font-size:16px;
+  }
+}
+
+@media print {
+  .markdown-body * {
+    background: transparent !important;
+    color: black !important;
+    filter:none !important;
+    -ms-filter: none !important;
+  }
+
+  .markdown-body {
+    font-size:12pt;
+    max-width:100%;
+    outline:none;
+    border: 0;
+  }
+
+  .markdown-body a,
+  .markdown-body a:visited {
+    text-decoration: underline;
+  }
+
+  .markdown-body .headeranchor-link {
+    display: none;
+  }
+
+  .markdown-body a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  .markdown-body abbr[title]:after {
+    content: " (" attr(title) ")";
+  }
+
+  .markdown-body .ir a:after,
+  .markdown-body a[href^="javascript:"]:after,
+  .markdown-body a[href^="#"]:after {
+    content: "";
+  }
+
+  .markdown-body pre {
+    white-space: pre;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .markdown-body pre,
+  .markdown-body blockquote {
+    border: 1px solid #999;
+    padding-right: 1em;
+    page-break-inside: avoid;
+  }
+
+  .markdown-body .progress,
+  .markdown-body .progress-bar {
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+  }
+
+  .markdown-body .progress {
+    border: 1px solid #ddd;
+  }
+
+  .markdown-body .progress-bar {
+    height: 22px;
+    border-right: 1px solid #ddd;
+  }
+
+  .markdown-body tr,
+  .markdown-body img {
+    page-break-inside: avoid;
+  }
+
+  .markdown-body img {
+    max-width: 100% !important;
+  }
+
+  .markdown-body p,
+  .markdown-body h2,
+  .markdown-body h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .markdown-body h2,
+  .markdown-body h3 {
+    page-break-after: avoid;
+  }
+}
+</style><style>/*GitHub*/
+.highlight {background-color:#f7f7f7;color:#333333;}
+.highlight .hll {background-color:#ffffcc;}
+.highlight .c{color:#999988;font-style:italic}
+.highlight .err{color:#a61717;background-color:#e3d2d2}
+.highlight .k{font-weight:bold}
+.highlight .o{font-weight:bold}
+.highlight .cm{color:#999988;font-style:italic}
+.highlight .cp{color:#999999;font-weight:bold}
+.highlight .c1{color:#999988;font-style:italic}
+.highlight .cs{color:#999999;font-weight:bold;font-style:italic}
+.highlight .gd{color:#000000;background-color:#ffdddd}
+.highlight .ge{font-style:italic}
+.highlight .gr{color:#aa0000}
+.highlight .gh{color:#999999}
+.highlight .gi{color:#000000;background-color:#ddffdd}
+.highlight .go{color:#888888}
+.highlight .gp{color:#555555}
+.highlight .gs{font-weight:bold}
+.highlight .gu{color:#800080;font-weight:bold}
+.highlight .gt{color:#aa0000}
+.highlight .kc{font-weight:bold}
+.highlight .kd{font-weight:bold}
+.highlight .kn{font-weight:bold}
+.highlight .kp{font-weight:bold}
+.highlight .kr{font-weight:bold}
+.highlight .kt{color:#445588;font-weight:bold}
+.highlight .m{color:#009999}
+.highlight .s{color:#dd1144}
+.highlight .n{color:#333333}
+.highlight .na{color:teal}
+.highlight .nb{color:#0086b3}
+.highlight .nc{color:#445588;font-weight:bold}
+.highlight .no{color:teal}
+.highlight .ni{color:purple}
+.highlight .ne{color:#990000;font-weight:bold}
+.highlight .nf{color:#990000;font-weight:bold}
+.highlight .nn{color:#555555}
+.highlight .nt{color:navy}
+.highlight .nv{color:teal}
+.highlight .ow{font-weight:bold}
+.highlight .w{color:#bbbbbb}
+.highlight .mf{color:#009999}
+.highlight .mh{color:#009999}
+.highlight .mi{color:#009999}
+.highlight .mo{color:#009999}
+.highlight .sb{color:#dd1144}
+.highlight .sc{color:#dd1144}
+.highlight .sd{color:#dd1144}
+.highlight .s2{color:#dd1144}
+.highlight .se{color:#dd1144}
+.highlight .sh{color:#dd1144}
+.highlight .si{color:#dd1144}
+.highlight .sx{color:#dd1144}
+.highlight .sr{color:#009926}
+.highlight .s1{color:#dd1144}
+.highlight .ss{color:#990073}
+.highlight .bp{color:#999999}
+.highlight .vc{color:teal}
+.highlight .vg{color:teal}
+.highlight .vi{color:teal}
+.highlight .il{color:#009999}
+.highlight .gc{color:#999;background-color:#EAF2F5}
+</style><title>README</title></head><body><article class="markdown-body"><h1 id="er-forest-structure">er-forest-structure<a class="headerlink" href="#er-forest-structure" title="Permanent link"></a></h1>
+<h2 id="replication-code-for-abiotic-influences-on-continuous-conifer-forest-structure-across-a-subalpine-watershed-worsham-et-al-2024">Replication code for &lsquo;Abiotic influences on continuous conifer forest structure across a subalpine watershed&rsquo; (Worsham et al., 2024).<a class="headerlink" href="#replication-code-for-abiotic-influences-on-continuous-conifer-forest-structure-across-a-subalpine-watershed-worsham-et-al-2024" title="Permanent link"></a></h2>
+<p>This repository contains code used for data processing, analysis, and inference in &lsquo;Abiotic influences on continuous conifer forest structure across a subalpine watershed&rsquo; (Worsham et al., 2024). In the paper, we quantified the relative influence of climate, topographic, edaphic, and geologic factors on conifer stand structure and composition, and their functional relationships, in Colorado&rsquo;s East River watershed and adjacent drainages. We used waveform LiDAR data to derive spatially continuous stand structure metrics within this upper montane–subalpine domain. We fused these with a species-level classification map to estimate tree species abundance. We applied generalized additive and generalized boosted models to evaluate the covariability of structural and compositional metrics with abiotic variables.</p>
+<p>The repository is complete in the sense that it includes all operations used in the analysis and reported in the paper. However, it does not include initial exploratory efforts or analytical dead-ends&mdash;approaches that failed or that we ultimately abandoned in favor of more reliable or efficient methods. Many of the operations, particularly those that process waveform LiDAR, require parallel implementation on large-scale, high-performance computing infrastructure because of data burden (1E+12 bytes) or algorithmic complexity. Operations for directly reproducing publication tables and figures will run on a personal computer. </p>
+<h2 id="attribution">Attribution<a class="headerlink" href="#attribution" title="Permanent link"></a></h2>
+<p>When using these models and/or the underlying data, please cite the associated publication and the archive version of this repository:</p>
+<div class="highlight"><pre>Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): &#39;Abiotic influences on continuous conifer forest structure across a subalpine watershed&#39; *Preprint*. DOI: TK
+
+Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): Code archive for &#39;Abiotic influences on continuous conifer forest structure across a subalpine watershed&#39;. Code repository. DOI: TK
+</pre></div>
+
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link"></a></h2>
+<p>The bulk of the analysis runs in the R statistical computing environment and is configured for Apple Mac and Linux operating systems. R session specifications are in <code>./config/r_session_info</code>. The header of every R script in the repository contains a call to load a YAML configuration file, <code>./config/config.yml</code>. This file contains a list of packages and a list of local and external paths for ingesting data, models, and other requisite information and is required for any subsequent code in the script to run. On execution, R scripts will automatically try to install the required packages and their dependencies (if not already present) and load them in the global environment. </p>
+<h2 id="replicating-tables-and-figures">Replicating tables and figures<a class="headerlink" href="#replicating-tables-and-figures" title="Permanent link"></a></h2>
+<p>To replicate all tables and figures, open a <code>bash</code> shell. From the repository root, navigate to &lsquo;./inst/notebooks/tables_figures/&rsquo; and run: </p>
+<div class="highlight"><pre>chmod u+x code/replicate_all.sh
+./replicate_all.sh
+</pre></div>
+
+<h2 id="repository-structure">Repository structure<a class="headerlink" href="#repository-structure" title="Permanent link"></a></h2>
+<p>The repository is organized much like a standard R package stored on the Comprehensive R Archive Network, following the &lsquo;Research Compendium&rsquo; framework described in Marwick et al. (2018). In this framework, compendium components are separated into distinct classes, and a clear separation is maintained between data, analytical functions, analytical scripts implementing those functions, and output. The file structure in the root directory of this repository enforces this separation. A summary follows below, with a full directory tree and file-level metadata below that. </p>
+<ul>
+<li><strong>config:</strong> stores configuration files for environment setup and external data source management</li>
+<li><strong>data:</strong> stores raw, intermediate, and final processed data output; note: because of the compute scale of this analysis, most input and output data are not stored in this repository but rather in external cloud storage buckets, from which they are ingested into memory on the fly</li>
+<li><strong>inst:</strong> stores scripts for processing data, running analyses, and generating manuscript elements, including tables and figures<ul>
+<li><strong>ms:</strong> stores source files for the publication manuscript; LaTEx source files for styles, references, and author metadata; and subdirectories containing final files for submitted tables and figures
+    -<strong>figures:</strong> stores final output files for submitted tables and figures
+    -<strong>tables:</strong> stores final output files for submitted tables and figures</li>
+<li><strong>notebooks:</strong> stores scripts used for data processing and analysis<ul>
+<li><strong>composition</strong>: stores an R markdown file containing the full analytical workflow for subsetting individual tree crown (ITC) objects to top-of-canopy, assigning species to ITC objects, and computing performance statistics</li>
+<li><strong>LiDAR</strong>: stores multiple scripts for cleaning and processing waveform LiDAR data, discretizing waveforms to point cloud, training and testing individual tree crown detection (ITD) algorithms, implementing an optimal ITD algorithm for the full domain, estimating allometric equations, predicting species, and producing gridded estimates of forest structure</li>
+<li><strong>misc</strong>: stores multiple scripts for miscellaneous operations, including computing statistics describing the study domain and submitting data to a permanent ESS-DIVE repository</li>
+<li><strong>regressions:</strong> stores scripts for building model frames and estimating inferential models on explanatory and response variables</li>
+<li><strong>state_factors:</strong> contains scripts for processing and cleaning data used for explanatory features in inferential modeling</li>
+<li><strong>tables_figures:</strong> contains scripts for generating final tables and figures for the publication manuscript and supplementary information</li>
+</ul>
+</li>
+<li><strong>shell_scripts:</strong> contains bash scripts for parallelizing analytical scripts on multiple nodes on a high-performance computing cluster and for data ingress/egress using rclone</li>
+</ul>
+</li>
+<li><strong>man:</strong> stores reference manual (man) pages describing the analytical functions in <code>./R</code></li>
+<li><strong>models:</strong> stores inferential model objects, typically an intermediate or final output of one or more analytical scripts</li>
+<li><strong>R:</strong> stores R files containing generalized functions sourced in analytical scripts</li>
+</ul>
+<h3 id="directory-tree">Directory tree<a class="headerlink" href="#directory-tree" title="Permanent link"></a></h3>
+<details>
+<summary>Click to unpack the full directory tree.</summary>
+
+<div class="highlight"><pre>.
+├── DESCRIPTION
+├── LICENSE
+├── NAMESPACE
+├── R
+│   ├── bipart.match.R
+│   ├── bipart.match.plot.R
+│   ├── bipart.match2.R
+│   ├── bipart.match3.R
+│   ├── build.models.R
+│   ├── find.incompletes.R
+│   ├── helpers.R
+│   ├── layerstacking_funs.R
+│   ├── li2012_funs.R
+│   ├── lmfauto_funs.R
+│   ├── lmffw_funs.R
+│   ├── lmfvw_funs.R
+│   ├── multichm_funs.R
+│   ├── plot.gams.R
+│   ├── points_to_raster.R
+│   ├── ptrees_funs.R
+│   ├── species.mapping.R
+│   ├── stratified.R
+│   └── watershed_funs.R
+├── README.md
+├── config
+│   ├── config.yml
+│   ├── pyenv-virtualenv_setup.sh
+│   ├── pyenv_setup.sh
+│   └── r_session_info
+├── data
+│   ├── intermediate
+│   │   ├── explainer_names_table.csv
+│   │   ├── gam_selection.md
+│   │   └── ls_debugging
+│   │       ├── ls+lmffill_filter80.png
+│   │       ├── ls+lmffill_nofilter.png
+│   │       ├── ls_complete_npoints.png
+│   │       ├── ls_incomp2_npoints.png
+│   │       ├── ls_incomplete_binary.png
+│   │       ├── ls_incomplete_clusters_all.png
+│   │       ├── ls_incomplete_clusters_gt100k.png
+│   │       ├── ls_incomplete_clusters_gt150k.png
+│   │       ├── ls_incomplete_clusters_gt50k.png
+│   │       ├── ls_incomplete_clusters_gt80k.png
+│   │       ├── ls_incomplete_npoints.png
+│   │       ├── ls_ntrees_50m+remain_postmerge.png
+│   │       └── ls_ntrees_50m+remain_premerge.png
+│   ├── processed
+│   └── raw
+│       ├── all_variables.csv
+│       ├── field_methods.csv
+│       ├── gam_specs.csv
+│       ├── itd_algorithms.csv
+│       ├── layerstacking_params.csv
+│       ├── match_criteria.csv
+│       └── variable_definitions.csv
+├── er-forest-structure.Rproj
+├── inst
+│   ├── dev
+│   │   ├── 00_chunk_waveforms.py
+│   │   ├── 00_debug_chunk.ipynb
+│   │   ├── 00_debug_decomp.R
+│   │   ├── 00_debug_deconvolution.R
+│   │   ├── 00_debug_processwf.R
+│   │   ├── 01_batch_process_all_waveforms.R
+│   │   ├── 01_process_waveforms.R
+│   │   ├── 02_compare_mylas_neonlas.R
+│   │   ├── 02_itc_segmentation.R
+│   │   ├── 04.00_gam.R
+│   │   ├── 05.00_gbm.R
+│   │   ├── 05.00_itc_traintest.R
+│   │   ├── 05.00_itc_traintest.Rmd
+│   │   ├── 05.00_itc_traintest_v2.R
+│   │   ├── 05.13_check_detected_trees.R
+│   │   ├── 06.00_predict_dbh.R
+│   │   ├── 09.01_accuracy_assessment.R
+│   │   ├── Canopy_Segmentation_Test_2020-06-17.R
+│   │   ├── chunk_waveforms.py
+│   │   ├── deconvolution.c
+│   │   ├── pyenvi_explore.ipynb
+│   │   ├── pyenvi_test.png
+│   │   ├── pyenvi_test.py
+│   │   ├── pylidar_explore.ipynb
+│   │   ├── sfa_neonaop_drive_curl.py
+│   │   ├── spectrum_deconvolution.py
+│   │   ├── waveformlidar_vignette1.R
+│   │   └── we.limitation.R
+│   ├── ms
+│   │   ├── ER_Forest_Structure_Paper_BetterBib.bib
+│   │   ├── EastRiver_Forest_Structure_Paper_05.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_05.docx
+│   │   ├── EastRiver_Forest_Structure_Paper_References.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_SI.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_SI.docx
+│   │   ├── EastRiver_Forest_Structure_Paper_TODO.md
+│   │   ├── EastRiver_Forest_Structure_Paper_TablesFigures.md
+│   │   ├── Fig_Interp.xlsx
+│   │   ├── RSE_Submission_Guidelines.md
+│   │   ├── author-info-blocks.lua
+│   │   ├── dropped_sentences.txt
+│   │   ├── figures
+│   │   │   ├── Fig1.pdf
+│   │   │   ├── Fig1.png
+│   │   │   ├── Fig10.pdf
+│   │   │   ├── Fig10.png
+│   │   │   ├── Fig2.pdf
+│   │   │   ├── Fig2.png
+│   │   │   ├── Fig3.pdf
+│   │   │   ├── Fig3.png
+│   │   │   ├── Fig4.pdf
+│   │   │   ├── Fig4.png
+│   │   │   ├── Fig5.pdf
+│   │   │   ├── Fig5.png
+│   │   │   ├── Fig6.pdf
+│   │   │   ├── Fig6.png
+│   │   │   ├── Fig7.pdf
+│   │   │   ├── Fig7.png
+│   │   │   ├── Fig8.pdf
+│   │   │   ├── Fig8.png
+│   │   │   ├── Fig9.pdf
+│   │   │   ├── Fig9.png
+│   │   │   ├── FigS1.pdf
+│   │   │   ├── FigS1.png
+│   │   │   ├── FigS2.pdf
+│   │   │   ├── FigS2.png
+│   │   │   ├── FigS3.pdf
+│   │   │   ├── FigS3.png
+│   │   │   ├── FigS3A.pdf
+│   │   │   ├── FigS3A.png
+│   │   │   ├── FigS4.pdf
+│   │   │   ├── FigS4A.png
+│   │   │   ├── FigS4B.png
+│   │   │   ├── FigS4C.png
+│   │   │   ├── FigS4D.png
+│   │   │   ├── FigS4E.png
+│   │   │   ├── FigS4F.png
+│   │   │   ├── FigS4G.png
+│   │   │   └── FigS4H.png
+│   │   ├── outline
+│   │   │   ├── ER_Forest_Structure_Paper_BrainDump.md
+│   │   │   ├── ER_Forest_Structure_Paper_KeySources.md
+│   │   │   ├── ER_Forest_Structure_Paper_Story_Summary.md
+│   │   │   └── EastRiver_Forest_Structure_Paper_IntroNotes.md
+│   │   ├── remote-sensing-of-environment.csl
+│   │   ├── scholarly-metadata.lua
+│   │   ├── styles.docx
+│   │   ├── tables
+│   │   │   ├── tbl1.svg
+│   │   │   ├── tbl2.svg
+│   │   │   ├── tbl3.svg
+│   │   │   ├── tbls1.svg
+│   │   │   ├── tbls2.svg
+│   │   │   ├── tbls3.svg
+│   │   │   ├── tbls4.svg
+│   │   │   ├── tbls5.svg
+│   │   │   ├── tbls6.svg
+│   │   │   ├── tbls7.svg
+│   │   │   └── tbls8.svg
+│   │   ├── v01
+│   │   │   ├── EastRiver_Forest_Structure_Outline_01.html
+│   │   │   ├── EastRiver_Forest_Structure_Outline_01.md
+│   │   │   ├── EastRiver_Forest_Structure_Paper_01.Rmd
+│   │   │   ├── EastRiver_Forest_Structure_Paper_01.docx
+│   │   │   ├── EastRiver_Forest_Structure_Paper_01.log
+│   │   │   ├── EastRiver_Forest_Structure_Paper_01.pdf
+│   │   │   ├── EastRiver_Forest_Structure_Paper_01.tex
+│   │   │   └── Figures
+│   │   │       ├── 90p_height.png
+│   │   │       ├── A_elevation.png
+│   │   │       ├── Fig2.png
+│   │   │       ├── Fig3.png
+│   │   │       ├── Fig4.png
+│   │   │       ├── Fig8.png
+│   │   │       ├── Fig9.png
+│   │   │       ├── ba_contour.png
+│   │   │       ├── basal_area.png
+│   │   │       ├── dens_contour.png
+│   │   │       ├── density.png
+│   │   │       ├── diam_distro.png
+│   │   │       ├── er_location.png
+│   │   │       ├── height_contour.png
+│   │   │       ├── height_distro_spp.png
+│   │   │       ├── noisy_waveform.png
+│   │   │       ├── qmd.png
+│   │   │       ├── qmd_contour.png
+│   │   │       ├── qmd_cut.png
+│   │   │       ├── responses.png
+│   │   │       ├── snow_soil_data.pptx
+│   │   │       ├── structure_stacks.pptx
+│   │   │       └── studydomain.png
+│   │   ├── v02
+│   │   │   ├── EastRiver_Forest_Structure_Paper_02.Rmd
+│   │   │   ├── EastRiver_Forest_Structure_Paper_02.docx
+│   │   │   ├── EastRiver_Forest_Structure_Paper_02.log
+│   │   │   ├── EastRiver_Forest_Structure_Paper_02.tex
+│   │   │   └── Figures
+│   │   │       ├── Fig1.png
+│   │   │       ├── Fig5.png
+│   │   │       ├── Fig6.pdf
+│   │   │       ├── Fig6.png
+│   │   │       ├── Fig7.png
+│   │   │       ├── Screen Shot 2023-10-25 at 12.03.25 PM.png
+│   │   │       ├── gbm_importance_01.png
+│   │   │       ├── gbm_importance_02.png
+│   │   │       ├── gbm_importance_03.png
+│   │   │       ├── gbm_importance_04.png
+│   │   │       ├── ls_perform.png
+│   │   │       ├── match_agreement.png
+│   │   │       ├── max_height_comp.png
+│   │   │       ├── performance_comp.png
+│   │   │       ├── relative_influence.png
+│   │   │       ├── sp_QMD.png
+│   │   │       ├── sp_ba.png
+│   │   │       ├── sp_density.png
+│   │   │       ├── sp_height.png
+│   │   │       └── sp_heightskew.png
+│   │   ├── v03
+│   │   │   ├── EastRiver_Forest_Structure_Paper_03.Rmd
+│   │   │   └── EastRiver_Forest_Structure_Paper_03.docx
+│   │   └── v04
+│   │       ├── EastRiver_Forest_Structure_Paper_04.Rmd
+│   │       └── EastRiver_Forest_Structure_Paper_04.docx
+│   ├── notebooks
+│   │   ├── LiDAR
+│   │   │   ├── 00_chunkwf.py
+│   │   │   ├── 00_count_wf.R
+│   │   │   ├── 00_find_flightpaths_by_plot.R
+│   │   │   ├── 00_make_poly_for_missing_flightpaths.R
+│   │   │   ├── 00_subset_flightpaths_to_forest.R
+│   │   │   ├── 00_synthetic_return.R
+│   │   │   ├── 00_unzipwf.py
+│   │   │   ├── 00_waveformlidar_explore.R
+│   │   │   ├── 01.00_process_all_waveforms.R
+│   │   │   ├── 01.01_process_waveforms_atplots.R
+│   │   │   ├── 01.02_checklogs.R
+│   │   │   ├── 01.03_cleanlogs.R
+│   │   │   ├── 02.00_regrid_points.R
+│   │   │   ├── 02.01_hyperpointcloud.R
+│   │   │   ├── 02.02_points_to_las.R
+│   │   │   ├── 02.03_regrid_LAScatalog.R
+│   │   │   ├── 02.04_downsample_las.R
+│   │   │   ├── 02.05.01_regridclip_neon_LAScatalog.R
+│   │   │   ├── 02.05_regrid_neon_LAScatalog.R
+│   │   │   ├── 02.06_regrid_points_checksums.R
+│   │   │   ├── 02.07_pointcount_heatmap.R
+│   │   │   ├── 03.00_normalize_points.R
+│   │   │   ├── 03.01_filter_abg_points.R
+│   │   │   ├── 03.01_normalize_points_missing_fp.R
+│   │   │   ├── 04.00_decimate_points.R
+│   │   │   ├── 05.00_itc_traintest_loadup.R
+│   │   │   ├── 05.01_itc_li.R
+│   │   │   ├── 05.02_itc_pt.R
+│   │   │   ├── 05.03_itc_ls.R
+│   │   │   ├── 05.04_itc_mc.R
+│   │   │   ├── 05.05_itc_lmf_fw.R
+│   │   │   ├── 05.06_itc_lmf_vw.R
+│   │   │   ├── 05.07_itc_lmfauto.R
+│   │   │   ├── 05.08_itc_ws.R
+│   │   │   ├── 05.09_itc_model_selection.R
+│   │   │   ├── 05.10_run_optimal_itd.R
+│   │   │   ├── 05.11_optimal_itd_performance.R
+│   │   │   ├── 06.00_detect_trees_full_watershed.R
+│   │   │   ├── 06.01_detect_trees_missing_fp.R
+│   │   │   ├── 06.02_check_detected_trees.R
+│   │   │   ├── 07.00_predict_dbh.R
+│   │   │   ├── 07.01_mask_trees.R
+│   │   │   ├── 07.02_make_chm.R
+│   │   │   ├── 07.03_predict_species.R
+│   │   │   ├── 08.00_make_rasters.R
+│   │   │   ├── 09.01_detection_sumstats.R
+│   │   │   ├── requirements.txt
+│   │   │   └── waveform
+│   │   │       ├── __init__.py
+│   │   │       └── chunk_waveforms.py
+│   │   ├── composition
+│   │   │   └── ER_Forest_Structure_Species_Mapping.Rmd
+│   │   ├── misc
+│   │   │   ├── er_climate_means.R
+│   │   │   ├── er_wilderness_area.R
+│   │   │   ├── ess-dive_submit_pubdata.ipynb
+│   │   │   └── ess-dive_submit_wfdata.ipynb
+│   │   ├── regressions
+│   │   │   ├── 00.00_plot_rasters.R
+│   │   │   ├── 01.00_stats_ingest_data.R
+│   │   │   ├── 02.00_corrmat.R
+│   │   │   ├── 03.00_ols.R
+│   │   │   ├── 04.00_gam.R
+│   │   │   ├── 04.01_gam_reports.R
+│   │   │   ├── 05.00_gbm.R
+│   │   │   └── 05.01_gbm_reports.R
+│   │   ├── state_factors
+│   │   │   ├── aso_swe_processing.R
+│   │   │   ├── geology_processing.R
+│   │   │   ├── polaris_processing.R
+│   │   │   └── ssurgo_ingest.R
+│   │   └── tables_figures
+│   │       ├── fig10_geology.R
+│   │       ├── fig1_domain.R
+│   │       ├── fig2_crownmap.R
+│   │       ├── fig3_itd_performance.R
+│   │       ├── fig4_height_distribution.R
+│   │       ├── fig5_structure_metrics.R
+│   │       ├── fig6_structure_histograms.R
+│   │       ├── fig7_gbm.R
+│   │       ├── fig8_gam_partial_effects.R
+│   │       ├── fig9_gam_interactions.R
+│   │       ├── replicate_all.sh
+│   │       ├── si_figs.R
+│   │       ├── si_tables.R
+│   │       ├── table1.R
+│   │       ├── table2.R
+│   │       └── table3.R
+│   └── shell_scripts
+│       ├── batchcluster_init.sh
+│       ├── batchcluster_init_li.sh
+│       ├── batchcluster_init_lmfauto.sh
+│       ├── batchcluster_init_lmffw.sh
+│       ├── batchcluster_init_lmfvw.sh
+│       ├── batchcluster_init_ls.sh
+│       ├── batchcluster_init_makehpc.sh
+│       ├── batchcluster_init_mc.sh
+│       ├── batchcluster_init_pt.sh
+│       ├── batchcluster_init_ws.sh
+│       ├── chunk_waveforms.sh
+│       ├── findtrees_init.sh
+│       ├── ipcluster_init.sh
+│       ├── make_findtrees.sh
+│       ├── multibatch_findtrees_init.sh
+│       ├── multibatch_processwf_init.sh
+│       ├── multibatch_traintest_init.sh
+│       ├── processwfpll.sh
+│       ├── rclone_checksums2drive.sh
+│       ├── rclone_copy_drive.sh
+│       ├── rclone_fullwf2drive.sh
+│       ├── rclone_fullwf2gcp.sh
+│       ├── rclone_gridreturns2drive.sh
+│       ├── rclone_hpc2drive.sh
+│       ├── rclone_imgs2drive.sh
+│       ├── rclone_itcresults2drive.sh
+│       ├── rclone_las2drive.sh
+│       ├── rclone_lasabg2drive.sh
+│       ├── rclone_lasdecim2drive.sh
+│       ├── rclone_lasdownsampled2drive.sh
+│       ├── rclone_lasnorm2drive.sh
+│       ├── rclone_lasregrid2drive.sh
+│       ├── rclone_logs2drive.sh
+│       ├── rclone_missingfp2drive.sh
+│       ├── rclone_neonlas2drive.sh
+│       ├── rclone_returns2drive.sh
+│       ├── rclone_trees2drive.sh
+│       ├── srun_init.sh
+│       ├── targz_bigdir.sh
+│       └── unzip_wf.sh
+├── man
+└── models
+    ├── abla_density_gam.rda
+    ├── abla_density_gbm.rda
+    ├── ba_gam.rda
+    ├── ba_gbm.rda
+    ├── density_gam.rda
+    ├── density_gbm.rda
+    ├── diam_gam.rda
+    ├── diam_gbm.rda
+    ├── height_95p_gam.rda
+    ├── height_95p_gbm.rda
+    ├── height_skew_gam.rda
+    ├── height_skew_gbm.rda
+    ├── pico_density_gam.rda
+    ├── pico_density_gbm.rda
+    ├── pien_density_gam.rda
+    └── pien_density_gbm.rda
+</pre></div>
+</details>
+
+<h3 id="file-level-documentation">File-level documentation<a class="headerlink" href="#file-level-documentation" title="Permanent link"></a></h3>
+<table>
+<thead>
+<tr>
+<th>Directory</th>
+<th>File</th>
+<th>Description</th>
+<th>Input Directory</th>
+<th>Input Filepath</th>
+<th>Output Filepath</th>
+<th>Output Filetype</th>
+<th>Output Description</th>
+<th>Output File Count</th>
+<th>Output Directory Size</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>config</td>
+<td>config.yml</td>
+<td>YAML configuration file storing a list of packages and a list of local and external paths for ingesting data, models, and other requisite information</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+</tr>
+<tr>
+<td></td>
+<td>r_session_info</td>
+<td>Text file storing R session information for the original development enviroment for this repository</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>data/intermediate</td>
+<td>explainer_names_table.csv</td>
+<td>Comma-separated values file storing variable names in multiple formats for tables and plotting</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>data/processed</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>data/raw</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+</tr>
+<tr>
+<td>inst/notebooks/LiDAR</td>
+<td>00_chunkwf.py</td>
+<td>Splits large waveform binary files into chunks of n waveforms each</td>
+<td>waveform_binary</td>
+<td></td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY</td>
+<td>directory</td>
+<td>directory containing ENVI binary waveform files subset to chunks of 1e5 waveforms</td>
+<td>14067</td>
+<td>3.67E+02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>00_chunkwf.py</td>
+<td>Splits large waveform binary files into chunks of n waveforms each</td>
+<td>waveform_binary</td>
+<td></td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY</td>
+<td>directory</td>
+<td>directory containing ENVI binary waveform files subset to chunks of 1e6 waveforms</td>
+<td>1448</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>01.00_process_all_waveforms.R</td>
+<td>Deconvolves and decomposes waveforms within a buffer of x meters around each plot; writes geolocated returns as csv</td>
+<td>waveform_binary_chunks</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_returnpoints</td>
+<td>csv</td>
+<td>geolocated returns for a given flightpath in csv format)</td>
+<td>14061</td>
+<td>3.18E+02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>01.01_process_waveforms_at_plots.R</td>
+<td>Deconvolves and decomposes all waveforms; writes geolocated returns as csv</td>
+<td>waveform_binary_chunks</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY</td>
+<td>AA-BBBN_2018_CRBU_1_2018MMDDFN_FLXXX-YYY_returnpoints</td>
+<td>csv</td>
+<td>geolocated returns within plot boundaries in csv format)</td>
+<td>118</td>
+<td>1.03E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.00_regrid_points.R</td>
+<td>DEPRECATED. Regrids geolocated points into equal-area grid cells of size mXn meters; writes waveforms corresponding to each grid cell to a csv; deprecated because the readLASCatalog function in lidR creates a smoother workflow</td>
+<td>geolocated_returns</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_returnpoints</td>
+<td>ER_gridded_returns_NNN</td>
+<td>csv</td>
+<td>geolocated returns within a given grid cell</td>
+<td>555</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.01_hyperpointcloud.R</td>
+<td>Creates a hyperpointcloud (Zhou 2019) from ungridded, often overlapping geolocated returns; writes a hyperpointcloud for each flightpath as csv</td>
+<td>geolocated_returns, waveform_binary_chunks</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_returnpoints</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_hpc</td>
+<td>csv</td>
+<td>hyperpointcloud for a given flightpath</td>
+<td>14061</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.02_points_to_las.R</td>
+<td>Converts csv files with geolocated returns to a LAS point cloud using rlas</td>
+<td>hyperpointcloud</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_hpc</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_hpc</td>
+<td>las</td>
+<td>hyper-dense las derived from hyperpointcloud per flightpath</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.03_regrid_LAScatalog</td>
+<td>Regrids overlapping las flies into uniform grid of dimension mXn (500x500); writes compressed .laz file per new grid cell</td>
+<td>las_ungridded</td>
+<td>2018_CRBU_1_2018MMDDFN_FLXXX-YYY_hpc</td>
+<td>las_regridded_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>hyper-dense laz regridded from ungridded flightpaths</td>
+<td>1632</td>
+<td>1.01E+03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.04_downsample_las.R</td>
+<td>Downsamples hyper-dense las file by preserving all peaks and sampling 1/n of the remaining points</td>
+<td>las_regridded2</td>
+<td>las_regridded_XXXXXX_YYYYYYY</td>
+<td>las_downsampled_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>less-dense laz downsampled from hyper-dense laz per grid cell</td>
+<td>1627</td>
+<td>1.77E+02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.05_regrid_neon_LAScatalog.R</td>
+<td>DEPRECATED. Regrids original NEON point cloud to match resolution of regridded hyperpointcloud-derived LAS</td>
+<td>neon_las</td>
+<td>NEON_D13_CRBU_DP1_L0XY-Z_2018MMDDFN_unclassified_point_cloud</td>
+<td>neon_las_regridded_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>regridded laz from moderate-density neon point cloud</td>
+<td>NA</td>
+<td>2.53E+01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.05.01_regridclip_neon_LAScatalog</td>
+<td>DEPRECATED Regrids original NEON point cloud for missing flightpaths to match resolution of regridded hyperpointcloud-derived LAS</td>
+<td>neon_las</td>
+<td>NEON_D13_CRBU_DP1_L0XY-Z_2018MMDDFN_unclassified_point_cloud</td>
+<td>neon_gaps_las_regridded_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>regridded laz from moderate-density neon point cloud to fill gaps in full waveform</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.06_regrid_points_checksums</td>
+<td>DEPRECATED. Checks data loss after running 02.00_regrid_points.R on geolocated_returns</td>
+<td>geolocated_returns; gridded_returns</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>02.07_pointcount_heatmap.R</td>
+<td>DEPRECATED. Plots heatmap of point counts per file in gridded_returns. Deprecated in favor of native lidR lasCatalog plotting.</td>
+<td>gridded returns</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>03.00_normalize_points</td>
+<td>Performs ground normalization on LAS catalog</td>
+<td>las_downsampled</td>
+<td>las_downsampled_XXXXXX_YYYYYYY</td>
+<td>las_norm_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>normalized laz from downsampled laz</td>
+<td>1615</td>
+<td>1.77E+02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>03.01_filter_abg_points</td>
+<td>Filters above-ground points (Z&gt;0)</td>
+<td>las_normalized</td>
+<td>las_norm_XXXXXX_YYYYYYY</td>
+<td>las_abg_XXXXXX_YYYYYY</td>
+<td>laz</td>
+<td>Z&gt;0 filtered laz from normalized laz</td>
+<td>1612</td>
+<td>5.23E+01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>04.00_decimate_points</td>
+<td>Decimates las catalog to homogenize sample density across watershed</td>
+<td>las_normalized</td>
+<td>las_norm_XXXXXX_YYYYYYY</td>
+<td>las_decimated_XXXXXX_YYYYYYY</td>
+<td>laz</td>
+<td>decimated laz from normalized laz</td>
+<td>1617</td>
+<td>4.14E+01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Multiple scripts</td>
+<td>Multiple scripts write to log files</td>
+<td>Multiple input directories</td>
+<td>Multiple input filepaths</td>
+<td>Multiple output filepaths</td>
+<td>txt</td>
+<td>data processing logs</td>
+<td>15</td>
+<td>3.20E-02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.00_traintest_loadup</td>
+<td>Initializes data for ITC training and testing, sourced in 05.01:05.08</td>
+<td>las_decimated; Drive:EastRiver_Census1_Data_Collated.csv</td>
+<td>las_decimated_XXXXXX_YYYYYY;</td>
+<td>NA; held in memory</td>
+<td>NA</td>
+<td>in-memory data for ITC detection optimization</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.01_itc_li.R</td>
+<td>Runs optimization procedure on ITC detection using Li 2012 algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>li_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; 114688</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.02_itc_pt.R</td>
+<td>Runs optimization procedure on ITC detection using PTrees algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>pt_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.03_itc_ls.R</td>
+<td>Runs optimization procedure on ITC detection using LayerStacking algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>ls_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.04_itc_mc.R</td>
+<td>Runs optimization procedure on ITC detection using MultiCHM algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>mc_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.05_itc_lmf_fw.R</td>
+<td>Runs optimization procedure on ITC detection using LMF-fixed window algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>lmffw_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.06_itc_lmf_vw.R</td>
+<td>Runs optimization procedure on ITC detection using LMF-variable window algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>lmfvw_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.07_itc_lmfauto.R</td>
+<td>Runs optimization procedure on ITC detection using LMFAuto algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>lmfauto_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.08_itc_ws.R</td>
+<td>Runs optimization procedure on ITC detection using watershed segmentation algorithm</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>ws_itd_results.csv</td>
+<td>csv; png</td>
+<td>csv of traintest results; pngs of agreement figures</td>
+<td>1; many</td>
+<td>4.88E-4; 6.7E0</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.09_itc_model_selection.R</td>
+<td>Parses optimization output to identify model and parameter set with least loss or highest f</td>
+<td>itd_results</td>
+<td>[model]_itd_results.csv</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.10_run_optimal_itd.R</td>
+<td>Runs ITC detection using optimal algorithm and parameters determined in 05.10 for reporting and figures</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>AA-BBBN_opt_trees.shp</td>
+<td>shp</td>
+<td>shapefiles of trees detected through optimal ITC procedure by training site</td>
+<td>68</td>
+<td>3.28E-04</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.10_run_optimal_itd.R</td>
+<td>Runs ITC detection using optimal algorithm and parameters determined in 05.10 for reporting and figures</td>
+<td>NA; sources in-memory data from 05.00_traintest_loadup</td>
+<td>NA</td>
+<td>opt_matches.csv</td>
+<td>csv</td>
+<td>csv of matched trees; includes observations all field-observed and lidar-detected trees with associated match data for each source, which yields some duplicates</td>
+<td>1</td>
+<td>3.28E-04</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.11_optimal_itd_performance</td>
+<td>Generates performance statistics and figures for reporting</td>
+<td>itd_results; itd_results/opt_trees</td>
+<td>opt_matches.csv; AA-BBBN_opt_trees.shp</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.11_optimal_itd_performance</td>
+<td>Generates performance statistics and figures for reporting; generates CHM for example site</td>
+<td>las_decimated</td>
+<td>las_decimated_XXXXXX_YYYYYY;</td>
+<td>uc2_chm.tif</td>
+<td>tif</td>
+<td>tif of CHM for example site (CC-UC2)</td>
+<td>NA</td>
+<td>3.00E-03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>06.00_detect_trees_full_watershed.R</td>
+<td>Detects trees across the full watershed using optimal ITC algorithm and parameters</td>
+<td>las_decimated</td>
+<td>las_decimated_XXXXXX_YYYYYY;</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>shp</td>
+<td>shapefiles of trees detected through optimal ITC procedure per unique 50m grid cell identifier</td>
+<td>NA</td>
+<td>7.00E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>06.01_detect_trees_missing_fp.R</td>
+<td>DEPRECATED. Not using missing filepath data</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>dev_code/05.13_check_detected_trees.R</td>
+<td>Checks detected trees across full watershed to find incomplete or missing output; resamples to 100m grid</td>
+<td>trees_ls_50m</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>shp</td>
+<td>shapefiles of trees detected through optimal ITC procedure per unique 100m grid cell identifier</td>
+<td>NA</td>
+<td>7.35E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>06.02_check_detected_trees.R</td>
+<td>Checks detected trees across full watershed to find incomplete or missing output</td>
+<td>trees_ls_100m</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.00_predict_dbh.R</td>
+<td>Estimates DBH of detected tree objects and exports .shp to .csv</td>
+<td>trees_ls_100m</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>csv</td>
+<td>csvs of trees detected through optimal ITC procedure with DBH and BA estimates by unique 100m grid cell identifier</td>
+<td>37408</td>
+<td>2.90E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.01_mask_rasters_conifer.R</td>
+<td>OUTPUT DEPRECATED. NOW MASK TO 5M. Masks detected tree objects to conifers and non-developed areas and writes a big CSV of all trees for rasterizing</td>
+<td>tifs; trees_ls_100m_csv</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_masked_100m.csv</td>
+<td>csv</td>
+<td>csv of detected trees masked to conifers and non-developed areas</td>
+<td>1</td>
+<td>4.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.01_mask_rasters_conifer.R</td>
+<td>Masks detected tree objects to conifer and non-developed areas and writes a big CSV of all trees for rasterizing</td>
+<td>tifs; trees_ls_100m_csv</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_masked_5m.csv</td>
+<td>csv</td>
+<td>csv of detected trees masked to conifers and non-developed areas</td>
+<td>1</td>
+<td>4.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.01_mask_rasters_conifer.R</td>
+<td>OUTPUT DEPRECATED. NOW MASK CONIFERS AND OTHER AREAS TO 5M. Masks detected tree objects to conifers and writes a big CSV of all trees for rasterizing</td>
+<td>tifs; trees_ls_100m_csv</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_conif_100m.csv</td>
+<td>csv</td>
+<td>csv of detected trees masked to conifers</td>
+<td>1</td>
+<td>4.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.02_make_CHM.R</td>
+<td>Creates CHM from las catalog</td>
+<td>las_decimated</td>
+<td>las_decimated_XXXXXX_YYYYYY;</td>
+<td>chm_smooth; chm_smooth_masked.tif</td>
+<td>tif</td>
+<td>tif of chm</td>
+<td>NA</td>
+<td>7.60E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.03_predict_species.R</td>
+<td>Extracts species from Falco et al. classification raster and assigns to tree objects &gt;= 90th pctl height</td>
+<td>trees_ls_100m_csv; Drive:species_classification</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>trees_XXXXXX_YYYYYY_species.csv</td>
+<td>csv</td>
+<td>csvs of 90th pctl height trees detected through optimal ITC procedure with species classification, DBH and BA estimates by unique 100m grid cell identifier</td>
+<td>21818</td>
+<td>2.26E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.03_predict_species.R</td>
+<td>OUTPUT DEPRECATED. NOW MASK TO 5M. Extracts species from Falco et al. classification raster and assigns to tree objects &gt;= 90th pctl height</td>
+<td>trees_ls_100m_csv; Drive:species_classification</td>
+<td>NEON_ER_4ws_species_map.tif</td>
+<td>trees_species.csv</td>
+<td>csv</td>
+<td>csv of detected trees &gt;90th pctl height with species</td>
+<td>1</td>
+<td>4.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>07.03_predict_species.R</td>
+<td>Extracts species from Falco et al. classification raster and assigns to tree objects &gt;= 90th pctl height</td>
+<td>trees_ls_100m_csv; Drive:species_classification</td>
+<td>NEON_ER_4ws_species_map.tif</td>
+<td>trees_species_masked_5m.csv</td>
+<td>csv</td>
+<td>csv of detected trees &gt;90th pctl height, masked to conifers and non-developed areas, with species</td>
+<td>1</td>
+<td>4.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>08.00_make rasters.R</td>
+<td>Creates png and tif files of gridded forest structure metrics</td>
+<td>trees_ls_100m_csv</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>[parameter]</td>
+<td>tif</td>
+<td>tif of gridded forest structure metrics</td>
+<td>21</td>
+<td>1.50E-03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>08.00_make rasters.R</td>
+<td>Creates png and tif files of gridded forest structure metrics</td>
+<td>trees_ls_100m_csv</td>
+<td>trees_XXXXXX_YYYYYY</td>
+<td>[parameter]</td>
+<td>tif</td>
+<td>tif of gridded forest structure metrics</td>
+<td>21</td>
+<td>1.50E-03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>09.01_detection_sumstats.R</td>
+<td>Generates summary statistics and figures from field inventory and ITC detection for reporting on tree detection performance</td>
+<td>~</td>
+<td>trees_masked_100m.csv</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>checksums</td>
+<td>Multiple scripts output checksum data</td>
+<td>Multiple input directories</td>
+<td>Multiple input filepaths</td>
+<td>Multiple output filepaths</td>
+<td>txt</td>
+<td>delimited checksum tables</td>
+<td>31</td>
+<td>1.55E-04</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>DEPRECATED? Not sure where this came from</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>3</td>
+<td>1.20E-04</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>DEPRECATED? Not sure where this came from</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>4</td>
+<td>9.30E-05</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>Not sure where this came from but necessary for filling missing flightpath</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>5</td>
+<td>2.05E-06</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>4.50E-08</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>4.50E-08</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>4.50E-08</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>04.00_gam</td>
+<td>Fits GAMs to structure metrics and explanatory data</td>
+<td>tifs</td>
+<td>AAA.tif</td>
+<td>AAA_gam_performance.txt</td>
+<td>txt</td>
+<td>Performance metrics and coefficient tables for GAMs</td>
+<td>NA</td>
+<td>8.51E-05</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.00_gbm</td>
+<td>Fits GBMs to structure metrics and explanatory data</td>
+<td>tifs</td>
+<td>AAA.tif</td>
+<td>AAA_gbm_performance.txt</td>
+<td>txt</td>
+<td>Performance metrics and tables for GBMs</td>
+<td>NA</td>
+<td>4.39E-05</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>1.33E+01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>1.10E+00</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>DEPRECATED. Not used downstream</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>6.60E-02</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>04.00_gam</td>
+<td>Fits GAMs to structure metrics and explanatory data</td>
+<td>tifs</td>
+<td>AAA.tif</td>
+<td>AAA.Rda</td>
+<td>rda</td>
+<td>RDA model objects for GAMs</td>
+<td>8</td>
+<td>2.45E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.00_gbm</td>
+<td>Fits GBMs to structure metrics and explanatory data</td>
+<td>tifs</td>
+<td>AAA.tif</td>
+<td>BBB.Rda</td>
+<td>rda</td>
+<td>RDA model objects for GAMs</td>
+<td>8</td>
+<td>8.60E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>05.00_gbm</td>
+<td>Fits GBMs to structure metrics and explanatory data</td>
+<td>tifs</td>
+<td>AAA.tif</td>
+<td>gbm_relative_influence.csv</td>
+<td>csv</td>
+<td>ranked relative influence of each variable in GBMs</td>
+<td>1</td>
+<td>5.00E-06</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>EastRiver_Census1_Data_Collated.csv</td>
+<td>csv</td>
+<td>collated census 1 field inventory data</td>
+<td>1</td>
+<td>2.00E-03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>aop_naip_ortho_3m.tif</td>
+<td>tif</td>
+<td>NAIP orthoimagery intersecting AOP boundary</td>
+<td>1</td>
+<td>3.28E-01</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>EastRiver_AOP_2018_Boundary.tar.gz</td>
+<td>shp</td>
+<td>boundary of AOP domain</td>
+<td>1</td>
+<td>1.14E-04</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>Kueppers_EastRiver_AllPlots_Centroid_2023_WGS84UTM13N.tar.gz</td>
+<td>shp</td>
+<td>centroids of plot locations</td>
+<td>1</td>
+<td>5.10E-06</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>Kueppers_EastRiver_AllPlots_Polygon_2023_WGS84UTM13N.tar.gz</td>
+<td>shp</td>
+<td>polygons of plot boundaries</td>
+<td>1</td>
+<td>6.30E-06</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>NA</td>
+<td>all_variables_unscaled.csv</td>
+<td>csv</td>
+<td>csv dataframe of all explanatory and response variables in raw unscaled values</td>
+<td>1</td>
+<td>8.00E-03</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>NA</td>
+<td></td>
+<td></td>
+<td></td>
+<td>tblA.csv</td>
+<td>csv</td>
+<td>csv of qualitative data for publication tables</td>
+<td>1</td>
+<td>4.30E-07</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>inst/notebooks/composition/ER_Forest_Structure_Species_Mapping.Rmd</td>
+<td>Tests several approaches to classifying top-of-canopy trees</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>1</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link"></a></h2>
+<p>Marwick B; Boettiger C; Mullen L (2018): Packaging Data Analytical Work Reproducibly Using R (and Friends). The American Statistician, 72(1), 80–88. <a href="https://doi.org/10.1080/00031305.2017.1375986">https://doi.org/10.1080/00031305.2017.1375986</a></p></article></body></html>

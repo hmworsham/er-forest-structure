@@ -40,7 +40,7 @@ download.file('https://drive.usercontent.google.com/download?id=TKTKTK&confirm=t
 gbm.sums <- read.csv(file.path(tempdir(), 'gbm_relative_influence.csv'))
 
 # Read local variable names reference table
-varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
+varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
                      row.names=1)
 varnames[varnames$label=='\xc6SWE', 'label'] <- '\u0394SWE' # Coerce UTF delta symbol
 

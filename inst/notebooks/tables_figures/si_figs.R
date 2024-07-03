@@ -232,12 +232,19 @@ x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
 # Ingest variable names
-varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'),
+varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
                      row.names=1)
 varnames[varnames$label=='\xc6SWE', 'label'] <- '\u0394SWE'
 
 # Ingest unscaled variables
-vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
+
+###############################
+# Ingest qualitative table data
+###############################
+download.file('https://drive.google.com/uc?export=download&id=1lQGjd1ZPV6sxmHLUWosu3eZv55cfnxKq&usp=drive_fs',
+              destfile=file.path(tempdir(), 'all_variables_unscaled.csv'),
+              method='wget')
+vars <- read.csv(file.path(tempdir(), 'all_variables_unscaled.csv'))
 
 # Slice model frames for all GAMs and collapse to one dataframe
 pe.dfs <- lapply(seq_along(gams), \(i) {
