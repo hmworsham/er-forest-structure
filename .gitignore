@@ -7,6 +7,9 @@
 .vscode
 .python-version
 
+# Jupyter stuff
+.ipynb_checkpoints
+
 # Slurm stuff
 slurm*.out
 
