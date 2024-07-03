@@ -1,12 +1,11 @@
 Package: er-forest-structure
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Replication code for 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' (Worsham et al., 2024).
+Version: 3.2.0.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("H. Marshall", "Worsham", , "worsham@berkeley.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-7924-040X"))
+Description: This repository contains code used for data processing, analysis, and inference in 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' (Worsham et al., 2024). In the paper, we quantified the relative influence of climate, topographic, edaphic, and geologic factors on conifer stand structure and composition, and their functional relationships, in Colorado's East River watershed and adjacent drainages. We used waveform LiDAR data to derive spatially continuous stand structure metrics within this upper montane–subalpine domain. We fused these with a species-level classification map to estimate tree species abundance. We applied generalized additive and generalized boosted models to evaluate the covariability of structural and compositional metrics with abiotic variables. The repository is complete in the sense that it includes all operations used in the analysis and reported in the paper. However, it does not include initial exploratory efforts or analytical dead-ends---approaches that failed or that we ultimately abandoned in favor of more reliable or efficient methods. Many of the operations, particularly those that process waveform LiDAR, require parallel implementation on large-scale, high-performance computing infrastructure because of data burden (1E+12 bytes) or algorithmic complexity. Operations for directly reproducing publication tables and figures will run on a personal computer. 
+License: `use_mit_license()`
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.1
