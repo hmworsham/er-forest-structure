@@ -12,15 +12,6 @@ devtools::load_all()
 load.pkgs(config$pkgs)
 
 ###############################
-# Ingest qualitative table data
-###############################
-
-download.file('https://drive.google.com/uc?export=download&id=12eSdo6XbUqcXf_u7yeyTeZxvetyLZ2j6&usp=drive_fs',
-              destfile=file.path(tempdir(), 'table_data.tar.gz'),
-              method='wget')
-untar(file.path(tempdir(), 'table_data.tar.gz'), exdir=file.path(tempdir(), 'table_data'))
-
-###############################
 # Define flextable formatting
 ###############################
 
