@@ -69,10 +69,10 @@ save_as_image(tbls2, file.path('inst', 'ms', 'tables', 'tbls2.svg'))
 ############
 
 # All ITD parameters
-tbls3 <- read.csv(file.path(tempdir(), 'table_data', 'itd_algorithms.csv'), stringsAsFactors = F,
+tbls3 <- read.csv(file.path(config$data$raw, 'itd_algorithms.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
 tbls3 <- make.ft(flextable(tbls3))
-save_as_image(tbls3, file.path('inst', 'ms', 'tables', 'tbls3.svg'))
+savre_as_image(tbls3, file.path('inst', 'ms', 'tables', 'tbls3.svg'))
 
 
 ############
@@ -160,7 +160,7 @@ save_as_image(tbls6, file.path('inst', 'ms', 'tables', 'tbls6.svg'))
 # GAM variables
 
 # Ingest variable table
-tbls7.in <- read.csv(file.path(tempdir(), 'table_data', 'gam_specs.csv'), stringsAsFactors = F,
+tbls7.in <- read.csv(file.path(config$data$raw, 'gam_specs.csv'), stringsAsFactors = F,
                   na = "", encoding='UTF-8', check.names=F)
 
 # Ingest stored GAMs
