@@ -14,9 +14,6 @@ load.pkgs(config$pkgs)
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
-# Set number of cores
-nCores <- as.integer(availableCores()-2)
-
 #############################
 # Ingest data
 #############################
