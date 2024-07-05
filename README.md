@@ -557,4 +557,4 @@ Roussel, J (2024): lidRplugins: Extra functions and algorithms for lidR package.
 
 Worsham, H M (2024): rwaveform: Waveform LiDAR Data Processing, Analysis, and Point Conversion. Version 0.1.9. GitHub repository. https://github.com/hmworsham/rwaveform
 
-Zhou, T., Popescu, S., 2019. Waveformlidar: An R package for waveform LiDAR processing and analysis. Remote Sens. 11, 1–19. https://doi.org/10.3390/rs11212552
+Zhou T; Popescu S; (2019): Waveformlidar: An R package for waveform LiDAR processing and analysis. Remote Sens. 11, 1–19. https://doi.org/10.3390/rs11212552
