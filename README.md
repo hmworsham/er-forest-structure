@@ -22,6 +22,19 @@ Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): Code archive
 
 The bulk of the analysis runs in the R statistical computing environment and is configured for Apple Mac and Linux operating systems. R session specifications are in `./config/r_session_info`. The header of every R script in the repository contains a call to load a YAML configuration file, `./config/config.yml`. This file contains a list of packages and a list of local and external paths for ingesting data, models, and other requisite information and is required for any subsequent code in the script to run. On execution, R scripts will automatically try to install the required packages and their dependencies (if not already present) and load them in the global environment. 
 
+Note: two of the R packages in the configuration file are not available on CRAN and may need to be installed manually if automatic installation fails. These packages are not necessary for replicating tables and figures, only for waveform processing and individual tree detection. 
+
+To install lidRplugins, open an R session and run:
+```
+remotes::install_github('Jean-Romain/lidRplugins')
+```
+
+To install rwaveform, open an R session and run:
+
+```
+remotes::install_github('hmworsham/rwaveform')
+```
+
 ## Replicating tables and figures
 
 To replicate all tables and figures, open a `bash` shell. From the repository root, navigate to './inst/notebooks/tables_figures/' and run: 
@@ -540,3 +553,9 @@ The repository is organized much like a standard R package stored on the Compreh
 ## References
 
 Marwick B; Boettiger C; Mullen L (2018): Packaging Data Analytical Work Reproducibly Using R (and Friends). The American Statistician, 72(1), 80–88. https://doi.org/10.1080/00031305.2017.1375986
+
+Roussel, J (2024): lidRplugins: Extra functions and algorithms for lidR package. GitHub repository. https://github.com/Jean-Romain/lidRplugins
+
+Worsham, H M (2024): rwaveform: Waveform LiDAR Data Processing, Analysis, and Point Conversion. Version 0.1.9. GitHub repository. https://github.com/hmworsham/rwaveform
+
+Zhou, T., Popescu, S., 2019. Waveformlidar: An R package for waveform LiDAR processing and analysis. Remote Sens. 11, 1–19. https://doi.org/10.3390/rs11212552
