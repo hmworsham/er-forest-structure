@@ -21,14 +21,14 @@ Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): Code archive
 
 The bulk of the analysis runs in the R statistical computing environment and is configured for Apple Mac and Linux operating systems. R session specifications are in `./config/r_session_info`. The header of every R script in the repository contains a call to load a YAML configuration file, `./config/config.yml`. This file contains a list of packages and a list of local and external paths for ingesting data, models, and other requisite information and is required for any subsequent code in the script to run. On execution, R scripts will automatically try to install the required packages and their dependencies (if not already present) and load them in the global environment. 
 
-Note: two of the R packages in the configuration file are not available on CRAN and may need to be installed manually if automatic installation fails. These packages are not necessary for replicating tables and figures, only for waveform processing and individual tree detection. 
+Note: two of the R packages in the configuration file are not available on CRAN and may need to be installed manually if automatic installation fails. They are **lidRplugins** and **rwaveform**. These packages are not necessary for replicating tables and figures, only for waveform processing and individual tree detection. 
 
-To install lidRplugins, open an R session and run:
+To install **lidRplugins**, open an R session and run:
 ```
 remotes::install_github('Jean-Romain/lidRplugins')
 ```
 
-To install rwaveform, open an R session and run:
+To install **rwaveform**, open an R session and run:
 
 ```
 remotes::install_github('hmworsham/rwaveform')
