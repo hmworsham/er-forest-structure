@@ -15,7 +15,6 @@ When using these models and/or the underlying data, please cite the associated p
 Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' *Preprint*. DOI: TK
 
 Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): Code archive for 'Abiotic influences on continuous conifer forest structure across a subalpine watershed'. Code repository. DOI: TK
-
 ```
 
 ## Requirements
