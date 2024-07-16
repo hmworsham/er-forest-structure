@@ -53,8 +53,8 @@ The repository is organized much like a standard R package stored on the Compreh
 - **data:** stores raw, intermediate, and final processed data output; note: because of the compute scale of this analysis, most input and output data are not stored in this repository but rather in external cloud storage buckets, from which they are ingested into memory on the fly
 - **inst:** stores scripts for processing data, running analyses, and generating manuscript elements, including tables and figures
 	- **ms:** stores source files for the publication manuscript; LaTEx source files for styles, references, and author metadata; and subdirectories containing final files for submitted tables and figures
-		-**figures:** stores final output files for submitted tables and figures
-		-**tables:** stores final output files for submitted tables and figures
+		- **figures:** stores final output files for submitted tables and figures
+		- **tables:** stores final output files for submitted tables and figures
 	- **notebooks:** stores scripts used for data processing and analysis
 		- **composition**: stores an R markdown file containing the full analytical workflow for subsetting individual tree crown (ITC) objects to top-of-canopy, assigning species to ITC objects, and computing performance statistics
 		- **LiDAR**: stores multiple scripts for cleaning and processing waveform LiDAR data, discretizing waveforms to point cloud, training and testing individual tree crown detection (ITD) algorithms, implementing an optimal ITD algorithm for the full domain, estimating allometric equations, predicting species, and producing gridded estimates of forest structure
