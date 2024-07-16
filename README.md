@@ -73,7 +73,217 @@ The repository is organized much like a standard R package stored on the Compreh
 <summary>Click to unpack the full directory tree.</summary>
 
 ```shell
-
+.
+├── DESCRIPTION
+├── LICENSE
+├── NAMESPACE
+├── R
+│   ├── bipart.match.plot.R
+│   ├── bipart.match3.R
+│   ├── build.models.R
+│   ├── find.incompletes.R
+│   ├── helpers.R
+│   ├── layerstacking_funs.R
+│   ├── li2012_funs.R
+│   ├── lmfauto_funs.R
+│   ├── lmffw_funs.R
+│   ├── lmfvw_funs.R
+│   ├── multichm_funs.R
+│   ├── plot.gams.R
+│   ├── points_to_raster.R
+│   ├── ptrees_funs.R
+│   ├── species.mapping.R
+│   └── watershed_funs.R
+├── README.md
+├── config
+│   ├── config.yml
+│   └── r_session_info
+├── data
+│   ├── intermediate
+│   ├── processed
+│   └── raw
+│       ├── all_variables.csv
+│       ├── explainer_names_table.csv
+│       ├── field_methods.csv
+│       ├── gam_specs.csv
+│       ├── itd_algorithms.csv
+│       ├── layerstacking_params.csv
+│       ├── match_criteria.csv
+│       └── variable_definitions.csv
+├── er-forest-structure.Rproj
+├── inst
+│   ├── ms
+│   │   ├── ER_Forest_Structure_Paper_BetterBib.bib
+│   │   ├── EastRiver_Forest_Structure_Paper_05.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_05.docx
+│   │   ├── EastRiver_Forest_Structure_Paper_References.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_SI.Rmd
+│   │   ├── EastRiver_Forest_Structure_Paper_SI.docx
+│   │   ├── author-info-blocks.lua
+│   │   ├── figures
+│   │   │   ├── Fig1.pdf
+│   │   │   ├── Fig10.pdf
+│   │   │   ├── Fig2.pdf
+│   │   │   ├── Fig3.pdf
+│   │   │   ├── Fig4.pdf
+│   │   │   ├── Fig5.pdf
+│   │   │   ├── Fig6.pdf
+│   │   │   ├── Fig7.pdf
+│   │   │   ├── Fig8.pdf
+│   │   │   ├── Fig9.pdf
+│   │   │   ├── FigS1.pdf
+│   │   │   ├── FigS2.pdf
+│   │   │   ├── FigS3.pdf
+│   │   │   ├── FigS3A.pdf
+│   │   │   └── FigS4.pdf
+│   │   ├── remote-sensing-of-environment.csl
+│   │   ├── scholarly-metadata.lua
+│   │   ├── styles.docx
+│   │   └── tables
+│   │       ├── tbl1.svg
+│   │       ├── tbl2.svg
+│   │       ├── tbl3.svg
+│   │       ├── tbls1.svg
+│   │       ├── tbls2.svg
+│   │       ├── tbls3.svg
+│   │       ├── tbls4.svg
+│   │       ├── tbls5.svg
+│   │       ├── tbls6.svg
+│   │       ├── tbls7.svg
+│   │       └── tbls8.svg
+│   ├── notebooks
+│   │   ├── LiDAR
+│   │   │   ├── 00.00_unzipwf.py
+│   │   │   ├── 00.01_chunkwf.py
+│   │   │   ├── 01.00_process_all_waveforms.R
+│   │   │   ├── 01.01_process_waveforms_atplots.R
+│   │   │   ├── 01.02_checklogs.R
+│   │   │   ├── 01.03_cleanlogs.R
+│   │   │   ├── 02.01_hyperpointcloud.R
+│   │   │   ├── 02.02_points_to_las.R
+│   │   │   ├── 02.03_regrid_LAScatalog.R
+│   │   │   ├── 02.04_downsample_las.R
+│   │   │   ├── 03.00_normalize_points.R
+│   │   │   ├── 03.01_filter_abg_points.R
+│   │   │   ├── 03.01_normalize_points_missing_fp.R
+│   │   │   ├── 04.00_decimate_points.R
+│   │   │   ├── 05.00_itc_traintest_loadup.R
+│   │   │   ├── 05.01_itc_li.R
+│   │   │   ├── 05.02_itc_pt.R
+│   │   │   ├── 05.03_itc_ls.R
+│   │   │   ├── 05.04_itc_mc.R
+│   │   │   ├── 05.05_itc_lmf_fw.R
+│   │   │   ├── 05.06_itc_lmf_vw.R
+│   │   │   ├── 05.07_itc_lmfauto.R
+│   │   │   ├── 05.08_itc_ws.R
+│   │   │   ├── 05.09_itc_model_selection.R
+│   │   │   ├── 05.10_run_optimal_itd.R
+│   │   │   ├── 05.11_optimal_itd_performance.R
+│   │   │   ├── 06.00_detect_trees_full_watershed.R
+│   │   │   ├── 06.02_check_detected_trees.R
+│   │   │   ├── 07.00_predict_dbh.R
+│   │   │   ├── 07.01_mask_trees.R
+│   │   │   ├── 07.02_make_chm.R
+│   │   │   ├── 07.03_predict_species.R
+│   │   │   ├── 08.00_make_rasters.R
+│   │   │   ├── 09.01_detection_sumstats.R
+│   │   │   ├── requirements.txt
+│   │   │   └── waveform
+│   │   │       ├── __init__.py
+│   │   │       └── chunk_waveforms.py
+│   │   ├── composition
+│   │   │   └── ER_Forest_Structure_Species_Mapping.Rmd
+│   │   ├── misc
+│   │   │   ├── er_climate_means.R
+│   │   │   ├── er_wilderness_area.R
+│   │   │   ├── ess-dive_submit_pubdata.ipynb
+│   │   │   └── ess-dive_submit_wfdata.ipynb
+│   │   ├── regressions
+│   │   │   ├── 00.00_plot_rasters.R
+│   │   │   ├── 01.00_stats_ingest_data.R
+│   │   │   ├── 02.00_corrmat.R
+│   │   │   ├── 04.00_gam.R
+│   │   │   ├── 04.01_gam_reports.R
+│   │   │   ├── 05.00_gbm.R
+│   │   │   └── 05.01_gbm_reports.R
+│   │   ├── state_factors
+│   │   │   ├── aso_swe_processing.R
+│   │   │   ├── geology_processing.R
+│   │   │   └── ssurgo_ingest.R
+│   │   └── tables_figures
+│   │       ├── fig10_geology.R
+│   │       ├── fig1_domain.R
+│   │       ├── fig2_crownmap.R
+│   │       ├── fig3_itd_performance.R
+│   │       ├── fig4_height_distribution.R
+│   │       ├── fig5_structure_metrics.R
+│   │       ├── fig6_structure_histograms.R
+│   │       ├── fig7_gbm.R
+│   │       ├── fig8_gam_partial_effects.R
+│   │       ├── fig9_gam_interactions.R
+│   │       ├── replicate_all.sh
+│   │       ├── si_figs.R
+│   │       ├── si_tables.R
+│   │       ├── table1.R
+│   │       ├── table2.R
+│   │       └── table3.R
+│   └── shell_scripts
+│       ├── batchcluster_init.sh
+│       ├── chunk_waveforms.sh
+│       ├── findtrees_init.sh
+│       ├── make_findtrees.sh
+│       ├── multibatch_processwf_init.sh
+│       ├── multibatch_traintest_init.sh
+│       └── unzip_wf.sh
+├── man
+│   ├── bipart.match.plot.Rd
+│   ├── bipart.match3.Rd
+│   ├── find.incompletes.Rd
+│   ├── get.spp.Rd
+│   ├── li2012.init.Rd
+│   ├── li2012.opt.Rd
+│   ├── lmf.auto.init.Rd
+│   ├── lmf.auto.opt.Rd
+│   ├── lmf.fw.init.Rd
+│   ├── lmf.fw.opt.Rd
+│   ├── lmf.vw.init.Rd
+│   ├── lmf.vw.opt.Rd
+│   ├── load.pkgs.Rd
+│   ├── ls.init.Rd
+│   ├── ls.opt.Rd
+│   ├── make.modframe.Rd
+│   ├── mapit.Rd
+│   ├── mc.init.Rd
+│   ├── mc.opt.Rd
+│   ├── pe.pivot.Rd
+│   ├── pe.pivot.itx.Rd
+│   ├── pe.slice.Rd
+│   ├── pe.slice.itx.Rd
+│   ├── plt.bar.Rd
+│   ├── plt.density.Rd
+│   ├── pointcount.Rd
+│   ├── ptrees.init.Rd
+│   ├── ptrees.opt.Rd
+│   ├── reclass.Rd
+│   ├── ws.init.Rd
+│   └── ws.opt.Rd
+└── models
+    ├── abla_density_gam.rda
+    ├── abla_density_gbm.rda
+    ├── ba_gam.rda
+    ├── ba_gbm.rda
+    ├── density_gam.rda
+    ├── density_gbm.rda
+    ├── diam_gam.rda
+    ├── diam_gbm.rda
+    ├── height_95p_gam.rda
+    ├── height_95p_gbm.rda
+    ├── height_skew_gam.rda
+    ├── height_skew_gbm.rda
+    ├── pico_density_gam.rda
+    ├── pico_density_gbm.rda
+    ├── pien_density_gam.rda
+    └── pien_density_gbm.rda
 ```  
 </details>
 
