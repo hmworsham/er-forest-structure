@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/305809055.svg)](https://zenodo.org/doi/10.5281/zenodo.12775449)
+
 # er-forest-structure
 
 ## Replication code for 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' (Worsham et al., 2024).
