@@ -93,7 +93,8 @@ hcomp.plt <- ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src)))
         legend.justification = c('left', 'top'),
         legend.key.size=unit(0.02, 'npc'),
         legend.box.background = element_rect(fill = "white", color = "black"),
-        axis.text.x = element_text(angle=60, hjust=1))
+        axis.text.x = element_text(angle=60, hjust=1),
+        plot.background = element_blank())
 
 ##################################################################
 # Compare detected and reference trees across the full domain
@@ -150,14 +151,15 @@ ls.ref.l.z <- ls.ref.l %>%
 # Plot kernel density across height support
 skill.density <- ggplot(df.matched.plt.l.z, aes(x=value, group=src, color=factor(src))) +
   stat_density(linewidth=1, geom='line', position='identity',
-               aes(x=value, group=src, color=factor(src)), data=ls.detect.l.z) +
-  stat_density(linewidth=1, geom='line', position='identity',
                aes(x=value, group=src, color=factor(src)), data=ls.ref.l.z) +
+  stat_density(linewidth=1, geom='line', position='identity',
+               aes(x=value, group=src, color=factor(src)), data=ls.detect.l.z) +
   stat_density(linewidth=1, geom='line', position='identity') +
   scale_color_manual(values=hcomp.colors, name=NULL) +
   labs(x='Height (m)', y='Frequency of occurrence (kernel density)') +
   ggthemes::theme_calc(base_size=8) +
   theme(legend.position='none',
+        plot.background = element_blank()
   )
 
 #############################

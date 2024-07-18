@@ -23,8 +23,8 @@ download.file('https://drive.usercontent.google.com/download?id=1AxKmbo2HxKUcuxb
               destfile=file.path(tempdir(), 'trees.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'trees.tar.gz'), exdir=file.path(tempdir(), 'trees'))
-alltrees <- read.csv(file.path(tempdir(), 'trees', 'trees_masked_5m.csv'))
-
+alltrees <- read_csv(file.path(tempdir(), 'trees', 'trees_masked_5m.csv'))
+alltrees <- read_csv('~/Desktop/ER_ForestStructure_RepData/trees_masked_5m.csv')
 # Optimal ITD results
 download.file('https://drive.google.com/uc?export=download&id=1Vnv4UGjPsVZSW5deBQE_1qjXo2Vq3K5P&usp=drive_fs',
               destfile=file.path(tempdir(), 'optimal_itd.tar.gz'),
@@ -95,7 +95,7 @@ alltrees.corx.plt <- ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fi
 # Write
 #############################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig4.pdf'),
+cairo_ps(file.path('inst', 'ms', 'figures', 'Fig4.eps'),
           width=90/25.4, height=90/25.4, onefile=T,
           family='Arial', bg='white')
 

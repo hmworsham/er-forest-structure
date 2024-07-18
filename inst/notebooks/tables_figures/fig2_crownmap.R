@@ -75,7 +75,9 @@ uc2.base.map <- ggplot() +
   geom_raster(data=chm, aes(x=x, y=y, fill=focal_median)) +
   scale_fill_gradient(low='#1A1A1A', high='#FFFFFF',
                       name='Canopy height (m)',
-                      breaks=c(1, 10, 20))
+                      limits=c(0,20),
+                      breaks=c(0, 20),
+                      na.value=NA)
 
 # Plot field-identified and LiDAR-detected tree objects, shaded by match status
 uc2.match.map <- uc2.base.map +
@@ -105,7 +107,6 @@ uc2.match.map <- uc2.base.map +
 #############################
 # Write
 #############################
-
 cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig2.pdf'),
           width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')

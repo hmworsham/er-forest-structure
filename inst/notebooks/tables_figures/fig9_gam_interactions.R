@@ -32,6 +32,18 @@ gam.names.new <- data.frame('o'=gam.names,
 x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
+# Ingest variable names
+varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
+                     row.names=1)
+varnames[varnames$label=='\xc6SWE', 'label'] <- '\u0394SWE'
+
+# Ingest unscaled variables
+vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
+download.file('https://drive.usercontent.google.com/download?id=1lQGjd1ZPV6sxmHLUWosu3eZv55cfnxKq&confirm=true',
+              destfile=file.path(tempdir(), 'all_variables_unscaled.csv'),
+              method='wget')
+vars <- read.csv(file.path(tempdir(), 'all_variables_unscaled.csv'))
+
 ##################################
 # Partial-effects interactions
 ##################################
@@ -165,12 +177,12 @@ peplots <- lapply(peplot.itx.sub, \(i) {
   g
 })
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig10.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig9.pdf'),
           width=190/25.4, height=220/25.4, onefile=T,
           family='Arial', bg='white')
 
 p <- wrap_plots(peplots, nrow=5, ncol=3, byrow=T) +
-  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:8], ')'))) &
+  plot_annotation(tag_levels = list(paste0('(', LETTERS[1:15], ')'))) &
   theme(plot.tag = element_text(face = 'bold'))
 
 p

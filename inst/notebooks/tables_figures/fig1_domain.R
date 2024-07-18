@@ -84,7 +84,6 @@ d.map <- ggplot() +
 #############################
 # Write
 #############################
-
 cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig1.pdf'),
           width=90/25.4, height=75/25.4, onefile=T,
           family='Arial', bg='white')

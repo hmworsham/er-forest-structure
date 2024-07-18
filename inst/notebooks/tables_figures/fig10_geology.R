@@ -134,7 +134,7 @@ y_ax <- cowplot::get_plot_component(axlabs, "ylab-l")
 # Assemble plot grid and write
 ################################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig9.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig10.pdf'),
           width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')
 
