@@ -2,7 +2,7 @@
 
 #' reclass
 #' @description Reclassify raster with factor labels
-#' @export make.modframe
+#' @export reclass
 #'
 
 reclass <- function(rs, target) {

@@ -2,6 +2,12 @@
 
 #' make.modframe
 #' @description Make a standard model frame for inferential modeling
+#' @param y character. Column name of the target response variable
+#' @param df dataframe. Dataframe of variable values
+#' @param modtype character. Target model specification that model frame will be fed into. 'gam' for Generalized Additive Model (mcgv::gam) or 'gbm' for Generalized Boosted Model (caret::gbm)
+#' @param target.vars list. Character list of column names of target explanatory variables
+#' @param itx concatenated list. Character list of paired variables to be specified as pairwise interactions in GAM. List elements must be of the form 'X,Y'. Defaults to c('none)
+#' @returns list. Two elements are returned in a list. The first element is a text string containing the model formula to be used in the model. The second element is a dataframe of n observations on m variables, where the names of the m variables correspond to those in the formula, the first variable is the response, and the remaining m-1 variables are explanatory variables.
 #' @export make.modframe
 #'
 
