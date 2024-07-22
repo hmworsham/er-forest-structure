@@ -36,7 +36,11 @@ To install **rwaveform**, open an R session and run:
 remotes::install_github('hmworsham/rwaveform')
 ```
 
-## Replicating tables and figures
+## Replication
+
+The repository contains all code required to replicate the analysis. We assume most users will want to (A) replicate tables and figures that appear in the manuscript or (B) explore the various functions and scripts. It is also possible to reproduce the entire project using the files here, along with publicly accessible datasets after downloading and sourcing them in code. However, note that the full analysis takes days to weeks on high-performance computing infrastructure, given the scale of data and computation.
+
+### A. Replicating tables and figures
 
 To replicate all tables and figures, open a `bash` shell. From the repository root, navigate to './inst/notebooks/tables_figures/' and run: 
 
@@ -45,9 +49,22 @@ chmod u+x code/replicate_all.sh
 ./replicate_all.sh
 ```
 
-On execution, replication scripts for tables and figures will automatically try to download source data from the public [ESS-DIVE data repository](https://data.ess-dive.lbl.gov/view/ess-dive-2377c69d12defc3-20240702T013021190) associated with this project (Worsham et al. 2024) using the web file retrieval protocol *wget*. For the most part, source data are not stored locally, so downloading is necessary for the scripts to generate the tables and figures.
+On execution, replication scripts for tables and figures will automatically try to download source data from the public [ESS-DIVE data repository (doi:10.15485/2404585)](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2404585) associated with this project (Worsham et al. 2024) using the web file retrieval protocol *wget*. For the most part, source data are not stored locally, so downloading is necessary for the scripts to generate the tables and figures.
 
-## Repository structure
+### B. Exploring functions and scripts
+
+R and Python files can be opened in the R statistical computing environment or RStudio, in other code editing software such as Microsoft Visual Studio, or a generic text editor. See [Repository structure](#structure) and [Directory tree](#tree) below for navigation details.
+
+### C. Replicating everything
+
+To fully reproduce the analysis, users are advised to download waveform LiDAR source data from [doi:10.15485/2403350](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2403350) and other source, intermediate, and final output data from [doi:10.15485/2404585](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2404585) into a local storage directory on a high-performance computing cluster. Then, update data ingest paths in the script files to match the local directory. Then, run the files in the following directories in their sequentially named order:
+
+1. inst/notebooks/LiDAR/
+2. inst/notebooks/state_factors/
+3. inst/notebooks/regressions/
+4. inst/notebooks/tables_figures/
+
+## Repository structure [structure]
 
 The repository is organized much like a standard R package stored on the Comprehensive R Archive Network, following the 'Research Compendium' framework described in Marwick et al. (2018). In this framework, compendium components are separated into distinct classes, and a clear separation is maintained between data, analytical functions, analytical scripts implementing those functions, and output. The file structure in the root directory of this repository enforces this separation. A summary follows below, with a full directory tree and file-level metadata below that. 
 
@@ -69,7 +86,7 @@ The repository is organized much like a standard R package stored on the Compreh
 - **models:** stores inferential model objects, typically an intermediate or final output of one or more analytical scripts
 - **R:** stores R files containing generalized functions sourced in analytical scripts
 
-### Directory tree
+### Directory tree [tree]
 
 <details>
 <summary>Click to unpack the full directory tree.</summary>
