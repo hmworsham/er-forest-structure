@@ -80,9 +80,3 @@ default:
   raw: './data/raw'
   int: './data/intermediate'
   pro: './data/processed'
-
-test:
-  key1: test
-
-production:
-  key1: production
