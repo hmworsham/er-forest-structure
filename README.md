@@ -38,7 +38,7 @@ remotes::install_github('hmworsham/rwaveform')
 
 ## Replication
 
-The repository contains all code required to replicate the analysis. We assume most users will want to (A) replicate tables and figures that appear in the manuscript or (B) explore the various functions and scripts. It is also possible to reproduce the entire project using the files here, along with publicly accessible datasets after downloading and sourcing them in code. However, note that the full analysis takes days to weeks on high-performance computing infrastructure, given the scale of data and computation.
+The repository contains all code required to replicate the analysis. We assume most users will want to (A) replicate tables and figures that appear in the manuscript or (B) explore the various functions and scripts. It is also possible to reproduce the entire project using the files here, along with publicly accessible datasets after downloading and sourcing them in code. However, note that full replication takes days to weeks on high-performance computing infrastructure, given the scale of data and computation.
 
 ### A. Replicating tables and figures
 
@@ -53,11 +53,11 @@ On execution, replication scripts for tables and figures will automatically try 
 
 ### B. Exploring functions and scripts
 
-R and Python files can be opened in the R statistical computing environment or RStudio, in other code editing software such as Microsoft Visual Studio, or a generic text editor. See [Repository structure](#structure) and [Directory tree](#tree) below for navigation details.
+R and Python files can be opened in the R statistical computing environment or RStudio, in other code editing software such as Microsoft Visual Studio, or a generic text editor. See [Repository structure](#structure) and [Directory tree](#tree) below for file descriptions and navigation details.
 
 ### C. Replicating everything
 
-To fully reproduce the analysis, users are advised to download waveform LiDAR source data from [doi:10.15485/2403350](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2403350) and other source, intermediate, and final output data from [doi:10.15485/2404585](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2404585) into a local storage directory on a high-performance computing cluster. Then, update data ingest paths in the script files to match the local directory. Then, run the files in the following directories in their sequentially named order:
+To fully reproduce the analysis, users are advised to download waveform LiDAR source data from [doi:10.15485/2403350](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2403350) and other source, intermediate, and final output data from [doi:10.15485/2404585](https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2404585) into a local storage directory on a high-performance computing cluster. Then, update data ingest paths in the script files to match your local storage directory and run them in their sequentially named order:
 
 1. inst/notebooks/LiDAR/
 2. inst/notebooks/state_factors/
