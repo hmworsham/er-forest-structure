@@ -1,7 +1,7 @@
 # Chunk large LiDAR binary files
 # Author: Marshall Worsham
-# Created 21-03-29
-# Revised: 21-11-06
+# Created: 03-29-21
+# Revised: 11-06-21
 
 # Script to split large binary files into chunks of 1M lines each for parallel processing
 
@@ -22,12 +22,11 @@ lview.block = True
 def wrapper(i):
     import sys
     sys.path.append(
-        '/global/home/users/worsham/Repos/eastriver/Watershed_Spatial_Dataset/LiDAR/')
+        '/global/home/users/worsham/Repos/er/er-forest-structure/inst/notebooks/LiDAR/')
     from waveform import chunk_waveforms as cw
     idir = '/global/scratch/users/worsham/waveform_binary'
     odir = '/global/scratch/users/worsham/waveform_binary_chunks'
     return(cw.chunk_wfbinary_loc(i, idir, odir))
-
 
 # Name flightpaths to ingest
 fps = [d for d in os.listdir(indir) if os.path.isdir(

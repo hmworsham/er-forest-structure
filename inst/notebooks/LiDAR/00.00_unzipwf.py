@@ -1,6 +1,7 @@
 # Unzip LiDAR binary files
 # Author: Marshall Worsham
-# Revised: 21-03-29
+# Created: 03-29-21
+# Revised: 03-29-21
 
 # Script to unzip zipfiles
 import os

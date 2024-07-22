@@ -89,7 +89,6 @@ sp.codes <- sp.codes %>%
   mutate(Pixel_Code=as.numeric(Pixel_Code)) %>%
   dplyr::select(-c(Genus:Common))
 
-
 # Ingest match data
 modtrees <- read.csv(drive_download(
   as_id('1LCafch6gd2bYqYTT0eeW1o5QSHXv5O50'),

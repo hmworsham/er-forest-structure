@@ -1,19 +1,37 @@
-library(lidR)
-library(data.table)
-library(devtools)
-library(plotly)
-library(parallel)
-library(stringr)
-load_all('~/Repos/rwaveform')
+# Discretize waveform data to hyperpointcloud
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 02-24-22
+# Revised: 07-22-24
+
+#############################
+# Set up working environment
+#############################
+
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
+
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
 
 # Name directories
 datadir <- '/global/scratch/users/worsham/geolocated_returns'
 wfdir <- '/global/scratch/users/worsham/waveform_binary_chunks'
 outdir <- '/global/scratch/users/worsham/hyperpointcloud'
 
+#############################
+# Data ingest
+#############################
+
+# List files to process
 returns <- list.files(datadir, full.names=T)
 wfs <- list.files(wfdir, full.names=T)
 
+#############################
+# Processing
+#############################
+
+# Processing function
 makehpc <- function(repath, geopath){
 
   filenam = tail(unlist(strsplit(geopath, '/')), 1)
@@ -26,10 +44,7 @@ makehpc <- function(repath, geopath){
   ge <- lapply(
     split(pts, pts$index),
     build.gauss,
-    tbins=500#,
-    #mc.preschedule = T,
-    #mc.cores = getOption("mc.cores", detectCores()-2)
-    )
+    tbins=500)
 
   waveform = data.table(do.call('rbind', ge))
 
@@ -42,18 +57,11 @@ makehpc <- function(repath, geopath){
   write.csv(rb, file.path(outdir, outname), row.names = F)
 
   print(filenam)
-  #return(rb)
+  return(rb)
 
 }
 
-r.did = str_replace(list.files(outdir), '_hpc.csv', '_returnpoints.csv')
-r.did = file.path(datadir, r.did)
-returns <- returns[!returns %in% r.did]
-
-g.did = str_replace(list.files(outdir), '_hpc.csv', '')
-g.did = file.path(wfdir, g.did)
-wfs <- wfs[!wfs %in% g.did]
-
+# Run function
 mcmapply(
   makehpc,
   returns,

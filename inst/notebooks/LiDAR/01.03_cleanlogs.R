@@ -1,4 +1,18 @@
-library(data.table)
+# Clean and print logs from waveform processing
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-26-21
+# Revised: 07-22-24
+
+#############################
+# Set up working environment
+#############################
+
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
+
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
 
 logdir <- '/global/scratch/users/worsham/logs'
 
