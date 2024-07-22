@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,12 +16,10 @@ load.pkgs(config$pkgs)
 #############################
 
 # Read GBM relative influence data
-# TODO: Get file link
-download.file('https://drive.usercontent.google.com/download?id=TKTKTK&confirm=true',
+download.file(config$extdata$gbm,
               destfile=file.path(tempdir(), 'gbm_relative_influence.csv'),
               method='wget')
 gbm.sums <- read.csv(file.path(tempdir(), 'gbm_relative_influence.csv'))
-gbm.sums <- read.csv('/Users/hmworsham/Desktop/ER_ForestStructure_RepData/gbm_relative_influence.csv')
 
 # Read local variable names reference table
 varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
@@ -209,7 +207,7 @@ p3 <- ggplot(gbm.summaries.5.spp, aes(x=reorder_within(label, rel.inf, Model),
 ################################
 
 # Open device
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig7.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_7.pdf'),
           width=190/25.4, height=120/25.4, onefile=T,
           family='Arial', bg='white')
 
@@ -259,6 +257,5 @@ vp5 <- viewport(x=0, y=0,
                 just=c('left', 'bottom'),
                 name='vp4')
 pushViewport(vp5)
-#grid.rect(gp=gpar(fill=NA))
 
 dev.off()

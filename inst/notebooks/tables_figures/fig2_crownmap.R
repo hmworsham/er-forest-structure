@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 #############################
 
 # Optimal ITD results
-download.file('https://drive.google.com/uc?export=download&id=1Vnv4UGjPsVZSW5deBQE_1qjXo2Vq3K5P&usp=drive_fs',
+download.file(config$extdata$itd_opt,
               destfile=file.path(tempdir(), 'optimal_itd.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'optimal_itd.tar.gz'), exdir=file.path(tempdir(), 'optimal_itd'))
@@ -29,7 +29,7 @@ ls.trees <- lapply(file.path(tempdir(), 'optimal_itd', opt.itd[grepl('shp', opt.
 ls.match <- read.csv(file.path(tempdir(), 'optimal_itd', 'opt_matches.csv'))
 
 # Plot boundaries
-download.file('https://drive.google.com/uc?export=download&id=1AxK7Wla0s41k2QWLNvFjzkljr3MlN8uy&usp=drive_fs',
+download.file(config$extdata$plots_poly,
               destfile=file.path(tempdir(), 'plots.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'plots.tar.gz'), exdir=file.path(tempdir(), 'plots'))
@@ -37,7 +37,7 @@ plotsf <- untar(file.path(tempdir(), 'plots.tar.gz'), list=T)
 plotsf <- st_read(file.path(tempdir(), 'plots', plotsf[file_ext(plotsf)=='shp']))
 
 # CHM
-download.file('https://drive.usercontent.google.com/download?id=1FXs0Wjnu1feV5oNH8YISUDV_av95azKb',
+download.file(config$extdata$chm,
               destfile=file.path(tempdir(), 'chm.tif'),
               method='wget')
 chm <- rast(file.path(tempdir(), 'chm.tif'))
@@ -107,7 +107,7 @@ uc2.match.map <- uc2.base.map +
 #############################
 # Write
 #############################
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig2.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_2.pdf'),
           width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')
 

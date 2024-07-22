@@ -5,12 +5,11 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
-
 
 #############################
 # Ingest data
@@ -34,7 +33,7 @@ x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
 # Ingest unscaled variables
-download.file('https://drive.usercontent.google.com/download?id=1lQGjd1ZPV6sxmHLUWosu3eZv55cfnxKq&confirm=true',
+download.file(config$extdata$allvars,
               destfile=file.path(tempdir(), 'all_variables_unscaled.csv'),
               method='wget')
 vars <- read.csv(file.path(tempdir(), 'all_variables_unscaled.csv'))
@@ -134,7 +133,7 @@ y_ax <- cowplot::get_plot_component(axlabs, "ylab-l")
 # Assemble plot grid and write
 ################################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig10.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_10.pdf'),
           width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')
 

@@ -14,9 +14,9 @@ The repository is complete in the sense that it includes all operations used in 
 When using these models and/or the underlying data, please cite the associated publication and the archive version of this repository:
 
 ```
-Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' *Preprint*. DOI: TK
+Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): 'Abiotic influences on continuous conifer forest structure across a subalpine watershed' *Preprint*. DOI: forthcoming.
 
-Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): Code archive for 'Abiotic influences on continuous conifer forest structure across a subalpine watershed'. Code repository. DOI: TK
+Worsham H M ; Wainwright H M; Powell T; Falco N; Kueppers L (2024): hmworsham/er-forest-structure: Abiotic influences on continuous conifer forest structure across a subalpine watershed: RSE review archive. Zenodo code repository. [doi:10.5281/zenodo.12775449](https://zenodo.org/doi/10.5281/zenodo.12775449).
 ```
 
 ## Requirements
@@ -45,7 +45,7 @@ The repository contains all code required to replicate the analysis. We assume m
 To replicate all tables and figures, open a `bash` shell. From the repository root, navigate to './inst/notebooks/tables_figures/' and run: 
 
 ```sh
-chmod u+x code/replicate_all.sh
+chmod u+x replicate_all.sh
 ./replicate_all.sh
 ```
 

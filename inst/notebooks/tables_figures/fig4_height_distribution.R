@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,17 +16,17 @@ load.pkgs(config$pkgs)
 #############################
 
 # All detected trees within conifer forest mask
-## NOTE: THE ZIPPED TAR FILE DOWNLOADED IN THIS CALL IS 4.1 GB.
+## NOTE: THE CSV FILE DOWNLOADED IN THIS CALL IS 3 GB.
 ## MAKE SURE STORAGE AND MEMORY RESOURCES ARE SUFFICIENT BEFORE EXECUTING.
 ## DOWNLOADING AND UNZIPPING WILL TAKE 5-10 MINUTES
-download.file('https://drive.usercontent.google.com/download?id=1AxKmbo2HxKUcuxbk7HXhwitlq6prR_sc&confirm=true',
-              destfile=file.path(tempdir(), 'trees.tar.gz'),
+download.file(config$extdata$trees_mask,
+              destfile=file.path(tempdir(), 'trees_masked_5m.csv'),
               method='wget')
-untar(file.path(tempdir(), 'trees.tar.gz'), exdir=file.path(tempdir(), 'trees'))
-alltrees <- read_csv(file.path(tempdir(), 'trees', 'trees_masked_5m.csv'))
-alltrees <- read_csv('~/Desktop/ER_ForestStructure_RepData/trees_masked_5m.csv')
+alltrees <- read_csv(file.path(tempdir(), 'trees_masked_5m.csv'))
+
+
 # Optimal ITD results
-download.file('https://drive.google.com/uc?export=download&id=1Vnv4UGjPsVZSW5deBQE_1qjXo2Vq3K5P&usp=drive_fs',
+download.file(config$extdata$itd_opt,
               destfile=file.path(tempdir(), 'optimal_itd.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'optimal_itd.tar.gz'), exdir=file.path(tempdir(), 'optimal_itd'))
@@ -36,7 +36,7 @@ opt.itd <- untar(file.path(tempdir(), 'optimal_itd.tar.gz'), list=T)
 ls.match <- read.csv(file.path(tempdir(), 'optimal_itd', 'opt_matches.csv'))
 
 # Field data
-download.file('https://drive.google.com/uc?export=download&id=17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9&usp=drive_fs',
+download.file(config$extdata$inv,
               destfile=file.path(tempdir(), 'EastRiver_Census1_Data_Collated.csv'))
 inv <- read.csv(file.path(tempdir(), 'EastRiver_Census1_Data_Collated.csv'))
 
@@ -95,7 +95,7 @@ alltrees.corx.plt <- ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fi
 # Write
 #############################
 
-cairo_ps(file.path('inst', 'ms', 'figures', 'Fig4.eps'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_4.pdf'),
           width=90/25.4, height=90/25.4, onefile=T,
           family='Arial', bg='white')
 

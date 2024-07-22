@@ -16,13 +16,11 @@ source(file.path('inst', 'notebooks', 'regressions', '01.00_stats_ingest_data.R'
 #############################
 # Modify rasters for plotting
 #############################
-
 res.rasters <- lapply(response, project, y='EPSG:4326')
 exp.rasters <- lapply(explainers, project, y='EPSG:4326')
 naip.raster <- project(naip, y='EPSG:4326')
 
 geol <- tail(exp.rasters,1)[[1]]
-# exp.rasters[16] <- geol
 values(naip.raster)[values(naip.raster) == 0] <- NA
 ext(naip.raster) <- ext(res.rasters[[1]])
 

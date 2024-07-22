@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 #############################
 
 # Optimal ITD results
-download.file('https://drive.google.com/uc?export=download&id=1Vnv4UGjPsVZSW5deBQE_1qjXo2Vq3K5P&usp=drive_fs',
+download.file(config$extdata$itd_opt,
               destfile=file.path(tempdir(), 'optimal_itd.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'optimal_itd.tar.gz'), exdir=file.path(tempdir(), 'optimal_itd'))
@@ -166,7 +166,7 @@ skill.density <- ggplot(df.matched.plt.l.z, aes(x=value, group=src, color=factor
 # Write
 #############################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig3.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_3.pdf'),
           width=90/25.4, height=180/25.4, onefile=T,
           family='Arial', bg='white')
 

@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 #############################
 
 # List and download forest structure rasters
-download.file('https://drive.usercontent.google.com/download?id=1AxscLUlN23TbKO0Ir8cf8jlorrybSqny&confirm=true',
+download.file(config$extdata$forest_rast,
               destfile=file.path(tempdir(), 'forest_structure_rasters.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'forest_structure_rasters.tar.gz'), exdir=file.path(tempdir(), 'forest_structure_rasters'))
@@ -35,7 +35,7 @@ pien <- rast(strfiles[grep('density_pien_100m_masked.tif', strfiles)])
 pico <- rast(strfiles[grep('density_pico_100m_masked.tif', strfiles)])
 
 # Download NAIP true color
-download.file('https://drive.usercontent.google.com/download?id=11rc7aWJzDC6lw-RyaNkoJxzq4iwFmxCT&confirm=true',
+download.file(config$extdata$naip,
               destfile=file.path(tempdir(), 'aop_naip_ortho_3m.tif'),
               method='wget')
 
@@ -128,7 +128,7 @@ np <- print(ggplot() +
 # Write
 #############################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig5.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_5.pdf'),
           width=190/25.4, height=190/25.4, onefile=T,
           family='Arial', bg='white')
 

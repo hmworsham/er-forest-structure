@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 #############################
 
 # AOP boundary
-download.file('https://drive.google.com/uc?export=download&id=1Ax0F5Z4Bo3Ka0j2BKD7YSdEo_eOfQfpr&usp=drive_fs',
+download.file(config$extdata$aop_bnd,
               destfile=file.path(tempdir(), 'aop.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'aop.tar.gz'), exdir=file.path(tempdir(), 'aop'))
@@ -24,7 +24,7 @@ aop <- untar(file.path(tempdir(), 'aop.tar.gz'), list=T)
 aop <- st_read(file.path(tempdir(), 'aop', aop[file_ext(aop)=='shp']))
 
 # Plots
-download.file('https://drive.google.com/uc?export=download&id=1Ax68dArhdEJ3KgGbfwWoAL20VcmDVOG3&usp=drive_fs',
+download.file(config$extdata$dem,
               destfile=file.path(tempdir(), 'plots.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'plots.tar.gz'), exdir=file.path(tempdir(), 'plots'))
@@ -36,7 +36,7 @@ aois <- c(aois[grep('XX', aois)], 'ER-BME3', 'SG-NWS1')
 plotsf <- plotsf[!plotsf$PLOT_ID %in% aois,]
 
 # DEM
-download.file('https://drive.usercontent.google.com/download?id=1mWHn_kGv2tNNy744yypNy8QO1ODYKkc5&usp=drive_fs&confirm=t',
+download.file(config$extdata$dem,
               destfile=file.path(tempdir(), 'usgs_dem.tif'),
               method='wget')
 elv <- rast(file.path(tempdir(), 'usgs_dem.tif'))
@@ -84,7 +84,7 @@ d.map <- ggplot() +
 #############################
 # Write
 #############################
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig1.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_1.pdf'),
           width=90/25.4, height=75/25.4, onefile=T,
           family='Arial', bg='white')
 

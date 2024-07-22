@@ -167,7 +167,7 @@ explainers <- append(topos, c(soil, snow, bcm))
 sapply(explainers, names)
 length(explainers) == 20
 
-varnames <- read.csv(file.path(config$data$int, 'explainer_names_table.csv'))
+varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'))
 
 for(i in seq_along(explainers)){
   names(explainers[[i]]) <- varnames[varnames$rastnames==names(explainers[[i]]), 'varnames']

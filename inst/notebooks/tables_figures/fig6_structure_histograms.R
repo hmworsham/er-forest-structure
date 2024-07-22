@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -16,7 +16,7 @@ load.pkgs(config$pkgs)
 #############################
 
 # List and download forest structure rasters
-download.file('https://drive.usercontent.google.com/download?id=1AxscLUlN23TbKO0Ir8cf8jlorrybSqny&confirm=true',
+download.file(config$extdata$forest_rast,
               destfile=file.path(tempdir(), 'forest_structure_rasters.tar.gz'),
               method='wget')
 untar(file.path(tempdir(), 'forest_structure_rasters.tar.gz'), exdir=file.path(tempdir(), 'forest_structure_rasters'))
@@ -97,7 +97,7 @@ str.hist <- lapply(1:8, \(i) {
 # Write
 #############################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig6.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_6.pdf'),
           width=190/25.4, height=190/25.4, onefile=T,
           family='Arial', bg='white')
 

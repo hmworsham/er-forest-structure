@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -38,8 +38,7 @@ varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
 varnames[varnames$label=='\xc6SWE', 'label'] <- '\u0394SWE'
 
 # Ingest unscaled variables
-vars <- read.csv(file.path(config$data$pro, 'all_variables_unscaled.csv'))
-download.file('https://drive.usercontent.google.com/download?id=1lQGjd1ZPV6sxmHLUWosu3eZv55cfnxKq&confirm=true',
+vars <- download.file(config$extdata$allvars,
               destfile=file.path(tempdir(), 'all_variables_unscaled.csv'),
               method='wget')
 vars <- read.csv(file.path(tempdir(), 'all_variables_unscaled.csv'))
@@ -177,7 +176,7 @@ peplots <- lapply(peplot.itx.sub, \(i) {
   g
 })
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig9.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_9.pdf'),
           width=190/25.4, height=220/25.4, onefile=T,
           family='Arial', bg='white')
 

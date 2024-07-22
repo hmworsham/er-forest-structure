@@ -1,0 +1,42 @@
+# er-forest-structure_config.yml
+
+default:
+ key1: repro
+ pkgs:
+  - tidyverse
+  - ggplot2
+  - usmap
+  - ggspatial
+  - grid
+  - gridExtra
+  - patchwork
+  - gtable
+  - tagger
+  - terra
+  - sf
+  - flextable
+  - ftExtra
+  - xfun
+
+ extdata:
+  repdata: 'https://data.ess-dive.lbl.gov/datasets/doi:10.15485/2404585'
+  naip: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-ac0d8e9a3cfa648-20240702T000616683'
+  plots_cent: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-3b3190e69a13c6a-20240701T230752544'
+  plots_poly: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-9bdef858ed7643e-20240701T230752561'
+  dem: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-c123b1b369deb98-20240722T194015808'
+  trees_mask: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-7b0c0ff46c071c1-20240701T230719846'
+  trees_spp: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-49ee7757f9b2569-20240701T230719879'
+  itd_results: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-000512b86ccd996-20240702T000538123'
+  itd_opt: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-975f0caabf98feb-20240701T230752570'
+  chm: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-61b9fa4913373c4-20240701T230719885'
+  aop_bnd: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-3e01c18f9d4bedc-20240702T000609317'
+  allvars: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-b86b434da14013b-20240702T000629386'
+  gbm: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-09a40efbda23a8b-20240702T000554812'
+  forest_rast: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-5bd24ea215f31f0-20240702T000601545'
+  exp_rast: 'https://data.ess-dive.lbl.gov/catalog/d1/mn/v2/object/ess-dive-178307ad1d3f865-20240722T193039447'
+  inv: 'https://drive.google.com/uc?export=download&id=17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9&usp=drive_fs'
+
+ data:
+  raw: './data/raw'
+  int: './data/intermediate'
+  pro: './data/processed'

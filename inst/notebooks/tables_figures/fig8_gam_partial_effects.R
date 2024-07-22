@@ -5,7 +5,7 @@
 #############################
 
 # Load config
-config <- config::get(file=file.path('config', 'config.yml'))
+config <- config::get(file=file.path('ft_repro_config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -33,8 +33,7 @@ x1 <- match(names(gams), gam.names.new$o)
 names(gams) <- gam.names.new$n[x1]
 
 # Read GBM relative influence data
-# TODO: Get file link
-download.file('https://drive.usercontent.google.com/download?id=TKTKTK&confirm=true',
+download.file(config$extdata$gbm,
               destfile=file.path(tempdir(), 'gbm_relative_influence.csv'),
               method='wget')
 gbm.sums <- read.csv(file.path(tempdir(), 'gbm_relative_influence.csv'))
@@ -187,7 +186,7 @@ peplot.leg <- grab.legend(
 # Assemble plot grid and write
 ################################
 
-cairo_pdf(file.path('inst', 'ms', 'figures', 'Fig8.pdf'),
+cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_8.pdf'),
           width=190/25.4, height=190/25.4, onefile=T,
           family='Arial', bg='white')
 
