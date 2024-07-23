@@ -1,38 +1,30 @@
 # Regrid LAS catalog
-# Author: Marshall Worsham
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-31-21
+# Revised: 03-02-22
 
-# Install and load libraries
-pkgs <- c('future',
-          'lidR',
-          'raster',
-          'rgl',
-          'RColorBrewer',
-          'sf',
-          'terra',
-          'tidyverse') # Name the packages you want to use here
+#############################
+# Set up working environment
+#############################
 
-# Function to install new packages if they're not already installed
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} 
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Runs the function on the list of packages defined in pkgs
-load.pkgs(pkgs)
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
 
 # Define directories
-shapedir <- '/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary'
-datadir <- '/global/scratch/users/worsham/las_ungridded'
-outdir <- '/global/scratch/users/worsham/las_regridded2'
-neondir <- '/global/scratch/users/worsham/neon_las'
-ngdir <- '/global/scratch/users/worsham/neon_las_gaps'
+shapedir <- file.path(config$extdata$scratch, 'EastRiver', 'RMBL_2020_EastRiver_SDP_Boundary')
+datadir <- file.path(config$extdata$scratch, 'las_ungridded')
+outdir <- file.path(config$extdata$scratch, 'las_regridded')
 dir.create(outdir)
 
 ######################
 # Regrid las catalog
 ######################
+
+# Ingest LAS and set processing specs
 lascat <- readLAScatalog(datadir)
 opt_chunk_buffer(lascat) <- 0
 opt_chunk_size(lascat) <- 500

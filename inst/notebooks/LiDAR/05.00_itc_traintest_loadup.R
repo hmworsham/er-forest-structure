@@ -1,27 +1,31 @@
-# Initialize data for ITC training and testing
+# Filter points to aboveground
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-23-23
+# Revised: 07-23-24
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-## ---------------------------------------------------------------------------------------------------
+# Configure Drive auth
 drive_auth(path=config$drivesa)
 
-## ---------------------------------------------------------------------------------------------------
+# Set parallel processing scope
 workerNodes <- str_split(system('squeue -u $USER -o "%N"', intern=T)[[2]], ',', simplify=T)
 workerNodes <- rep(workerNodes, 32)
-#cl <- parallel::makeCluster(workerNodes)
 set_lidr_threads(length(workerNodes)-2)
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Data ingest
+#############################
+
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
                        pattern=config$extdata$plotpattern)
@@ -35,18 +39,19 @@ tmpfile <- drive_download(
 
 inv <- read.csv(tmpfile)
 
-## ---------------------------------------------------------------------------------------------------
 # Ingest full LAS catalog of decimated points
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Data cleaning
+#############################
+
 # Subset plot shapefiles to areas of interest (those within AOP flights)
 aois <- plotsf$PLOT_ID
 aois <- aois[grep('XX', aois, invert=T)]
 plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 
-## ---------------------------------------------------------------------------------------------------
 # Split plots into quadrants
 # div <- 2 # Number of divisions
 # ls <- list() # Empty list to store result
@@ -63,7 +68,6 @@ plotsf <- plotsf[plotsf$PLOT_ID %in% aois,]
 # Store plot quadrant names
 #  quad.names <- paste(unlist(lapply(aois, rep, 4)), seq(1,4), sep='.')
 
-## ---------------------------------------------------------------------------------------------------
 # Filter out trees not meeting criteria
 inv <- inv[grep('outside plot', inv$Comments, invert=T),] # Outside plots
 inv <- inv[inv$Status == 'Live',] # Living stems
@@ -81,35 +85,18 @@ stem.xyz = na.omit(stem.xyz)
 stem.sf <- st_as_sf(stem.xyz, coords=c('X', 'Y'), crs='EPSG:4326')
 stem.sf <- st_transform(stem.sf, crs=st_crs(plotsf))
 
-## ---------------------------------------------------------------------------------------------------
 # Find intersection of stems and plots
 stems.in.plots <- st_intersection(plotsf, stem.sf)
 
-## ---------------------------------------------------------------------------------------------------
 # Find intersection of stems and quadrants
 # Returns an `sf` object with each tree associated with a quadrant (and its parent plot)
 # quads <- st_buffer(plotsf, 5)
 # stems.in.quads <- st_intersection(quads, stem.sf)
 
+#############################
+# Processing
+#############################
 
-## ---------------------------------------------------------------------------------------------------
-# Clip LAS points to all plot quadrants using a determined buffer
-# lasplots <- mclapply(quad.names, function(x){
-#   p = plotsf[plotsf$QUADRANT==x,][1]
-#   bnd = st_buffer(p$geometry, endCapStyle='ROUND', 1)
-#   pc = clip_roi(lascat, bnd)
-#   return(pc)
-#   },
-#   mc.cores = getOption("mc.cores", length(workerNodes)-2))
-#
-# # Check
-# assertthat::are_equal(length(lasplots), length(quad.names), 68)
-#
-# # Add names to list of lasplots
-# names(lasplots) <- quad.names
-
-
-## ---------------------------------------------------------------------------------------------------
 #  Clip LAS points to all plots using a determined buffer
 lasplots <- mclapply(aois, function(x){
   p = plotsf[plotsf$PLOT_ID==x,][1]

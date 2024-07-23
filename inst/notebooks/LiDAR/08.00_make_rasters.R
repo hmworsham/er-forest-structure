@@ -1,24 +1,28 @@
-## ---------------------------------------------------------------------------------------------------
+# Make rasters of gridded structure metrics from detected trees
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-21-24
+# Revised: 07-23-24
+
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-# Set number of cores
-nCores <- as.integer(availableCores()-2)
-
-## ---------------------------------------------------------------------------------------------------
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
-## ---------------------------------------------------------------------------------------------------
-## Ingest data
+# Define parallel scope
+nCores <- as.integer(availableCores()-2)
+
+#############################
+# Data ingest
+#############################
 
 # Ingest trees
 alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_5m.csv'))
@@ -28,8 +32,10 @@ trees.spp <- read_csv(file.path(config$extdata$scratch, 'trees_species_masked_5m
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
                     pattern=config$extdata$bndpattern)
 
-## ---------------------------------------------------------------------------------------------------
-# Clean trees
+
+#############################
+# Data cleaning
+#############################
 
 # Remove trees missing geoinfo
 alltrees <- alltrees[!is.na(alltrees$X) & !is.na(alltrees$Y),]
@@ -46,7 +52,6 @@ ptsf <- st_as_sf(alltrees,
 returns <- data.frame(x=alltrees$X, y=alltrees$Y, z=alltrees$H, d=alltrees$DBH_est, ba=alltrees$BA_est)
 coordinates(returns) <- ~x+y
 
-## ---------------------------------------------------------------------------------------------------
 # Clean trees_spp
 
 # Remove trees missing geoinfo
@@ -55,7 +60,10 @@ trees.spp <- trees.spp[!is.na(trees.spp$X) & !is.na(trees.spp$Y),]
 # Remove unlikely trees
 trees.spp <- trees.spp[trees.spp$Z<=60,]
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up raster frame
+#############################
+
 # Initialize the raster frame
 reso <- 100
 ncells <- 100^2
@@ -63,10 +71,10 @@ rs = raster(matrix(1:ncells,reso,reso), xmx=st_bbox(ptsf)[3], xmn=st_bbox(ptsf)[
 res(rs) <- 100
 ncell(rs)
 values(rs) <- 1:ncell(rs)
-# plot(rs, col=sample(rainbow(ncell(rs))))
 
-## ---------------------------------------------------------------------------------------------------
+#############################
 # Compute rasters
+#############################
 
 # Height rasters
 height.raster = rasterize(returns[,1:2], rs, returns$z, fun=function(x, ...) mean(x, na.rm=T))
@@ -106,33 +114,38 @@ cls <- c('white', mako(20))
 plot(density.pien.raster, col=cls)
 plot(bnd$geometry, col=NA, border='grey10', axes=T, labels=T, add=T)
 
-## ---------------------------------------------------------------------------------------------------
+#############################
 # Collate rasters
+#############################
+
+# Assemble as list
 rasters <- c(
-  # 'ba_100m'=ba.raster,
-  # 'density_100m'=density.raster,
+  'ba_100m'=ba.raster,
+  'density_100m'=density.raster,
   'density_abla_100m'=density.abla.raster,
   'density_pien_100m'=density.pien.raster,
-  'density_pico_100m'=density.pico.raster#,
-  # 'diam_10pctl_100m'=diamq.raster[[1]],
-  # 'diam_25pctl_100m'=diamq.raster[[2]],
-  # 'diam_50pctl_100m'=diamq.raster[[3]],
-  # 'diam_75pctl_100m'=diamq.raster[[4]],
-  # 'diam_90pctl_100m'=diamq.raster[[5]],
-  # 'diam_95pctl_100m'=diamq.raster[[6]],
-  # 'diam_qmd_100m'=qmd.raster,
-  # 'height_10pctl_100m'=heightq.raster[[1]],
-  # 'height_25pctl_100m'=heightq.raster[[2]],
-  # 'height_50pctl_100m'=heightq.raster[[3]],
-  # 'height_75pctl_100m'=heightq.raster[[4]],
-  # 'height_80pctl_100m'=heightq.raster[[5]],
-  # 'height_90pctl_100m'=heightq.raster[[6]],
-  # 'height_95pctl_100m'=heightq.raster[[7]],
-  # 'height_mean_100m'=height.raster,
-  # 'height_skew_100m'=heightsk.raster
+  'density_pico_100m'=density.pico.raster,
+  'diam_10pctl_100m'=diamq.raster[[1]],
+  'diam_25pctl_100m'=diamq.raster[[2]],
+  'diam_50pctl_100m'=diamq.raster[[3]],
+  'diam_75pctl_100m'=diamq.raster[[4]],
+  'diam_90pctl_100m'=diamq.raster[[5]],
+  'diam_95pctl_100m'=diamq.raster[[6]],
+  'diam_qmd_100m'=qmd.raster,
+  'height_10pctl_100m'=heightq.raster[[1]],
+  'height_25pctl_100m'=heightq.raster[[2]],
+  'height_50pctl_100m'=heightq.raster[[3]],
+  'height_75pctl_100m'=heightq.raster[[4]],
+  'height_80pctl_100m'=heightq.raster[[5]],
+  'height_90pctl_100m'=heightq.raster[[6]],
+  'height_95pctl_100m'=heightq.raster[[7]],
+  'height_mean_100m'=height.raster,
+  'height_skew_100m'=heightsk.raster
 )
 
-## ---------------------------------------------------------------------------------------------------
+################
+# Mask rasters
+################
 # Mask rasters to density >=100 stems / ha
 
 # Across rasters, assign NA to all pixels with forest density <= 100 stems / ha
@@ -145,35 +158,37 @@ rasters <- lapply(rasters, \(x) {
   y
 })
 
-## ---------------------------------------------------------------------------------------------------
-# Write rasters
+#############################
+# Write
+#############################
 
 pngpal <- list(
-  # cividis(20),
-  # viridis(20),
+  cividis(20),
+  viridis(20),
   mako(20),
   mako(20),
-  mako(20)#,
-  # heat.colors(20),
-  # inferno(20),
-  # inferno(20, direction=-1),
-  # cividis(20),
-  # rocket(20),
-  # magma(20),
-  # magma(20),
-  # magma(20),
-  # plasma(20),
-  # heat.colors(20),
-  # magma(20),
-  # magma(20),
-  # magma(20),
-  # magma(20),
-  # magma(20),
-  # magma(20)
+  mako(20),
+  heat.colors(20),
+  inferno(20),
+  inferno(20, direction=-1),
+  cividis(20),
+  rocket(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  plasma(20),
+  heat.colors(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20),
+  magma(20)
 )
 
 assertthat::are_equal(length(pngpal), length(rasters))
 
+# Write PNG
 lapply(seq_along(rasters), \(x) {
   runpng(rasters[[x]],
          bnd,
@@ -181,9 +196,11 @@ lapply(seq_along(rasters), \(x) {
          file.path(config$extdata$scratch, 'pngs', 'ls_masked', paste0(names(rasters)[x], '_masked.png')))
 })
 
+# Write GEOTiff
 lapply(seq_along(rasters), \(x){
   writeRaster(rasters[[x]],
-              file.path(config$extdata$scratch, 'tifs', 'ls_masked', paste0(names(rasters)[x], '_masked.tif')),
+              file.path(config$extdata$scratch, 'tifs', 'ls_masked',
+                        paste0(names(rasters)[x], '_masked.tif')),
               overwrite=T)
 })
 

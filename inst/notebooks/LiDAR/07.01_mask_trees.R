@@ -1,25 +1,28 @@
-## ---------------------------------------------------------------------------------------------------
+# Mask predicted trees
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-21-24
+# Revised: 07-23-24
+
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-# Set number of cores
+# Configure drive auth
+drive_auth(path=config$drivesa)
+
+# Define parallel scope
 nCores <- as.integer(availableCores()-2)
 
-## ---------------------------------------------------------------------------------------------------
-# Configure Drive auth
-drive_auth(path=config$drivesa)
-register_google(key=readLines(config$mapkey))
-
-## ---------------------------------------------------------------------------------------------------
-# Ingest data
+#############################
+# Data ingest
+#############################
 
 # Ingest AOP boundary
 bnd <- load.plot.sf(path=as_id(config$extdata$bndid),
@@ -80,8 +83,9 @@ roads <- load.plot.sf(path=as_id(config$extdata$roadsid),
 # Ingest template forest structure raster to resample conifers to
 template <- rast(file.path(config$extdata$scratch, 'tifs', 'ls', 'density_100m.tif'))
 
-## ---------------------------------------------------------------------------------------------------
+##########################################################
 # Create conifer mask from Breckheimer classification data
+##########################################################
 
 # Set all non-conifer classes in landcover data to NA
 # needle-leaf trees = 1
@@ -119,8 +123,9 @@ plot(conif.sieve, col=c('blue', NA), add=T)
 
 writeRaster(conif.sieve, file.path(config$extdata$scratch, 'tifs', 'conifers_100m.tif'), overwrite=T)
 
-## ---------------------------------------------------------------------------------------------------
+##########################################################
 # Create conifer mask from Falco classification data
+##########################################################
 
 # Set all non-conifer classes in Falco data to NA
 sp.class[!sp.class %in% c(45:47)] <- NA
@@ -166,8 +171,9 @@ plot(conif.sieve, col=c('blue', NA), alpha=0.4, add=T)
 # Write Falco conif sieve
 writeRaster(nf.conif.sieve, file.path(config$extdata$scratch, 'tifs', 'nf_conifers_5m.tif'), overwrite=T)
 
-## ---------------------------------------------------------------------------------------------------
+##########################################################
 ## Overlay masks on NAIP imagery
+##########################################################
 
 # Read in saved sieves
 nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_100m.tif'))
@@ -192,9 +198,9 @@ ggmap(er.bmap) +
   tidyterra::geom_spatraster(data=nf.conif.sieve.fact, aes(fill=label), alpha=0.2) +
   scale_fill_gradientn(colors='turquoise', na.value=NA)
 
-
-## ---------------------------------------------------------------------------------------------------
+##########################################################
 # Add density and other masks
+##########################################################
 
 # Read in saved sieves
 nf.conif.sieve <- rast(file.path(config$extdata$scratch, 'tifs', 'nf_conifers_5m.tif'))
@@ -216,7 +222,6 @@ plot(naip)
 plot(conif.density.mask, col='red', add=T)
 plot(mask(template, conif.density.mask))
 
-## ---------------------------------------------------------------------------------------------------
 # Buffer AOP boundary inward 100m
 bnd100 <- st_buffer(bnd, -100)
 
@@ -246,8 +251,9 @@ writeRaster(conif.density.bnd.mfp.dev.rd.mask,
             file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'),
             overwrite=T)
 
-## ---------------------------------------------------------------------------------------------------
+##########################################################
 ## Mask trees and write out
+##########################################################
 
 # Read full mask
 full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'))

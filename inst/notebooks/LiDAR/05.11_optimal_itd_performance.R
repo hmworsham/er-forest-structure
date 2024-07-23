@@ -1,7 +1,11 @@
-### ITC optimization using LayerStacking
+# Check optimal ITD performance
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-08-24
+# Revised: 07-23-24
 
-## Workspace setup
-## -----------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -13,8 +17,9 @@ load.pkgs(config$pkgs)
 # Configure Drive auth
 drive_auth(path=config$drivesa)
 
-## Load data: optimized segmented trees and matched trees
-## -----------------------------------------------------------------------------
+#############################
+# Data ingest
+#############################
 
 # Ingest optimized segmented trees
 opt.trees <- drive_ls(as_id('1aPYSoWdXJxX8L81ABSvCZuwi_CRzgd9U'))
@@ -36,8 +41,10 @@ ls.match <- drive_download(
 
 ls.match <- read.csv(ls.match)
 
-## Compare detected and reference trees
-## -----------------------------------------------------------------------------------------
+#############################################
+# Compare detected and reference trees
+#############################################
+
 pred.med.ht <- median(ls.match$Zpred, na.rm=T)
 pred.sd.ht <- sd(ls.match$Zpred, na.rm=T)
 pred.p90.ht <- quantile(ls.match$Zpred, .9, na.rm=T)
@@ -49,8 +56,9 @@ ht.delta <- ls.match %>%
   filter(src==1) %>%
   summarise(mean(Zpred-Zobs, na.rm=T))
 
-## Compare detected and reference trees by plot
-## ------------------------------------------------------------------------------------------
+################################################
+# Compare detected and reference trees by plot
+################################################
 
 # Compare median height by site
 ls.detect.med.l <- ls.match %>%
@@ -132,6 +140,10 @@ ls.match.comp.medh <- bind_rows(ls.detect.med.l, ls.detect.match.med.l,
 #   mutate(name=factor(name, levels=c('All detected', 'All reference',
 #                                     'Matched detected', 'Matched reference')))
 
+#############################################
+# Plots
+#############################################
+
 # Plot: median height comparison barplot
 hcomp.colors <- c(brewer.pal(9, name='Blues')[c(6,8)],
                   brewer.pal(9, name='Greens')[c(4,8)])
@@ -168,8 +180,9 @@ hcomp.plt <- ggplot(ls.match.comp.medh, aes(x=site, y=Median, fill=factor(src)))
 #   labs(x='Site', y='90th percentile of height (m)') +
 #   ggthemes::theme_calc(base_size=18)
 
-## Compare detected and reference trees across the full domain
-## -------------------------------------------------------------------------------
+###################################################
+# Compare detected and reference trees full domain
+###################################################
 
 ## Reformat matches
 ls.match.l <- ls.match %>%
@@ -212,7 +225,7 @@ ls.ref.l <- ls.match %>%
                names_to='dim')
 
 ##########################
-# VERSION 1: XYZ DENSITY
+# Plot v1: XYZ density
 #########################
 
 # Kernel density estimate
@@ -234,7 +247,7 @@ skill.density <- ggplot(df.matched.plt.l, aes(x=value, group=src, color=factor(s
 skill.density
 
 ##########################
-# VERSION 2: XYZ DENSITY
+# Plot v2: XYZ density
 #########################
 
 df.matched.plt.l.z <- df.matched.plt.l %>%
@@ -274,8 +287,9 @@ hcomp.plt /
 
 dev.off()
 
-## Map example tree detections
-## -----------------------------------------------------------------------------
+#############################################
+# Map example tree detections
+#############################################
 
 # Ingest plot boundaries
 plotsf <- load.plot.sf(path=as_id(config$extdata$plotid),
@@ -398,7 +412,7 @@ uc2.match.map <- uc2.base.map +
         )
 
 # saveRDS(uc2.match.map, 'map')
-#uc2.match.map <- readRDS(file.path(config$data$int, 'matchmap.Rda'))
+# uc2.match.map <- readRDS(file.path(config$data$int, 'matchmap.Rda'))
 
 cairo_pdf('~/Desktop/Fig2.pdf', width=140/25.4, height=140/25.4, onefile=T,
           family='Arial', bg='white')
@@ -406,91 +420,3 @@ cairo_pdf('~/Desktop/Fig2.pdf', width=140/25.4, height=140/25.4, onefile=T,
 print(uc2.match.map)
 
 dev.off()
-
- # SCRATCH
-# base.map <- ggplot() +
-#   geom_raster(data=uc2.naip.df, aes(x=x, y=y, fill=rgb(red=red,
-#                                                        blue=blue,
-#                                                        green=green,
-#                                                        maxColorValue = 255))) +
-#   scale_fill_identity() +
-#   coord_equal()
-#
-# base.map
-
-
-# Map SR-PVG1
-
-# # Define target site and subset matches to all predicted
-# pvg1.match <- ls.match[ls.match$site=='SR-PVG1',]
-# pvg1.pred <- pvg1.match[pvg1.match$src==1,]
-#
-# # Reformat matches
-# pvg1.l <- pvg1.pred %>%
-#   pivot_longer(cols=c(treeID, obs),
-#                names_to='Source',
-#                values_to='treeID') %>%
-#   arrange(pair_id) %>%
-#   mutate(Source=ifelse(Source=='treeID', 'Detected', 'Observed')) %>%
-#   mutate(across(Zobs:Yobs, ~ ifelse(Source=='Detected', NA, .)),
-#          across(Zpred:Ypred, ~ ifelse(Source=='Observed', NA, .)),
-#          Z = coalesce(Zobs, Zpred),
-#          X = coalesce(Xobs, Xpred),
-#          Y = coalesce(Yobs, Ypred),
-#          Zscale = Z^2)
-#
-# # Subset plot boundaries to target site
-# pvg1.bnd <- plotsf[plotsf$PLOT_ID=='SR-PVG1',]
-#
-# # Clip las to plot boundaries
-# pvg1.las <- clip_roi(lascat, st_buffer(pvg1.bnd, 8, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 8))
-# st_crs(pvg1.las) <- st_crs(pvg1.bnd)
-#
-# # Rasterize canooy
-# pvg1.chm.pitfree.05 <- rasterize_canopy(pvg1.las, 0.5, pitfree(subcircle=1), pkg = "terra")
-# #pvg1.chm.pitfree.05 <- crop(pvg1.chm.pitfree.05, st_buffer(pvg1.bnd, 20, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 5))
-# plot(pvg1.chm.pitfree.05, col=rev(brewer.pal(11,'Spectral')))
-#
-# # Smooth canopy
-# kernel <- matrix(1,3,3)
-# pvg1.chm.smooth <- focal(pvg1.chm.pitfree.05, w = kernel, fun = median, na.rm = TRUE)
-# pvg1.chm.smooth <- pvg1.chm.pitfree.05
-# plot(pvg1.chm.smooth, col=rev(brewer.pal(11,'Spectral')))
-#
-# # Coerce to df
-# pvg1.chm.df <- as.data.frame(pvg1.chm.pitfree.05, xy=T)
-#
-# # Clip naip to plot boundaries
-# pvg1.naip <- crop(naip, st_buffer(pvg1.bnd, 10, endCapStyle ='SQUARE', joinStyle='MITRE', mitreLimit = 10))
-# pvg1.naip.df <- as.data.frame(pvg1.naip, xy=T)
-# names(pvg1.naip.df)[3:5] <- c('green', 'blue', 'red')
-#
-# # Plot
-# nclr <- nrow(pvg1.l)/2
-#
-# pvg1.match.map <- ggplot() +
-#   geom_raster(data=pvg1.chm.df, aes(x=x, y=y, fill=Z)) +
-#   scale_fill_gradient(low='#1A1A1A', high='#FFFFFF', name='Canopy height (m)')
-#
-# pvg1.match.map <- pvg1.match.map +
-#   geom_point(data=pvg1.l, aes(x=X, y=Y, size=Zscale,
-#                               shape=factor(Source),
-#                               color=factor(pair_id)),
-#              inherit.aes = F) +
-#   geom_text(data=pvg1.l, aes(x=X, y=Y,
-#                              size=36,
-#                              color=factor(pair_id),
-#                              label=factor(pair_id)),
-#             position=position_jitter(width=1,height=1)) +
-#   scale_color_manual(values=rainbow(nclr, s=0.75)[sample(1:nclr, nclr)],
-#                      na.value='white') +
-#   scale_shape_manual(values=c(1,3), name='Tree data source') +
-#   geom_sf(data=pvg1.bnd, color='gold', fill=NA) +
-#   guides(color='none', size='none') +
-#   labs(x='Longitude', y='Latitude') +
-#   ggthemes::theme_calc(base_size=18) +
-#   theme(axis.text = element_text(size=10))
-#
-#
-# gridExtra::grid.arrange(uc2.match.map, pvg1.match.map)
-

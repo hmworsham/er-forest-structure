@@ -14,10 +14,11 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-# Name directories
-datadir <- '/global/scratch/users/worsham/geolocated_returns'
-wfdir <- '/global/scratch/users/worsham/waveform_binary_chunks'
-outdir <- '/global/scratch/users/worsham/hyperpointcloud'
+# Define directories
+
+datadir <- file.path(config$extdata$scratch, 'geolocated_returns')
+wfdir <- file.path(config$extdata$scratch, 'waveform_binary_chunks')
+outdir <- file.path(config$extdata$scratch, 'hyperpointcloud')
 
 #############################
 # Data ingest

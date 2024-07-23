@@ -18,16 +18,10 @@ load.pkgs(config$pkgs)
 # Data ingest
 #############################
 
-# Name directories
-datadir <- '/global/scratch/users/worsham/geolocated_returns'
-wfdir <- '/global/scratch/users/worsham/waveform_binary_chunks'
-outdir <- '/global/scratch/users/worsham/hyperpointcloud'
-
-# Setup workspace
-scrdir <- '/global/scratch/users/worsham'
-shapedir <- '/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary'
-datadir <- '/global/scratch/users/worsham/hyperpointcloud'
-outdir <- '/global/scratch/users/worsham/las_ungridded'
+# Define directories
+shapedir <- file.path(config$extdata$scratch, 'EastRiver', 'RMBL_2020_EastRiver_SDP_Boundary')
+datadir <- file.path(config$extdata$scratch, 'hyperpointcloud')
+outdir <- file.path(config$extdata$scratch, 'las_ungridded')
 
 # Ingest geolocated points
 infiles <- list.files(datadir, full.names=T)

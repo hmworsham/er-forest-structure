@@ -1,31 +1,27 @@
-# Downsample (decimate) points to uniform density
-# Load libraries
+# Filter points to aboveground
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-23-23
+# Revised: 07-23-24
+
+#############################
+# Set up working environment
+#############################
+
+# Set RGL option
 options(rgl.useNULL=TRUE)
 
-# Install and load libraries
-pkgs <- c('future',
-          'lidR',
-          'raster',
-          'rgl',
-          'terra') # Name the packages you want to use here
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Function to install new packages if they're not already installed
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} 
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
 
-# Runs load.pkgs on the list of packages defined in pkgs
-load.pkgs(pkgs)
-
-# Setup workspace
-scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
-shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_abg')
-neondir <- file.path(scrdir, 'neon_las_regridded')
-outdir <- file.path(scrdir, 'las_decimated')
+# Define directories
+shapedir <- file.path(config$extdata$scratch, 'EastRiver', 'RMBL_2020_EastRiver_SDP_Boundary')
+datadir <- file.path(config$extdata$scratch, 'las_abg')
+neondir <- file.path(config$extdata$scratch, 'neon_las_regridded')
+outdir <- file.path(config$extdata$scratch, 'las_decimated')
 dir.create(outdir)
 
 ############################
@@ -82,7 +78,7 @@ plan(multisession, workers = 18L)
 #lascat.tst <- lascat[1550:1560,]
 dp <- decimate_points(lascat, homogenize(48, 4))
 
-# check decimation results
+# Check decimation results
 #dp <- dp[dp['Number.of.point.records']$Number.of.point.records>0,]
 summary(dp)
 plot(lascat.tst['Number.of.point.records'], main='N points per grid cell (Original)')
@@ -92,33 +88,3 @@ las <- readLAS(infiles[9])
 plot(las[1:50000])
 hist(las$Z)
 rglwidget()
-
-
-
-
-
-
-# Select points randomly to reach an overall density of 1
-thinned1 <- decimate_points(las, random(1))
-plot(rasterize_density(las))
-plot(rasterize_density(thinned1))
-
-plot(las, bg='white', legend=T)
-rglwidget()
-
-plot(thinned1, bg='white', legend=T)
-rglwidget()
-
-# Select points randomly to reach an homogeneous density of 1
-thinned2 <- decimate_points(las, homogenize(1,5))
-#plot(rasterize_density(thinned2))
-
-# Select the highest point within each pixel of an overlayed grid
-thinned3 = decimate_points(las, highest(5))
-#plot(thinned3)
-
-#################
-# Check results
-################
-lascat1 <- readLAScatalog(infiles)
-lascat2 <- readLAScatalog(list.files(outdir, full.names=T)

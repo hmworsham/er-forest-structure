@@ -14,9 +14,21 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-logdir <- '/global/scratch/users/worsham/logs'
+# Define directories
+logdir <- file.path(config$extdata$scratch, 'logs')
+
+#############################
+# Set up working environment
+#############################
+
+# Read logs
 log <- read.csv(file.path(logdir, 'wf_processing_log.csv'))
 
+#############################
+# Processing
+#############################
+
+# Check logs
 colnames(log)
 log %>%
   group_by(flightpath) %>%

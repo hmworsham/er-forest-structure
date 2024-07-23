@@ -1,12 +1,14 @@
-# Predict DBH on modeled trees
+# Predict species of modeled trees
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-21-24
+# Revised: 07-23-24
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -15,15 +17,14 @@ load.pkgs(config$pkgs)
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
-# Set number of cores
+# Define parallel scope
 nCores <- as.integer(availableCores()-2)
 
-## ---------------------------------------------------------------------------------------------------
-## Data ingest
+#############################
+# Data ingest
+#############################
 
 # Ingest detected trees
-# treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m_csv', pattern='.csv', full.names=T)
-# trees <- mclapply(treefiles, read.csv, mc.cores=getOption('mc.cores', nCores))
 alltrees <- read_csv(file.path(config$extdata$scratch, 'trees_masked_5m.csv'))
 
 # Cast trees as sf
@@ -53,7 +54,10 @@ sp.codes <- sp.codes %>%
 # Ingest CHM
 chm.masked <- rast(file.path(config$extdata$scratch, 'chm_full_extent', 'chm_smooth_masked.tif'))
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Assign species
+#############################
+
 ## Assign species to tree objects using height-dependent buffer for trees > 90th percentile height
 
 # Filter to 90th percentile height
@@ -71,8 +75,9 @@ stems.spp.sf <- left_join(stems.spp.sf, sp.codes, by='Pixel_Code')
 data.table::fwrite(stems.spp.sf,
                    file.path(config$extdata$scratch, 'stems_species.csv'))
 
-## ---------------------------------------------------------------------------------------------------
-## Crown segmentation approach
+#############################
+# Crown segmentation approach
+#############################
 
 # Ingest trees
 treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
@@ -127,6 +132,9 @@ segtrees <- function(treefile, chmraster, spraster, spcodes) {
 mclapply(treefiles, segtrees, chm.masked, sp.class, sp.codes,
                  mc.cores=getOption('mc.cores', nCores)
                  )
+#############################
+# Mask and write
+#############################
 
 # Ingest tree species csvs
 trees.spp.fn <- list.files(file.path(config$extdata$scratch, 'trees_species_100m_csv'), full.names=T)

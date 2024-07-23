@@ -1,6 +1,12 @@
 # Pull detection summary statistics and figures
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-21-24
+# Revised: 07-23-24
 
-## --------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
+
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
 
@@ -8,15 +14,15 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-# Set number of cores
-nCores <- as.integer(availableCores()-2)
-
-## ---------------------------------------------------------------------------------------------------
-## Configure Drive auth
+# Configure drive auth
 drive_auth(path=config$drivesa)
 
-## ---------------------------------------------------------------------------------------------------
-## Ingest data
+# Define parallel scope
+nCores <- as.integer(availableCores()-2)
+
+#############################
+# Data ingest
+#############################
 
 # Ingest detected trees
 alltrees <- read_csv(
@@ -39,8 +45,9 @@ tmpfile <- drive_download(
 
 inv <- read.csv(tmpfile)
 
-## ---------------------------------------------------------------------------------------------------
-## Clean data
+#############################
+# Data cleaning
+#############################
 
 # Clean field data
 inv <- inv %>%
@@ -57,9 +64,10 @@ inv <- inv %>%
 # Remove unlikely detected trees
 alltrees <- alltrees[alltrees$H<=60,]
 
-## ---------------------------------------------------------------------------------------
+####################################
+# Summary stats on inventory trees
+####################################
 
-## Summary stats on inventory trees
 inv.qmd <- sqrt(mean(inv$DBH_Avg_CM^2, na.rm=T))
 inv.sd.dbh <- sd(inv$DBH_Avg_CM, na.rm=T)
 inv.median.ht <- median(inv$Height_Avg_M, na.rm=T)
@@ -80,8 +88,9 @@ data.frame('QMD'=inv.qmd,
            'SD Height'=inv.sd.ht,
            'Max height'=inv.max.ht)
 
-## ------------------------------------------------------------------------------------------
+######################################################
 ## Summary stats on detected trees in training
+######################################################
 
 ls.match.det <- ls.match %>%
   filter(src==1) %>%
@@ -109,8 +118,9 @@ data.frame('QMD'=ls.qmd,
            'SD Height'=ls.sd.ht,
            'Max Height'=ls.max.ht)
 
-## ------------------------------------------------------------------------------------------
-## Summary stats on ALL detected trees
+###############################################
+# Summary stats on ALL detected trees
+###############################################
 
 ntrees <- nrow(alltrees)
 
@@ -130,8 +140,9 @@ data.frame('QMD'=qmd,
            'Percentile-25 Height'=p25.ht,
            'Percentile-75 Height'=p75.ht)
 
-
-## Corrections on ALL detected trees
+####################################################
+# Esimate correction factor on ALL detected trees
+####################################################
 
 alltrees.corx <- alltrees %>%
   mutate(bin = cut(H, breaks=seq(0,max(H),1))) %>%
@@ -160,9 +171,6 @@ lstrees.corx <- full_join(lstrees.obs.corx, lstrees.det.corx, by='bin') %>%
 lstrees.corx.l <- lstrees.corx %>%
   pivot_longer(cols=c(f_obs, f_det))
 
-ggplot(lstrees.corx.l, aes(x=bin, y=value, group=name, fill=name)) +
-  geom_col(position='dodge')
-
 alltrees.corx <- alltrees.corx %>%
   full_join(lstrees.corx, by='bin') %>%
   mutate(n_corr=n*pct_scale,
@@ -173,6 +181,10 @@ alltrees.corx.l <- alltrees.corx %>%
   pivot_longer(cols=c(n, n_corr)) %>%
   mutate(name=ifelse(name=='n', 'Pre-correction', 'Post-correction'))
 
+# Number of corrected trees
+sum(alltrees.corx$n_corr, na.rm=T)
+
+# Plot corrected vs original
 alltrees.corx.plt <- ggplot(alltrees.corx.l, aes(x=hbin, y=value, group=name, fill=name)) +
   geom_col(width=.8, position=position_dodge(.8)) +
   scale_fill_manual(values=c('#E31A1C', '#FD8D3C'), name=NULL) +
@@ -189,7 +201,3 @@ cairo_pdf('~/Desktop/Fig4.pdf', width=90/25.4, height=90/25.4, onefile=T,
 print(alltrees.corx.plt)
 
 dev.off()
-
-
-# Number of corrected trees
-sum(alltrees.corx$n_corr, na.rm=T)

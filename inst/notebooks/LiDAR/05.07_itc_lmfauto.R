@@ -1,31 +1,34 @@
-### ITC optimization using LMF fixed window
+# ITD optimization using LMF-auto
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-24-23
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # LMF auto parameters
 # No params
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Run optimization
+#############################
+
 testlmf.auto <- lapply(lasplots, lmf.auto.opt, hmin=1.3)
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Clean results
+#############################
 
 # Unnest results of algorithm
 # testlmf.auto <- unlist(testlmf.auto, recursive=F)
@@ -52,8 +55,9 @@ testlmf.auto <- Filter(function(x) nrow(x) > 0 , testlmf.auto)
 # Update run IDs after filtering
 lmf.auto.runid <- lmf.auto.runid[lmf.auto.runid %in% names(testlmf.auto)]
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Bipartite matching
+#############################
 
 ### Run matching
 lmf.auto.match <- mclapply(lmf.auto.runid,
@@ -70,13 +74,12 @@ lmf.auto.match <- data.frame(do.call('rbind', lmf.auto.match))
 lmf.auto.match$quad <- unlist(lapply(strsplit(rownames(lmf.auto.match), '_'), '[',1))
 lmf.auto.match$paramset <- unlist(lapply(strsplit(rownames(lmf.auto.match), '_'), '[', 2))
 
-## Write results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Write results
+#############################
+
 write.csv(lmf.auto.match,
-          file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
+          file.path(config$extdata$scratch,
                     'itc_results',
                     'lmfauto_itc_results.csv'),
           row.names=T)

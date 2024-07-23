@@ -1,4 +1,11 @@
-# ITC model selection
+# ITD model selection
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-08-24
+# Revised: 07-23-24
+
+#############################
+# Set up working environment
+#############################
 
 # Load config
 config <- config::get(file=file.path('config', 'config.yml'))
@@ -7,10 +14,18 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
+#############################
+# Data ingest
+#############################
+
 # Read itc optimization results
 itc.res.files <- list.files(file.path(config$data$int, 'itc_results'),
                             pattern='results.csv', full.names=T)
 itc.res <- lapply(itc.res.files, read.csv)
+
+#############################
+# Clean data
+#############################
 
 # Bind into one dataframe
 itc.res <- bind_rows(itc.res, .id='mi')
@@ -20,6 +35,10 @@ mod.names <- unlist(lapply(str_split(itc.res.files, '/|_'), '[', 6))
 mod.names <- data.frame(mi=as.character(1:8), model=mod.names)
 itc.res <- left_join(itc.res, mod.names, by='mi')
 itc.res$paramset <- as.integer(str_replace(itc.res$paramset, 'p', ''))
+
+#############################
+# Check results
+#############################
 
 # Check number of unique parameter combinations per model
 itc.pcombs <- itc.res %>%
@@ -119,6 +138,10 @@ best.mean <- best.res %>%
 
 names(best.mean) <- c('Model', names(opt.mean))
 best.mean <- best.mean[c(5, 1:4, 6:8),]
+
+#############################
+# Table output
+#############################
 
 # Flextables
 opt.mean.ft <- flextable(opt.mean)

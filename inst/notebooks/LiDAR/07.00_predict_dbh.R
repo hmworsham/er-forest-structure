@@ -1,8 +1,14 @@
 # Predict DBH on modeled trees
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-02-24
+# Revised: 07-23-24
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('config','config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -11,14 +17,18 @@ load.pkgs(config$pkgs)
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
-# Set number of cores
+# Define parallel scope
 nCores <- as.integer(availableCores()-2)
 
-## ---------------------------------------------------------------------------------------------
-## Data ingest
+# Define directories
+datadir <- file.path(config$extdata$scratch, 'trees_ls_100m')
+
+#############################
+# Data ingest
+#############################
 
 # Ingest trees
-treefiles <- list.files('/global/scratch/users/worsham/trees_ls_100m', pattern='.shp', full.names=T)
+treefiles <- list.files(datadir, pattern='.shp', full.names=T)
 
 # Ingest field data
 tmpfile <- drive_download(
@@ -29,8 +39,9 @@ tmpfile <- drive_download(
 
 inv <- read.csv(tmpfile)
 
-## ---------------------------------------------------------------------------------------------------
-## Cleaning and processing
+#############################
+# Clean data
+#############################
 
 # Select the variables of interest
 
@@ -62,7 +73,10 @@ ggplot(allom, aes(x=Height_Avg_M, y=DBH_Avg_CM)) +
 #   group_by(bin) %>%
 #   summarise(across(Height_Avg_M:DBH_Avg_CM, \(x) mean(x, na.rm=T)))
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Setup allometry estimation
+#############################
+
 ## Jucker approach
 
 RMSE<-function(Obs,Pred){sqrt(mean((Obs-Pred)^2))} # function to calculate Root Mean Square Error (RMSE) of model predictions
@@ -77,7 +91,9 @@ Prediction_interval<-function(t_crit,sigma_v,n,x_new,x_mean,x_sd){
 allom.bins <- allom %>%
   mutate(bin = ntile(log(DBH_Avg_CM), 20))
 
-#### Data binning procedure
+#############################
+# Data binning
+#############################
 
 ## Create empty dataframes to store model fit statistics for each randomization step
 reps<-100
@@ -191,8 +207,9 @@ err.rand.plt <- function() {
   }
 }
 
-
-# Estimating uncertainty for models fit to binned data
+#####################################################
+# Estimate uncertainty for models fit to raw data
+#####################################################
 
 # Final model - updates parameters based on means from prior runs
 mean.raw.coef <- summarise(raw.model, across(alpha:CV, \(x) sqrt(mean(x^2))))
@@ -207,6 +224,7 @@ H.new <- seq(min(log(val.data$H)), max(log(val.data$H)),len=100) # new data for 
 H.mean <- mean(log(val.data$H)) # mean value of the explanatory variable
 H.sd <- sd(log(val.data$H)) # standard deviation of the explanatory variable
 
+# Plot
 plot(DBH ~ H, val.data,
      col='grey80', pch=16, cex=0.2, bty="l",
      log='xy', xlim=c(0.5,500), ylim=c(1,300),
@@ -227,7 +245,9 @@ points(PI_lo~H,new.dat[new.dat$PI_lo>1,],type="l",col="#4682B4",lty=2,lwd=2)
 points(PI_sig_hi~H,new.dat[new.dat$PI_hi>1,],type="l",col="black",lty=3,lwd=1)
 points(PI_sig_lo~H,new.dat[new.dat$PI_lo>1,],type="l",col="black",lty=3,lwd=1)
 
-# Running on validation data -------------
+########################
+# Run on validation data
+########################
 
 # 1:1 plot for val data
 # Select the variables of interest
@@ -284,6 +304,7 @@ allom.val.plt <- ggplot(allom.val, aes(x=DBH, y=DBH_pred, color=dens)) +
   theme(aspect.ratio = 1,
         legend.key.height=unit(0.1, 'npc'))
 
+# Export plot
 cairo_pdf('~/Desktop/FigS3a.pdf', width=190/25.4, height=190/25.4, onefile=T,
           family='Arial', bg='white')
 
@@ -298,9 +319,11 @@ allom.val.plt
 
 dev.off()
 
-## ---------------------------------------------------------------------------------------------
-# Predict diameter from height in model data and write to csv
+########################
+# Predict
+########################
 
+# Predict diameter from height in model data and write to csv
 mclapply(treefiles, \(x) {
   tf <- st_read(x, quiet=T)
   tf <- rename(tf, H=Z)[,-which(names(tf)=='id_1')]
@@ -324,181 +347,3 @@ mclapply(treefiles, \(x) {
   },
   mc.cores = getOption("mc.cores", nCores)
 )
-
-## ---------------------------------------------------------------------------------------------------
-## SCRATCH
-#
-# nlmod <- fitcurve(allom$Height_Avg_M, allom$DBH_Avg_CM,
-#                   model='weibull',
-#                   start=c(20, 0.001, 0.5))
-#
-# # Pull coefficients
-# coef <- coef(nlmod)
-# b1 <- coef[1]
-# b2 <- coef[2]
-# b3 <- coef[3]
-# b1.se <- coef[4]
-# b2.se <- coef[5]
-# b3.se <- coef[6]
-#
-# # Predict diameter from height in field data
-# # yhat <- nthroot(log(1-((allom$Height_Avg_M-1.3)/b1))/-b2, b3)
-# # yhat <- b1*(1+exp(b2*allom$Height_Avg_M))
-# # allom$yhat <- yhat
-# # resid <- allom$yhat-allom$DBH_Avg_CM
-#
-# ## Model
-#
-# # Fit exponential model to field height and diameter
-# nlmod <- nls(DBH_Avg_CM~a+b*Height_Avg_M^c,
-#              start=list(a=20, b=0.01, c=1),
-#              data=allom.bins,
-#              na.action=na.exclude,
-#              control=nls.control(maxiter=1000))
-#
-# # Pull coefficients
-# coef <- summary(nlmod)$coefficients
-# a.est <- coef[1,'Estimate']
-# b.est <- coef[2, 'Estimate']
-# c.est <- coef[3, 'Estimate']
-# a.se <- coef[1, 'Std. Error']
-# b.se <- coef[2, 'Std. Error']
-# c.se <- coef[3, 'Std. Error']
-#
-# # # Predict diameter from height in field data
-# yhat <- predict(nlmod, allom$Height_Avg_M)
-# allom$yhat <- yhat
-# resid <- allom$yhat-allom$DBH_Avg_CM
-#
-# # What is RMSE of DBH estimate?
-# dbh.est.rmse <- sqrt(mean(resid^2, na.rm=T))
-# dbh.est.rmse
-#
-# # Pull sigma for model
-# #sig <- sqrt((sum(log(allom$DBH_Avg_CM) - log(allom$yhat))^2)/(length(allom$DBH_Avg_CM-2)))
-# sig <- log(allom$DBH_Avg_CM) - log(allom$yhat)
-# sig <- sig^2
-# sig <- sum(sig)
-# sig <- sig/(nrow(allom)-2)
-# sig <- sqrt(sig)
-# yhat2 <- a.est + (b.est*allom$DBH_Avg_CM^c.est) * exp(sig^2/2)
-# allom$yhat2 <- yhat2
-#
-# # Plot predictions
-# ggplot(allom, aes(x=Height_Avg_M)) +
-#   geom_point(aes(y=DBH_Avg_CM), shape=21, color='blue') +
-#   geom_point(aes(y=yhat2), shape=21, color='red') +
-#   geom_line(aes(y=yhat2))
-#
-# resid2 <- allom$yhat2-allom$DBH_Avg_CM
-# rmse2 <- sqrt(mean(resid2^2, na.rm=T))
-# bias <- mean((allom$DBH_Avg_CM - allom$yhat)/allom$DBH_Avg_CM) *100
-#
-# # What is RMSE of DBH estimate?
-# dbh.est.rmse <- sqrt(mean(resid^2, na.rm=T))
-#
-#
-# nthroot = function(x,n) {
-#   (abs(x)^(1/n))*sign(x)
-# }
-#
-# a=1.2
-# b=12
-# c=.69
-# x <- nthroot(log(((allom$Height_Avg_M-1.3)/a)-1)/b,c)
-# x <- 1.3+20*(1-exp(-.2*allom$DBH_Avg_CM^.1))
-# x <- a*(1+exp(b*allom$Height_Avg_M))+1.3
-# x <- (((allom$Height_Avg_M-1.3)^a)/b)^(1/c)
-# x <- exp(.4 + 1.02*log(allom$Height_Avg_M))
-#
-# plot(allom$Height_Avg_M, allom$DBH_Avg_CM)
-# lines(allom$Height_Avg_M, x, col='red')
-# plot(allom$DBH_Avg_CM, allom$Height_Avg_M)
-#
-#
-# nlmod <- nls(DBH_Avg_CM~a*(1+exp(b*Height_Avg_M)),
-#              start=list(a=2, b=0.1),
-#              data=allom,
-#              na.action=na.exclude,
-#              control = nls.control(maxiter=1000))
-#
-# # Doesnt work - nas for log
-# nlmod <- nls(DBH_Avg_CM~nthroot(log(1-((allom$Height_Avg_M-1.3)/a))/-b, c),
-#              start=list(a=20, b=0.01, c=1),
-#              data=allom,
-#              na.action=na.exclude,
-#              control=nls.control(maxiter=1000))
-#
-# # Doesn't work - singular gradient
-# nlmod <- nls(DBH_Avg_CM~(((Height_Avg_M-1.3)^a)/b)^(1/c),
-#              start=list(a=1.2, b=12, c=.6),
-#              data=allom,
-#              na.action=na.exclude,
-#              lower=c(0.8, 1, .01),
-#              control=nls.control(maxiter=1000))
-#
-# nlmod <- nls(DBH_Avg_CM ~ exp(a + b*log(Height_Avg_M)),
-#              start=list(a=0.2, b=.01),
-#              data=allom,
-#              na.action=na.exclude)
-#
-# nlmod <- nls(Height_Avg_M~(DBH_Avg_CM/a)^(1/b),
-#              start=list(a=.9, b=.5),
-#              data=allom,
-#              na.action=na.exclude,
-#              control=nls.control(maxiter=1000))
-#
-# # Run on bins... attempt 1
-# lapply(allom.bin, \(x) {
-#   x <- summarise(across(Height_Avg_M:DBH_Avg_CM))
-#
-# })
-# # Scatterplot with smooth fit
-# lapply(allom.bin, \(x) {
-#   ggplot(x, aes(x=Height_Avg_M, y=DBH_Avg_CM)) +
-#     geom_point(shape=21) +
-#     geom_smooth(se=F) +
-#     labs(x='Height (m)', y='DBH (cm)')
-# })
-#
-# # Fit exponential model to field height and diameter by bin
-# nlmods <- lapply(allom.bin, \(x) {
-#   nlmod <- nls(DBH_Avg_CM~a+b*Height_Avg_M^c,
-#                start=list(a=1, b=0.01, c=5),
-#                data=x,
-#                na.action=na.exclude,
-#                control=nls.control(maxiter=1024)
-#   )
-#
-#   coef <- summary(nlmod)$coefficients
-#   a <- coef[1,'Estimate']
-#   b <- coef[2, 'Estimate']
-#   a.se <- coef[1, 'Std. Error']
-#   b.se <- coef[2, 'Std. Error']
-#
-#   # # Predict diameter from height in field data
-#   yhat <- predict(nlmod, allom$DBH_Height_M)
-#   x$yhat <- yhat
-#   resid <- x$yhat - x$DBH_Avg_CM
-#   bias <- mean((x$DBH_Avg_CM - x$yhat)/x$DBH_Avg_CM) * 100
-#
-#   # What is RMSE of DBH estimate?
-#   dbh.est.rmse <- sqrt(mean(resid^2, na.rm=T))
-#
-#   return(list('a'=a,
-#               'b'=b,
-#               'a.se'=a.se,
-#               'b.se'=b.se,
-#               'dbh.rmse'=dbh.est.rmse,
-#               'dbh.bias'=bias,
-#               'df'=x))
-#
-# })
-#
-# nlmods[[1]]$dbh.bias
-#
-# ggplot(nlmods[[3]]$df, aes(x=Height_Avg_M)) +
-#   geom_point(aes(y=DBH_Avg_CM), shape=21, color='blue') +
-#   #geom_point(aes(y=yhat), shape=21, color='red') +
-#   geom_line(aes(y=yhat), color='red')
-

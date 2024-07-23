@@ -1,21 +1,21 @@
-### ITC optimization using LMF fixed window
+# ITD optimization using LMF variable window
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-24-23
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # LMF fixed window parameters
 p1.seq <- seq(0.5,2.0,0.5)
@@ -24,12 +24,15 @@ p3.seq <- c(1,3,5)
 shape.opts <- c('square', 'circular')
 lmf.vw.params <- expand_grid(p1.seq, p2.seq, p3.seq, shape.opts)
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Run optimization
+#############################
+
 testlmf.vw <- lapply(lasplots, lmf.vw.opt, lmf.vw.params, hmin=1.3)
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Reformat results
+#############################
 
 # Unnest results of algorithm
 testlmf.vw <- unlist(testlmf.vw, recursive=F)
@@ -58,8 +61,9 @@ testlmf.vw <- Filter(function(x) nrow(x) > 0 , testlmf.vw)
 # Update run IDs after filtering
 lmf.vw.runid <- lmf.vw.runid[lmf.vw.runid %in% names(testlmf.vw)]
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Bipartite matching
+#############################
 
 ### Run matching
 lmf.vw.match <- mclapply(lmf.vw.runid,
@@ -76,13 +80,12 @@ lmf.vw.match <- data.frame(do.call('rbind', lmf.vw.match))
 lmf.vw.match$quad <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[',1))
 lmf.vw.match$paramset <- unlist(lapply(strsplit(rownames(lmf.vw.match), '_'), '[', 2))
 
-## Write results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Write results
+#############################
+
 write.csv(lmf.vw.match,
-          file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
+          file.path(config$extdata$scratch,
                     'itc_results',
                     'lmfvw_itc_results.csv'),
           row.names=T)

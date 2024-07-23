@@ -1,20 +1,21 @@
-### Run LayerStacking with optimal parameters over all plots and export data
+# Run optimal algorithm with optimal parameters over all plots and export data
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-08-24
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # Optimal parameters
 # st = 0.5
@@ -23,12 +24,15 @@ source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDA
 # ws2 = 2
 # buf = 0.2
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
-testls <- lapply(lasplots, ls.init, 0.5, 0.5, 1, 2, 0.2, hmin=1.3)
+##############################
+# Run optimal algorithm
+#############################
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+testls <- lapply(lasplots, ls.init, start=0.5, res=0.5, ws1=1, ws2=2, buf=0.2, hmin=1.3)
+
+##############################
+# Clean results
+#############################
 
 # Unnest results of algorithm
 testls <- unlist(testls, recursive=F)
@@ -52,8 +56,9 @@ ls.runid <- paste(ls.runid[,1],ls.runid[,2], ls.runid[,3], sep='')
 # Add run IDs to unnested list of ITD outputs
 names(testls) <- ls.runid
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+##############################
+# Bipartite matching
+#############################
 
 ### Run matching
 ls.match <- mclapply(ls.runid,
@@ -78,7 +83,10 @@ ls.match.sums <- mclapply(ls.runid,
                      mc.cores = getOption("mc.cores", length(workerNodes)-2)
 )
 
+##############################################
 # Generate summary stats for optimal model
+##############################################
+
 opt.res <- do.call('rbind', ls.match.sums)
 
 opt.mean <- opt.res %>%
@@ -105,8 +113,9 @@ names(opt.mean) <- c('N detected trees',
 opt.sd <- opt.res %>%
   summarise(across(nobstrees:loss, \(x) sd(x, na.rm=T)))
 
-## Export
-## ---------------------------------------------------------------------------------------------------
+###########
+# Write
+###########
 
 # Write shapefiles of detected trees at each plot (pre-matching)
 lapply(seq_along(testls), \(x) {

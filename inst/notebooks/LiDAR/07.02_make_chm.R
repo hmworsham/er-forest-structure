@@ -1,12 +1,14 @@
-# Predict DBH on modeled trees
+# Make canopy height model (CHM)
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 03-21-24
+# Revised: 07-23-24
 
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
+
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
 # Load local helper functions and packages
 devtools::load_all()
@@ -15,18 +17,20 @@ load.pkgs(config$pkgs)
 # Configure drive auth
 drive_auth(path=config$drivesa)
 
-# Set number of cores
+# Define parallel scope
 nCores <- as.integer(availableCores()-2)
 
-## ---------------------------------------------------------------------------------------------------
-## Data ingest
+#############################
+# Data ingest
+#############################
 
 # Ingest las
 infiles <- list.files(config$extdata$las_dec, full.names=T)
 lascat <- readLAScatalog(infiles)
 
-## ---------------------------------------------------------------------------------------------------
-## Create CHM
+#############################
+# Create CHM
+#############################
 
 # Processing controls
 plan(multisession, workers=nCores)
@@ -43,14 +47,18 @@ kernel <- matrix(1,7,7)
 chm.smooth <- focal(chm.pitfree.025, w = kernel, fun = mean, na.rm = TRUE)
 plot(chm.smooth)
 
-# Write smoothed CHM
+# Write smoothed CHM as intermediate output
 writeRaster(chm.smooth, file.path(config$extdata$scratch, 'chm.smooth.tif'))
 
 # Mask CHM to conifer forest
-chm.smooth <- rast(file.path(config$extdata$scratch, 'chm.pitfree.smooth.tif'))
+chm.smooth <- rast(file.path(config$extdata$scratch, 'chm.smooth.tif'))
 full.mask <- rast(file.path(config$extdata$scratch, 'tifs', 'fullmask_5m.tif'))
 full.mask <- alignfun(full.mask, chm.smooth)
 chm.masked <- mask(chm.smooth, full.mask)
+
+#############################
+# Write
+#############################
 
 # Write masked smoothed CHM
 writeRaster(chm.masked, file.path(config$extdata$scratch, 'chm_smooth_masked.tif'))

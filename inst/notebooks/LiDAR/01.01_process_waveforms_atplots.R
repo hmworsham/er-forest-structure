@@ -1,38 +1,27 @@
-# Process NEON waveform LiDAR
+# Process NEON waveform LiDAR at plot locations
 # Author: Marshall Worsham | worsham@berkeley.edu
 # Created: 03-26-21
 # Revised: 03-02-22
-
 
 #############################
 # Set up working environment
 #############################
 
-# Load config
-config <- config::get(file=file.path('config', 'config.yml'))
-
-# Load local helper functions and packages
-devtools::load_all()
-load.pkgs(config$pkgs)
-
-# Name data directory
-datadir <- '/global/scratch/users/worsham/waveform_binary_chunks'
-
-# Name directory where inventory plot shapefiles live
-shapedir <- '/global/scratch/users/worsham/EastRiver/Plot_Shapefiles/Polygons/'
-
-# Name output directory
-outdir <- '/global/scratch/users/worsham/geolocated_returns_plots'
-
-# Name logfile
-logpath = '/global/scratch/users/worsham/logs/plots_pwf_log.txt'
+# Define directories
+datadir <- file.path(config$extdata$scratch, 'waveform_binary_chunks')
+shapedir <- file.path(config$extdata$scratch, 'EastRiver', 'Plot_Shapefiles', 'Polygons')
+outdir <- file.path(config$extdata$scratch, 'geolocated_returns_plots')
+logpath = file.path(config$extdata$scratch, 'logs', 'plots_pwf_log.txt')
 
 # Name flightpaths as filenames
 flightpaths <- list.files(datadir, full.names = T)
 
-# Get plot/LiDAR intersections
-intersectscsv <- '~/Output/EastRiver_Plot_LiDAR_Chunk_Intersections.csv'
+#############################
+# Data ingest
+#############################
 
+# Get plot/LiDAR intersections
+intersectscsv <- file.path(config$extdata$scratch, 'EastRiver_Plot_LiDAR_Chunk_Intersections.csv')
 intersects <- read.csv(intersectscsv)
 names(intersects) <- str_replace(names(intersects), '\\.', '-')
 
@@ -46,7 +35,7 @@ names(intersects) <- str_replace(names(intersects), '\\.', '-')
 # print(toc-tic)
 
 ##########################################
-# process waveforms at all plot locations
+# Process waveforms at all plot locations
 ##########################################
 
 aop.plots <- c(

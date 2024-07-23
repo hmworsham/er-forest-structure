@@ -1,20 +1,21 @@
-### ITC optimization using PTrees
+# ITD optimization using PTrees
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-24-23
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # PTrees parameters
 k.seq <- c(100, 80, 60, 40, 30, 25, 20, 15, 12, 10, 8, 7, 6, 5)
@@ -34,12 +35,16 @@ for(i in seq(length(k.seq2))) {
 # Bind permutations into single list
 pt.params <- c(k.seq3, k.seq4)
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Run optimization
+#############################
+
 testpt <- lapply(lasplots, ptrees.opt, pt.params, hmin=1.3)
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Clean results
+#############################
+
 # Unnest results of algorithm
 testpt <- unlist(testpt, recursive=F)
 
@@ -67,8 +72,9 @@ testpt <- Filter(function(x) nrow(x) > 0 , testpt)
 # Update run IDs after filtering
 pt.runid <- pt.runid[pt.runid %in% names(testpt)]
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Bipartite matching
+#############################
 
 ### Run matching
 pt.match <- mclapply(pt.runid,
@@ -85,13 +91,12 @@ pt.match <- data.frame(do.call('rbind', pt.match))
 pt.match$quad <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[',1))
 pt.match$paramset <- unlist(lapply(strsplit(rownames(pt.match), '_'), '[', 2))
 
-## Write results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Write results
+#############################
+
 write.csv(pt.match,
-          file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
+          file.path(config$extdata$scratch,
                     'itc_results',
                     'pt_itc_results.csv'),
           row.names=T)

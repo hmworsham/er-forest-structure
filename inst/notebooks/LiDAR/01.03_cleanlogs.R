@@ -14,12 +14,21 @@ config <- config::get(file=file.path('config', 'config.yml'))
 devtools::load_all()
 load.pkgs(config$pkgs)
 
-logdir <- '/global/scratch/users/worsham/logs'
+# Define directories
+logdir <- file.path(config$extdata$scratch, 'logs')
+
+#############################
+# Data ingest
+#############################
 
 # Read in all flightpaths log
 log <- read.delim(file.path(logdir, 'sbatch_pwf_log.txt'), sep='\t', header=F)
 names(log) <- c('datetime', 'thread', 'type', 'src_pkg', 'src_fun', 'message')
 log <- data.frame(log)
+
+#############################
+# Processing
+#############################
 
 # Split the message based on ':' delimeter
 log$flightpath <- as.character(lapply(strsplit(log$message, ' : '), '[', 1))
@@ -35,7 +44,8 @@ log$vector <- as.numeric(log$vector)
 log <- log[order(log$flightpath),]
 log <- log[-6]
 
-fwrite(log, '/global/scratch/users/worsham/logs/wf_processing_log.csv')
+# Write
+fwrite(log, file.path(logdir, 'wf_processing_log.csv'))
 
 # Processed at plots log
 plog <- read.delim(file.path(logdir, 'processwf_plots_log.txt'), sep='\t', header=F)

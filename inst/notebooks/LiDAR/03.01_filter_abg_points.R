@@ -1,30 +1,26 @@
-# Downsample (decimate) points to uniform density
-# Load libraries
+# Filter points to aboveground
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-23-23
+# Revised: 07-23-24
+
+#############################
+# Set up working environment
+#############################
+
+# Set RGL option
 options(rgl.useNULL=TRUE)
 
-# Install and load libraries
-pkgs <- c('future',
-          'lidR',
-          'raster',
-          'rgl',
-          'terra') # Name the packages you want to use here
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Function to install new packages if they're not already installed
-load.pkgs <- function(pkg){
-  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
-  if (length(new.pkg))
-    install.packages(new.pkg, dependencies = TRUE)
-  sapply(pkg, require, character.only = TRUE)
-} 
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
 
-# Runs load.pkgs on the list of packages defined in pkgs
-load.pkgs(pkgs)
-
-# Setup workspace
-scrdir <- file.path('/global', 'scratch', 'users', 'worsham')
-shapedir <- file.path(scrdir, 'EastRiverInputs/RMBL_2020_EastRiver_SDP_Boundary')
-datadir <- file.path(scrdir, 'las_normalized')
-outdir <- file.path(scrdir, 'las_abg')
+# Define directories
+shapedir <- file.path(config$extdata$scratch, 'EastRiverInputs', 'RMBL_2020_EastRiver_SDP_Boundary')
+datadir <- file.path(config$extdata$scratch, 'las_normalized')
+outdir <- file.path(config$extdata$scratch, 'las_abg')
 dir.create(outdir)
 
 ############################
@@ -64,7 +60,7 @@ opt_laz_compression(lascat) <- T
 aboveground <- function(chunk){
   x = readLAS(chunk)
   if (is.empty(x)) return(NULL)        # check if it actually contain points
-  abg = tryCatch({x[x$Z>0]}, 
+  abg = tryCatch({x[x$Z>0]},
            error=function(cond){message('Normalization error')
              return(NULL)})
   if (is.empty(abg)) return(NULL)

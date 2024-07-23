@@ -1,15 +1,23 @@
-library(terra)
-library(parallel)
-library(tidyverse)
-library(plyr)
-library(RColorBrewer)
-library(pbmcapply)
-library(lidR)
-library(rlas)
+# Downsample LAS
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 02-28-22
+# Revised: 07-22-24
 
-shapedir <- '/global/scratch/users/worsham/EastRiver/RMBL_2020_EastRiver_SDP_Boundary'
-datadir <- '/global/scratch/users/worsham/las_regridded'
-outdir <- '/global/scratch/users/worsham/las_downsampled'
+#############################
+# Set up working environment
+#############################
+
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
+
+# Load local helper functions and packages
+devtools::load_all()
+load.pkgs(config$pkgs)
+
+# Define directories
+shapedir <- file.path(config$extdata$scratch, 'EastRiver', 'RMBL_2020_EastRiver_SDP_Boundary')
+datadir <- file.path(config$extdata$scratch, 'las_regridded')
+outdir <- file.path(config$extdata$scratch, 'las_downsampled')
 dir.create(outdir)
 
 ########################

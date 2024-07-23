@@ -1,20 +1,21 @@
-### ITC optimization using LayerStacking
+# ITD optimization using Layer Stacking
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-24-23
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
 # Load config
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # LayerStacking parameter sets
 start.seq = 0.5
@@ -29,12 +30,15 @@ ls.params <- expand.grid(start.seq, res.seq, ws1.seq, ws2.seq, buf.seq)
 # Check dims
 length(start.seq)*length(res.seq)*length(ws1.seq)*length(ws2.seq)*length(buf.seq) == nrow(ls.params)
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Run optimization
+#############################
+
 testls <- lapply(lasplots, ls.opt, ls.params, hmin=1.3)
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Clean results
+#############################
 
 # Unnest results of algorithm
 testls <- unlist(testls, recursive=F)
@@ -63,8 +67,9 @@ testls <- Filter(function(x) nrow(x) > 0 , testls)
 # Update run IDs after filtering
 ls.runid <- ls.runid[ls.runid %in% names(testls)]
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Bipartite matching
+#############################
 
 ### Run matching
 ls.match <- mclapply(ls.runid,
@@ -81,20 +86,12 @@ ls.match <- data.frame(do.call('rbind', ls.match))
 ls.match$quad <- unlist(lapply(strsplit(rownames(ls.match), '_'), '[',1))
 ls.match$paramset <- unlist(lapply(strsplit(rownames(ls.match), '_'), '[', 2))
 
-## Write results
-## ---------------------------------------------------------------------------------------------------
+
+#############################
+# Write results
+#############################
 write.csv(ls.match,
-          file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
+          file.path(config$extdata$scratch,
                     'itc_results',
                     'ls_itc_results_1-3.csv'),
           row.names=T)
-
-ls <- read.csv(file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
-                    'itc_results',
-                    'ls_itc_results_1-3.csv'))

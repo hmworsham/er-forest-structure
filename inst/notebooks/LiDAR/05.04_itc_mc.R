@@ -1,20 +1,21 @@
-### ITC optimization using multichm
+# ITD optimization using multichm
+# Author: Marshall Worsham | worsham@berkeley.edu
+# Created: 04-24-23
+# Revised: 07-23-24
 
-## Workspace setup
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Set up working environment
+#############################
 
-config <- config::get(file=file.path('~',
-                                     'Repos',
-                                     'er-forest-structure',
-                                     'config',
-                                     'config.yml'))
+# Load config
+config <- config::get(file=file.path('config', 'config.yml'))
 
-# Load local helper functions and packages
+# Source loadup file
 source(file.path('~', 'Repos', 'er-forest-structure', 'inst', 'notebooks', 'LiDAR', '05.00_itc_traintest_loadup.R'))
 
-
-## Define vectors of parameters on which to run algorithm
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Define parameters
+#############################
 
 # Multichm parameter sets
 res.seq <- c(0.5, 1)
@@ -24,12 +25,15 @@ dist3d.seq <- c(0.5,1,3,5)
 
 mc.params <- expand.grid(res.seq, layer_thickness.seq, dist2d.seq, dist3d.seq)
 
-## Run optimization
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Run optimization
+#############################
+
 testmc <- lapply(lasplots, mc.opt, mc.params)
 
-## Reformat results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Clean results
+#############################
 
 # Unnest results of algorithm
 testmc <- unlist(testmc, recursive=F)
@@ -58,8 +62,9 @@ testmc <- Filter(function(x) nrow(x) > 0 , testmc)
 # Update run IDs after filtering
 mc.runid <- mc.runid[mc.runid %in% names(testmc)]
 
-## Bipartite matching
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Bipartite matching
+#############################
 
 ### Run matching
 mc.match <- mclapply(mc.runid,
@@ -76,13 +81,12 @@ mc.match <- data.frame(do.call('rbind', mc.match))
 mc.match$quad <- unlist(lapply(strsplit(rownames(mc.match), '_'), '[',1))
 mc.match$paramset <- unlist(lapply(strsplit(rownames(mc.match), '_'), '[', 2))
 
-## Write results
-## ---------------------------------------------------------------------------------------------------
+#############################
+# Write results
+#############################
+
 write.csv(mc.match,
-          file.path('/global',
-                    'scratch',
-                    'users',
-                    'worsham',
+          file.path(config$extdata$scratch,
                     'itc_results',
                     'mc_itc_results.csv'),
           row.names=T)

@@ -31,6 +31,7 @@ default:
   - FedData
   - rgl
   - nngeo
+  - geos
   - broom
   - plot3D
   - readxl
@@ -56,11 +57,11 @@ default:
   - ftExtra
 
  extdata:
-  scratch: '/global/scratch/users/worsham'
+  scratch: '/global/scratch/users/worsham' ###
   las_dec: '/global/scratch/users/worsham/las_decimated'
   las_reg: '/global/scratch/users/worsham/las_regridded'
   trees: '/global/scratch/users/worsham/trees_ls_100m_csv'
-  itc: '/global/scratch/users/worsham/itc_results'
+  itc: '/global/scratch/users/worsham/itc_results' ###
   siteindex: '1KPpaiTZSfrq0RYMJQwNdwgCU-4rWucheW5KUN_maERs'
   invpattern: 'EastRiver_Census1_Data_Collated.csv'
   invid: '17V27lVbOqh3dIhHQ24tiJpmpJeurSGy9'
