@@ -36,7 +36,7 @@ names(gams) <- gam.names.new$n[x1]
 download.file(config$extdata$gbm,
               destfile=file.path(tempdir(), 'gbm_relative_influence.csv'),
               method='wget')
-gbm.sums <- read.csv(file.path(tempdir(), 'gbm_relative_influence.csv'))
+gbm.sums <- read.csv(file.path('~','Downloads', 'gbm_relative_influence.csv'))
 
 # Read local variable names reference table
 varnames <- read.csv(file.path(config$data$raw, 'explainer_names_table.csv'),
@@ -141,6 +141,8 @@ lblr <- c(`Basal area`=bquote('Basal area ('*m^2~ha^-1*')'),
 
 # Plot PE for full-forest structure variables by model
 peplots <- lapply(peplot.dfs, \(p) {
+  p <- p %>%
+    filter(var %in% c('swe', 'delta_swe'))
   ggplot(p) +
     geom_line(aes(x=v, y=fit, color=label), linewidth=1) +
     geom_line(aes(x=v, y=u95, color=label), linetype=2, linewidth=0.4) +
@@ -167,11 +169,14 @@ peplot_xaxis <- cowplot::get_plot_component(
     labs(x = 'Zero-centered values'), 'xlab-b')
 
 # Produce legend separately
+peplot.df.filt <- peplot.df %>%
+  filter(var %in% c('swe', 'delta_swe'))
+
 peplot.leg <- grab.legend(
-  ggplot(peplot.df, aes(x=v, y=fit, color=label)) +
+  ggplot(peplot.df.filt, aes(x=v, y=fit, color=label)) +
     geom_line(linewidth=1.2) +
-    scale_color_manual(limits=peplot.df$label,
-                       values=peplot.df$pdcolors,
+    scale_color_manual(limits=peplot.df.filt$label,
+                       values=peplot.df.filt$pdcolors,
                        name=NULL) +
     ggthemes::theme_calc(base_size=8)
   +
@@ -191,22 +196,18 @@ cairo_pdf(file.path('inst', 'ms', 'figures', 'Figure_8.pdf'),
           family='Arial', bg='white')
 
 design = "
-ABC
-DEF
-GHI
-#J#
+ABCD
+##J#
 "
 
-pw <- list(peplot.leg, peplots[[1]], peplots[[2]],
-           peplots[[3]], peplots[[4]], peplots[[5]],
-           peplots[[6]], peplots[[7]], peplots[[8]],
+pw <- list(peplot.leg, peplots[[1]], peplots[[2]], peplots[[5]],
            peplot_xaxis) %>%
   wrap_plots() +
-  patchwork::plot_layout(heights=c(20,20,20,1), design=design) +
-  plot_annotation(tag_levels = list(c('',
-                                      paste0('(', LETTERS[1:8], ')'),
-                                      ''))) &
-  theme(plot.tag = element_text(face = 'bold'))
+  patchwork::plot_layout(design=design) # +
+  # plot_annotation(tag_levels = list(c('',
+  #                                     paste0('(', LETTERS[1:8], ')'),
+  #                                     ''))) &
+  # theme(plot.tag = element_text(face = 'bold'))
 
 pw
 
